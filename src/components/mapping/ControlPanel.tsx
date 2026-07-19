@@ -1,11 +1,20 @@
 import type { ChangeEvent } from 'react';
-import type { Floorplan } from '../../types';
+import type { Floorplan, ViewMode } from '../../types';
+
+const MODE_LABELS: { mode: ViewMode; label: string }[] = [
+  { mode: '일반', label: '일반 상태 모드' },
+  { mode: '유지보수', label: '유지보수 모드' },
+  { mode: '히트맵', label: '히트맵 모드' },
+  { mode: '타임라인', label: '히스토리 타임라인' },
+];
 
 export default function ControlPanel({
   floorplans,
   activeFloorplanId,
   onSelectFloorplan,
   onUpload,
+  viewMode,
+  onChangeViewMode,
   showLabels,
   onToggleLabels,
   showValues,
@@ -24,6 +33,8 @@ export default function ControlPanel({
   activeFloorplanId: string | null;
   onSelectFloorplan: (id: string) => void;
   onUpload: (file: File) => void;
+  viewMode: ViewMode;
+  onChangeViewMode: (m: ViewMode) => void;
   showLabels: boolean;
   onToggleLabels: (v: boolean) => void;
   showValues: boolean;
@@ -76,15 +87,19 @@ export default function ControlPanel({
       <div className="p-4 border-b border-border">
         <div className="text-sm font-medium mb-2">보기 모드</div>
         <div className="space-y-1.5">
-          <div className="rounded-lg bg-accent/15 text-accent px-3 py-1.5 text-sm">일반 상태 모드</div>
-          {['유지보수 모드', '히트맵 모드', '히스토리 타임라인'].map((mode) => (
-            <div
+          {MODE_LABELS.map(({ mode, label }) => (
+            <button
               key={mode}
-              title="다음 단계에서 구현 예정"
-              className="rounded-lg px-3 py-1.5 text-sm text-text-dim/50 cursor-not-allowed border border-dashed border-border"
+              type="button"
+              onClick={() => onChangeViewMode(mode)}
+              className={`w-full text-left rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                viewMode === mode
+                  ? 'bg-accent/15 text-accent'
+                  : 'text-text-dim hover:bg-white/5 hover:text-text'
+              }`}
             >
-              {mode} · 준비 중
-            </div>
+              {label}
+            </button>
           ))}
         </div>
       </div>

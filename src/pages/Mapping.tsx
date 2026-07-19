@@ -3,6 +3,9 @@ import { useAppStore } from '../store';
 import { useMappingStore } from '../mappingStore';
 import { computeFailureStats } from '../lib/stats';
 import { computeZoneStats } from '../lib/geo';
+import { nextWorkOrderStatus } from '../lib/workOrders';
+import { historyDateRange } from '../lib/timeline';
+import type { ViewMode } from '../types';
 import ControlPanel from '../components/mapping/ControlPanel';
 import FloorplanCanvas from '../components/mapping/FloorplanCanvas';
 import AssetToolbar from '../components/mapping/AssetToolbar';
@@ -32,17 +35,25 @@ export default function Mapping() {
     activeFloorplanId,
     placements,
     zones,
+    workOrders,
     addFloorplan,
     setActiveFloorplan,
     upsertPlacement,
     addZone,
     removeZone,
+    setWorkOrderStatus,
   } = useMappingStore();
+  const workOrdersById = useMemo(
+    () => new Map(workOrders.map((w) => [w.설비ID, w.상태])),
+    [workOrders],
+  );
 
   const [showLabels, setShowLabels] = useState(true);
   const [showValues, setShowValues] = useState(true);
   const [showConnections, setShowConnections] = useState(true);
   const [showZones, setShowZones] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('일반');
+  const [asOfDate, setAsOfDate] = useState<Date>(() => historyDateRange(histories).max);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedConnectionKey, setSelectedConnectionKey] = useState<string | null>(null);
@@ -66,6 +77,10 @@ export default function Mapping() {
   const handleMove = (설비ID: string, xPct: number, yPct: number) => {
     if (!activeFloorplanId) return;
     upsertPlacement({ 설비ID, 도면ID: activeFloorplanId, xPct, yPct });
+  };
+
+  const handleWorkOrderClick = (설비ID: string) => {
+    setWorkOrderStatus(설비ID, nextWorkOrderStatus(workOrdersById.get(설비ID)));
   };
 
   const selectEquipment = (id: string | null) => {
@@ -123,6 +138,8 @@ export default function Mapping() {
           activeFloorplanId={activeFloorplanId}
           onSelectFloorplan={setActiveFloorplan}
           onUpload={handleUpload}
+          viewMode={viewMode}
+          onChangeViewMode={setViewMode}
           showLabels={showLabels}
           onToggleLabels={setShowLabels}
           showValues={showValues}
@@ -159,6 +176,13 @@ export default function Mapping() {
             drawingZone={drawingZone}
             draftPoints={draftPoints}
             onAddDraftPoint={(xPct, yPct) => setDraftPoints((prev) => [...prev, { xPct, yPct }])}
+            viewMode={viewMode}
+            statsById={statsById}
+            workOrders={workOrdersById}
+            onWorkOrderClick={handleWorkOrderClick}
+            histories={histories}
+            asOfDate={asOfDate}
+            onChangeAsOfDate={setAsOfDate}
           />
           {selectedEquipment && (
             <EquipmentPopover equipment={selectedEquipment} onClose={() => selectEquipment(null)} />

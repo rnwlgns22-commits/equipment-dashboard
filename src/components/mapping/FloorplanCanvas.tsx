@@ -2,11 +2,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Line, Circle } from 'react-konva';
 import useImage from 'use-image';
 import type Konva from 'konva';
-import type { Equipment, Floorplan, Placement, Zone } from '../../types';
+import type {
+  Equipment,
+  FailureStat,
+  Floorplan,
+  HistoryRecord,
+  Placement,
+  ViewMode,
+  WorkOrderStatus,
+  Zone,
+} from '../../types';
 import EquipmentToken from './EquipmentToken';
 import ConnectionLine from './ConnectionLine';
 import ZoneShape from './ZoneShape';
+import HeatmapLayer from './HeatmapLayer';
+import HistoryTimeline from './HistoryTimeline';
 import { computeConnections } from '../../lib/topology';
+import { dueStateOf, workOrderColor as computeWorkOrderColor } from '../../lib/workOrders';
+import { hadRecentRepair, historyDateRange } from '../../lib/timeline';
 import mascotSurprised from '../../assets/mascot/surprised.png';
 
 const MIN_SCALE = 0.15;
@@ -33,6 +46,13 @@ export default function FloorplanCanvas({
   drawingZone,
   draftPoints,
   onAddDraftPoint,
+  viewMode,
+  statsById,
+  workOrders,
+  onWorkOrderClick,
+  histories,
+  asOfDate,
+  onChangeAsOfDate,
 }: {
   floorplan: Floorplan | null;
   placements: Placement[];
@@ -54,6 +74,13 @@ export default function FloorplanCanvas({
   drawingZone: boolean;
   draftPoints: { xPct: number; yPct: number }[];
   onAddDraftPoint: (xPct: number, yPct: number) => void;
+  viewMode: ViewMode;
+  statsById: Map<string, FailureStat>;
+  workOrders: Map<string, WorkOrderStatus>;
+  onWorkOrderClick: (id: string) => void;
+  histories: HistoryRecord[];
+  asOfDate: Date;
+  onChangeAsOfDate: (d: Date) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -162,6 +189,8 @@ export default function FloorplanCanvas({
     [showConnections, equipments, placedIds],
   );
   const placementByEquip = useMemo(() => new Map(placements.map((p) => [p.설비ID, p])), [placements]);
+  const now = useMemo(() => new Date(), []);
+  const historyRange = useMemo(() => historyDateRange(histories), [histories]);
 
   // 도면이 없을 때도 이 div(ref 대상)는 항상 마운트해둔다 — 조건부로 아예 안 그리면
   // ResizeObserver가 처음 관측할 대상이 없어서 setup effect(deps [])가 영원히 no-op된다
@@ -191,6 +220,15 @@ export default function FloorplanCanvas({
           >
             <Layer>
               {image && <KonvaImage image={image} listening={false} />}
+
+              {image && viewMode === '히트맵' && (
+                <HeatmapLayer
+                  placements={placements}
+                  imageWidth={image.naturalWidth}
+                  imageHeight={image.naturalHeight}
+                  statsById={statsById}
+                />
+              )}
 
               {image &&
                 showZones &&
@@ -256,6 +294,23 @@ export default function FloorplanCanvas({
               {placements.map((p) => {
                 const eq = equipmentsById.get(p.설비ID);
                 if (!eq || !image) return null;
+
+                let woColor: string | undefined;
+                if (viewMode === '유지보수') {
+                  const due = dueStateOf(eq.다음점검일, now);
+                  if (due) {
+                    const status = workOrders.get(eq.설비ID) ?? '대기';
+                    woColor = computeWorkOrderColor(status, due);
+                  }
+                }
+
+                const overrideColor =
+                  viewMode === '타임라인'
+                    ? hadRecentRepair(eq.설비ID, asOfDate, histories)
+                      ? '#f87171'
+                      : '#4b5563'
+                    : undefined;
+
                 return (
                   <EquipmentToken
                     key={p.설비ID}
@@ -269,16 +324,31 @@ export default function FloorplanCanvas({
                     selected={selectedId === p.설비ID}
                     onSelect={onSelect}
                     onMove={onMove}
+                    workOrderColor={woColor}
+                    onWorkOrderClick={() => onWorkOrderClick(eq.설비ID)}
+                    dim={viewMode === '히트맵'}
+                    overrideColor={overrideColor}
                   />
                 );
               })}
             </Layer>
           </Stage>
-          <div className="absolute bottom-3 left-3 text-xs text-text-dim bg-bg-soft/80 rounded-lg px-2 py-1 border border-border">
-            {drawingZone
-              ? '캔버스를 클릭해서 구역 꼭짓점을 찍으세요 (3개 이상 필요)'
-              : '휠: 확대/축소 · 드래그: 이동 · 우측 목록에서 설비를 끌어다 놓으세요'}
-          </div>
+          {viewMode === '타임라인' ? (
+            <HistoryTimeline
+              minDate={historyRange.min}
+              maxDate={historyRange.max}
+              value={asOfDate}
+              onChange={onChangeAsOfDate}
+            />
+          ) : (
+            <div className="absolute bottom-3 left-3 text-xs text-text-dim bg-bg-soft/80 rounded-lg px-2 py-1 border border-border">
+              {drawingZone
+                ? '캔버스를 클릭해서 구역 꼭짓점을 찍으세요 (3개 이상 필요)'
+                : viewMode === '유지보수'
+                  ? '점검 임박/경과 설비의 🔧 배지를 클릭하면 대기→진행중→완료로 상태가 바뀝니다'
+                  : '휠: 확대/축소 · 드래그: 이동 · 우측 목록에서 설비를 끌어다 놓으세요'}
+            </div>
+          )}
         </>
       )}
     </div>

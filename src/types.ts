@@ -87,3 +87,13 @@ export interface Zone {
   도면ID: string;
   points: { xPct: number; yPct: number }[]; // 다각형 꼭짓점, 3개 이상
 }
+
+// Phase C — 작업오더(Work Order). 도면과 무관하게 설비 자체에 붙는 상태라 도면ID 없음.
+export type WorkOrderStatus = '대기' | '진행중' | '완료';
+
+export interface WorkOrder {
+  설비ID: string;
+  상태: WorkOrderStatus;
+}
+
+export type ViewMode = '일반' | '유지보수' | '히트맵' | '타임라인';
