@@ -5,6 +5,7 @@ const navItems = [
   { to: '/dashboard', label: '대시보드' },
   { to: '/equipment', label: '설비 목록' },
   { to: '/mapping', label: '레이아웃 매핑' },
+  { to: '/graph', label: '관계 그래프' },
 ];
 
 export default function Layout() {

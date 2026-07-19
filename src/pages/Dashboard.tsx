@@ -15,9 +15,16 @@ import {
 import { useAppStore } from '../store';
 import { computeFailureStats, equipmentName } from '../lib/stats';
 import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown } from '../lib/aggregate';
+import { computeBrainSignals } from '../lib/brain';
 import { COLORS } from '../lib/colors';
 import Card from '../components/Card';
 import KpiTile from '../components/KpiTile';
+
+const BRAIN_BADGE: Record<string, string> = {
+  연쇄고장: 'bg-risk-high/15 text-risk-high',
+  설치코호트: 'bg-risk-mid/15 text-risk-mid',
+  동시다발: 'bg-accent/15 text-accent',
+};
 
 function daysUntil(dateStr: string | undefined, now: Date): number | null {
   if (!dateStr) return null;
@@ -51,6 +58,7 @@ export default function Dashboard() {
   );
 
   const highRiskStats = stats.filter((s) => s.위험등급 !== '하').slice(0, 8);
+  const brainSignals = useMemo(() => computeBrainSignals(equipments, histories).slice(0, 6), [equipments, histories]);
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -164,6 +172,25 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </Card>
+
+        <Card title="🧠 뇌모델 신호 (실험적 · 참고용)" className="xl:col-span-2">
+          <p className="text-xs text-text-dim -mt-2 mb-3">
+            머신러닝 예측 아님 — 계통 연결·제조사·설치연도·날짜 근접 같은 사실만으로 "지켜볼 근거가
+            있다"를 뽑는 규칙기반 분석입니다.
+          </p>
+          {brainSignals.length === 0 ? (
+            <p className="text-sm text-text-dim">발견된 신호가 없습니다(연결설비·고장이력 표본 부족).</p>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {brainSignals.map((s, i) => (
+                <div key={i} className="rounded-xl border border-border p-3">
+                  <span className={`text-xs rounded-full px-2 py-0.5 ${BRAIN_BADGE[s.종류]}`}>{s.종류}</span>
+                  <p className="text-sm mt-1.5 leading-relaxed">{s.근거}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>
