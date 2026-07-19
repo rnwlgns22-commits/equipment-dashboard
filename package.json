@@ -14,13 +14,16 @@
     "clsx": "^2.1.1",
     "dexie": "^4.4.4",
     "framer-motion": "^12.42.2",
+    "konva": "^10.3.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-force-graph-2d": "^1.29.1",
     "react-force-graph-3d": "^1.29.1",
+    "react-konva": "^19.2.5",
     "react-router-dom": "^7.18.1",
     "recharts": "^3.9.2",
     "tailwindcss": "^4.3.3",
+    "use-image": "^1.1.4",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import EquipmentList from './pages/EquipmentList';
 import EquipmentDetail from './pages/EquipmentDetail';
+import Mapping from './pages/Mapping';
 
 function RequireData({ children }: { children: ReactNode }) {
   const loaded = useAppStore((s) => s.loaded);
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/equipment" element={<EquipmentList />} />
           <Route path="/equipment/:id" element={<EquipmentDetail />} />
+          <Route path="/mapping" element={<Mapping />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

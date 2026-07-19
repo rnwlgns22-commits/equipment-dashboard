@@ -62,3 +62,19 @@ export interface BrainSignal {
   관련설비: string[];
   근거: string;
 }
+
+// 설계.md §11 — 설비 레이아웃 매핑(FMS Mapping). 좌표는 Equipment의 속성이 아니라
+// "이 도면 위에서 어디 있는지"라서 별도 모델로 분리 (도면이 여러 장이면 같은 설비가
+// 여러 좌표를 가질 수 있어야 함).
+export interface Floorplan {
+  id: string;
+  name: string;
+  imageDataUrl: string;
+}
+
+export interface Placement {
+  설비ID: string;
+  도면ID: string;
+  xPct: number; // 0~100, 도면 원본 이미지 기준 상대좌표
+  yPct: number;
+}
