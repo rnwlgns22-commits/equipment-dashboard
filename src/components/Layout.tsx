@@ -1,6 +1,11 @@
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Suspense, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store';
+
+function RouteFallback() {
+  return <div className="p-8 text-text-dim text-sm">불러오는 중…</div>;
+}
 
 const navItems = [
   { to: '/dashboard', label: '대시보드' },
@@ -14,6 +19,7 @@ const navItems = [
 export default function Layout() {
   const clearData = useAppStore((s) => s.clearData);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-bg text-text">
@@ -77,7 +83,19 @@ export default function Layout() {
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden">
-        <Outlet />
+        <Suspense fallback={<RouteFallback />}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </Suspense>
       </main>
     </div>
   );

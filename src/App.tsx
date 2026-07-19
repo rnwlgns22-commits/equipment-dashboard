@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, useEffect, useState, type ReactNode } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore, hydrateFromDb } from './store';
 import Layout from './components/Layout';
@@ -22,10 +22,6 @@ function RequireData({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function RouteFallback() {
-  return <div className="min-h-screen flex items-center justify-center bg-bg text-text-dim text-sm">불러오는 중…</div>;
-}
-
 export default function App() {
   const [hydrated, setHydrated] = useState(false);
 
@@ -37,27 +33,25 @@ export default function App() {
 
   return (
     <HashRouter>
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route
-            element={
-              <RequireData>
-                <Layout />
-              </RequireData>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/equipment" element={<EquipmentList />} />
-            <Route path="/equipment/:id" element={<EquipmentDetail />} />
-            <Route path="/mapping" element={<Mapping />} />
-            <Route path="/graph" element={<GraphView />} />
-            <Route path="/history" element={<HistoryBrowser />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route
+          element={
+            <RequireData>
+              <Layout />
+            </RequireData>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/equipment" element={<EquipmentList />} />
+          <Route path="/equipment/:id" element={<EquipmentDetail />} />
+          <Route path="/mapping" element={<Mapping />} />
+          <Route path="/graph" element={<GraphView />} />
+          <Route path="/history" element={<HistoryBrowser />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       <MascotHelp />
     </HashRouter>
   );

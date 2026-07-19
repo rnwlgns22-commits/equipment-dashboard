@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
 import Card from '../components/Card';
+import mascotSurprised from '../assets/mascot/surprised.png';
 
 export default function EquipmentDetail() {
   const { id } = useParams();
@@ -23,9 +24,12 @@ export default function EquipmentDetail() {
 
   if (!equipment) {
     return (
-      <div className="p-8">
-        <p className="text-text-dim">설비를 찾을 수 없습니다.</p>
-        <Link to="/equipment" className="text-accent text-sm">
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-3 text-center px-6">
+        <img src={mascotSurprised} alt="" className="h-20 w-auto select-none" draggable={false} />
+        <p className="text-text-dim text-sm">
+          &ldquo;{id}&rdquo; 설비를 찾을 수 없습니다. 삭제됐거나 잘못된 링크일 수 있어요.
+        </p>
+        <Link to="/equipment" className="text-accent text-sm hover:underline">
           ← 설비 목록으로
         </Link>
       </div>
