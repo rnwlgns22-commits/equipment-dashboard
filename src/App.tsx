@@ -8,6 +8,8 @@ import EquipmentList from './pages/EquipmentList';
 import EquipmentDetail from './pages/EquipmentDetail';
 import Mapping from './pages/Mapping';
 import GraphView from './pages/GraphView';
+import HistoryBrowser from './pages/HistoryBrowser';
+import Settings from './pages/Settings';
 import MascotHelp from './components/MascotHelp';
 
 function RequireData({ children }: { children: ReactNode }) {
@@ -33,6 +35,8 @@ export default function App() {
           <Route path="/equipment/:id" element={<EquipmentDetail />} />
           <Route path="/mapping" element={<Mapping />} />
           <Route path="/graph" element={<GraphView />} />
+          <Route path="/history" element={<HistoryBrowser />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -6,6 +6,8 @@ const navItems = [
   { to: '/equipment', label: '설비 목록' },
   { to: '/mapping', label: '레이아웃 매핑' },
   { to: '/graph', label: '관계 그래프' },
+  { to: '/history', label: '점검·수리 이력' },
+  { to: '/settings', label: '설정 / 데이터' },
 ];
 
 export default function Layout() {
