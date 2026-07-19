@@ -1,0 +1,64 @@
+// 설계.md §3 데이터 모델. 필드명은 원본 볼트 frontmatter와 개념을 맞춰서 한글 유지.
+
+export type Category =
+  | '공조'
+  | '냉난방'
+  | '급배수'
+  | '전기'
+  | '소방'
+  | '승강기'
+  | '통신'
+  | '기타';
+
+export type EquipmentStatus = '정상' | '정지' | '수리중' | '폐기';
+
+export type RiskLevel = '상' | '중' | '하';
+
+export interface Equipment {
+  설비ID: string;
+  설비명: string;
+  분류: Category;
+  사이트: string;
+  위치?: string;
+  제조사?: string;
+  모델명?: string;
+  설치일?: string;
+  상태: EquipmentStatus;
+  점검주기일?: number;
+  최근점검일?: string;
+  다음점검일?: string;
+  연결설비: string[];
+  상세사양: Record<string, string>;
+  출처파일: string;
+}
+
+export type HistoryType = '점검' | '수리';
+
+export interface HistoryRecord {
+  id: string;
+  날짜: string;
+  설비ID?: string;
+  유형: HistoryType;
+  제목: string;
+  내용?: string;
+  출처파일: string;
+}
+
+export interface FailureStat {
+  설비ID: string;
+  고장건수: number;
+  최근1년건수: number;
+  최초고장일: string;
+  최근고장일: string;
+  mtbf일?: number;
+  예상다음고장일?: string;
+  위험등급: RiskLevel;
+}
+
+export type BrainSignalKind = '연쇄고장' | '설치코호트' | '동시다발';
+
+export interface BrainSignal {
+  종류: BrainSignalKind;
+  관련설비: string[];
+  근거: string;
+}
