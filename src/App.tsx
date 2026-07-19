@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAppStore } from './store';
+import { useAppStore, hydrateFromDb } from './store';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -19,6 +19,14 @@ function RequireData({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    hydrateFromDb().finally(() => setHydrated(true));
+  }, []);
+
+  if (!hydrated) return null;
+
   return (
     <HashRouter>
       <Routes>

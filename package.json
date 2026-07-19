@@ -16,6 +16,8 @@
     "framer-motion": "^12.42.2",
     "jszip": "^3.10.1",
     "konva": "^10.3.0",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-force-graph-2d": "^1.29.1",
@@ -25,6 +27,7 @@
     "recharts": "^3.9.2",
     "tailwindcss": "^4.3.3",
     "use-image": "^1.1.4",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

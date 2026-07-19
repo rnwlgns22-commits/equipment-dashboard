@@ -1,16 +1,134 @@
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { sampleEquipments, sampleHistories } from '../lib/sampleData';
+import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
+import { runUploadPipeline, type EquipmentCandidate, type HistoryCandidate, type FailedCandidate } from '../lib/uploadPipeline';
+import { nextEquipmentId } from '../lib/equipmentId';
+import type { Equipment, HistoryRecord } from '../types';
+import UploadReview from '../components/UploadReview';
 import mascotGreeting from '../assets/mascot/greeting.png';
+
+type Mode = 'idle' | 'dragging' | 'parsing' | 'review';
 
 export default function Landing() {
   const navigate = useNavigate();
+  const equipments = useAppStore((s) => s.equipments);
   const loadData = useAppStore((s) => s.loadData);
+  const appendData = useAppStore((s) => s.appendData);
+
+  const [mode, setMode] = useState<Mode>('idle');
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [equipmentCandidates, setEquipmentCandidates] = useState<EquipmentCandidate[]>([]);
+  const [historyCandidates, setHistoryCandidates] = useState<HistoryCandidate[]>([]);
+  const [failed, setFailed] = useState<FailedCandidate[]>([]);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const loadSample = () => {
     loadData(sampleEquipments, sampleHistories);
     navigate('/dashboard');
   };
+
+  const runPipeline = async (files: { file: File; relativePath: string }[]) => {
+    if (files.length === 0) return;
+    setMode('parsing');
+    setProgress({ done: 0, total: 0 });
+    const result = await runUploadPipeline(files, equipments, (done, total) => setProgress({ done, total }));
+    setEquipmentCandidates(result.equipmentCandidates);
+    setHistoryCandidates(result.historyCandidates);
+    setFailed(result.failed);
+    setMode('review');
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    void readDataTransfer(e.dataTransfer).then(runPipeline);
+  };
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) void runPipeline(readFileList(e.target.files));
+    e.target.value = '';
+  };
+
+  const equipmentOptions = useMemo(
+    () => [
+      ...equipments.map((e) => ({ ref: e.설비ID, label: `${e.설비명} (${e.설비ID})` })),
+      ...equipmentCandidates.map((c) => ({ ref: `cand:${c.key}`, label: `${c.name} (신규)` })),
+    ],
+    [equipments, equipmentCandidates],
+  );
+
+  const cancelReview = () => {
+    setMode('idle');
+    setEquipmentCandidates([]);
+    setHistoryCandidates([]);
+    setFailed([]);
+  };
+
+  const commitReview = () => {
+    const runningEquipments = [...equipments];
+    const keyToId = new Map<string, string>();
+    const newEquipments: Equipment[] = [];
+
+    for (const c of equipmentCandidates) {
+      const id = nextEquipmentId(c.category, runningEquipments);
+      const equipment: Equipment = {
+        설비ID: id,
+        설비명: c.name,
+        분류: c.category,
+        사이트: c.site,
+        상태: '정상',
+        연결설비: [],
+        상세사양: { 자동인식: '업로드 파일에서 자동 추출됨 — 필요하면 상세 페이지에서 보완하세요' },
+        출처파일: c.relativePath,
+      };
+      newEquipments.push(equipment);
+      runningEquipments.push(equipment);
+      keyToId.set(c.key, id);
+    }
+
+    const newHistories: HistoryRecord[] = historyCandidates.map((h, i) => {
+      let 설비ID: string | undefined;
+      if (h.equipmentRef.startsWith('cand:')) {
+        설비ID = keyToId.get(h.equipmentRef.slice(5));
+      } else if (h.equipmentRef) {
+        설비ID = h.equipmentRef;
+      }
+      return {
+        id: `up-h-${Date.now()}-${i}`,
+        날짜: h.date,
+        설비ID,
+        유형: h.type,
+        제목: h.title,
+        출처파일: h.relativePath,
+      };
+    });
+
+    appendData(newEquipments, newHistories);
+    cancelReview();
+    navigate('/dashboard');
+  };
+
+  if (mode === 'review') {
+    return (
+      <div className="min-h-screen bg-bg text-text py-10">
+        <UploadReview
+          equipmentCandidates={equipmentCandidates}
+          historyCandidates={historyCandidates}
+          failed={failed}
+          onUpdateEquipment={(key, patch) =>
+            setEquipmentCandidates((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)))
+          }
+          onUpdateHistory={(key, patch) =>
+            setHistoryCandidates((prev) => prev.map((h) => (h.key === key ? { ...h, ...patch } : h)))
+          }
+          equipmentOptions={equipmentOptions}
+          onCommit={commitReview}
+          onCancel={cancelReview}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text px-6">
@@ -36,13 +154,42 @@ export default function Landing() {
         </p>
 
         <div
-          className="rounded-2xl border-2 border-dashed border-border bg-bg-soft/60 py-14 px-6 hover:border-accent/50 transition-colors cursor-not-allowed"
-          title="파일 업로드는 다음 단계에서 연결됩니다"
+          onDragOver={(e) => {
+            e.preventDefault();
+            setMode('dragging');
+          }}
+          onDragLeave={() => setMode('idle')}
+          onDrop={handleDrop}
+          className={`rounded-2xl border-2 border-dashed py-14 px-6 transition-colors ${
+            mode === 'dragging' ? 'border-accent bg-accent/5' : 'border-border bg-bg-soft/60 hover:border-accent/50'
+          }`}
         >
-          <p className="text-text-dim text-sm">
-            여기로 업무폴더를 끌어다 놓으세요
-          </p>
-          <p className="text-text-dim/60 text-xs mt-1">(업로드 파이프라인 준비 중)</p>
+          {mode === 'parsing' ? (
+            <p className="text-text-dim text-sm">
+              분석 중… {progress.total > 0 ? `${progress.done}/${progress.total}` : ''}
+            </p>
+          ) : (
+            <>
+              <p className="text-text-dim text-sm">여기로 업무폴더를 끌어다 놓으세요</p>
+              <button
+                type="button"
+                onClick={() => folderInputRef.current?.click()}
+                className="mt-3 text-xs text-accent hover:underline"
+              >
+                또는 폴더 선택하기
+              </button>
+              <input
+                ref={folderInputRef}
+                type="file"
+                // @ts-expect-error 표준 File 타입엔 없지만 크로미움 계열이 지원하는 폴더선택 속성
+                webkitdirectory=""
+                directory=""
+                multiple
+                className="hidden"
+                onChange={handleFolderSelect}
+              />
+            </>
+          )}
         </div>
 
         <button
