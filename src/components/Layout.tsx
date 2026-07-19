@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAppStore } from '../store';
 
@@ -12,10 +13,37 @@ const navItems = [
 
 export default function Layout() {
   const clearData = useAppStore((s) => s.clearData);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-bg text-text">
-      <aside className="w-56 shrink-0 border-r border-border bg-bg-soft flex flex-col">
+    <div className="min-h-screen flex flex-col md:flex-row bg-bg text-text">
+      {/* 모바일 전용 상단바 — 사이드바가 폭을 다 차지해버려서(390px에서 컨텐츠가
+          166px로 눌리던 문제, 2026-07-19 발견) md 미만에서는 사이드바를 드로어로 뺌 */}
+      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-bg-soft shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="text-text-dim hover:text-text"
+          aria-label="메뉴 열기"
+        >
+          ☰
+        </button>
+        <div className="text-sm font-medium">설비관리 대시보드</div>
+        <div className="w-5" />
+      </div>
+
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-bg-soft flex flex-col transition-transform duration-200 md:static md:z-auto md:w-56 md:shrink-0 md:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="px-5 py-6">
           <div className="text-lg font-semibold tracking-tight">설비관리 대시보드</div>
           <div className="text-xs text-text-dim mt-1">클라이언트 전용 · 서버 없음</div>
@@ -25,6 +53,7 @@ export default function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-2 text-sm transition-colors ${
                   isActive
