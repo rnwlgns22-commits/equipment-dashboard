@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../store';
 import { useMappingStore } from '../mappingStore';
+import { computeFailureStats } from '../lib/stats';
+import { computeZoneStats } from '../lib/geo';
 import ControlPanel from '../components/mapping/ControlPanel';
 import FloorplanCanvas from '../components/mapping/FloorplanCanvas';
 import AssetToolbar from '../components/mapping/AssetToolbar';
 import EquipmentPopover from '../components/mapping/EquipmentPopover';
+import ZoneStatsPopover from '../components/mapping/ZoneStatsPopover';
 
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -17,16 +20,40 @@ function readAsDataUrl(file: File): Promise<string> {
 
 export default function Mapping() {
   const equipments = useAppStore((s) => s.equipments);
+  const histories = useAppStore((s) => s.histories);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
+  const statsById = useMemo(() => {
+    const { stats } = computeFailureStats(histories);
+    return new Map(stats.map((s) => [s.설비ID, s]));
+  }, [histories]);
 
-  const { floorplans, activeFloorplanId, placements, addFloorplan, setActiveFloorplan, upsertPlacement } =
-    useMappingStore();
+  const {
+    floorplans,
+    activeFloorplanId,
+    placements,
+    zones,
+    addFloorplan,
+    setActiveFloorplan,
+    upsertPlacement,
+    addZone,
+    removeZone,
+  } = useMappingStore();
 
   const [showLabels, setShowLabels] = useState(true);
+  const [showValues, setShowValues] = useState(true);
+  const [showConnections, setShowConnections] = useState(true);
+  const [showZones, setShowZones] = useState(true);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedConnectionKey, setSelectedConnectionKey] = useState<string | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+
+  const [drawingZone, setDrawingZone] = useState(false);
+  const [draftPoints, setDraftPoints] = useState<{ xPct: number; yPct: number }[]>([]);
 
   const activeFloorplan = floorplans.find((f) => f.id === activeFloorplanId) ?? null;
   const activePlacements = placements.filter((p) => p.도면ID === activeFloorplanId);
+  const activeZones = zones.filter((z) => z.도면ID === activeFloorplanId);
   const placedIds = useMemo(() => new Set(activePlacements.map((p) => p.설비ID)), [activePlacements]);
 
   const handleUpload = async (file: File) => {
@@ -41,7 +68,46 @@ export default function Mapping() {
     upsertPlacement({ 설비ID, 도면ID: activeFloorplanId, xPct, yPct });
   };
 
+  const selectEquipment = (id: string | null) => {
+    setSelectedId(id);
+    setSelectedConnectionKey(null);
+    setSelectedZoneId(null);
+  };
+  const selectConnection = (key: string | null) => {
+    setSelectedConnectionKey(key);
+    setSelectedId(null);
+    setSelectedZoneId(null);
+  };
+  const selectZone = (id: string | null) => {
+    setSelectedZoneId(id);
+    setSelectedId(null);
+    setSelectedConnectionKey(null);
+  };
+
+  const startDrawingZone = () => {
+    setDrawingZone(true);
+    setDraftPoints([]);
+    selectZone(null);
+  };
+  const cancelDrawingZone = () => {
+    setDrawingZone(false);
+    setDraftPoints([]);
+  };
+  const finishDrawingZone = () => {
+    if (draftPoints.length < 3 || !activeFloorplanId) return;
+    const name = window.prompt('구역 이름을 입력하세요 (예: 제1 가공 위험 구역)');
+    if (name === null) return; // 취소하면 그리기 모드 유지, 점은 살아있음
+    if (!name.trim()) return;
+    addZone({ id: `zone-${Date.now()}`, name: name.trim(), 도면ID: activeFloorplanId, points: draftPoints });
+    setDrawingZone(false);
+    setDraftPoints([]);
+  };
+
   const selectedEquipment = selectedId ? equipmentsById.get(selectedId) ?? null : null;
+  const selectedZone = selectedZoneId ? activeZones.find((z) => z.id === selectedZoneId) ?? null : null;
+  const selectedZoneStats = selectedZone
+    ? computeZoneStats(selectedZone, activePlacements, equipmentsById, statsById)
+    : null;
 
   return (
     <div className="h-screen flex flex-col">
@@ -59,20 +125,54 @@ export default function Mapping() {
           onUpload={handleUpload}
           showLabels={showLabels}
           onToggleLabels={setShowLabels}
+          showValues={showValues}
+          onToggleValues={setShowValues}
+          showConnections={showConnections}
+          onToggleConnections={setShowConnections}
+          showZones={showZones}
+          onToggleZones={setShowZones}
+          drawingZone={drawingZone}
+          draftPointCount={draftPoints.length}
+          onStartDrawingZone={startDrawingZone}
+          onFinishDrawingZone={finishDrawingZone}
+          onCancelDrawingZone={cancelDrawingZone}
         />
         <div className="flex-1 min-w-0 relative flex">
           <FloorplanCanvas
             floorplan={activeFloorplan}
             placements={activePlacements}
+            equipments={equipments}
             equipmentsById={equipmentsById}
             showLabels={showLabels}
+            showValues={showValues}
+            showConnections={showConnections}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selectEquipment}
             onMove={handleMove}
             onDropEquipment={handleMove}
+            selectedConnectionKey={selectedConnectionKey}
+            onSelectConnection={selectConnection}
+            zones={activeZones}
+            showZones={showZones}
+            selectedZoneId={selectedZoneId}
+            onSelectZone={selectZone}
+            drawingZone={drawingZone}
+            draftPoints={draftPoints}
+            onAddDraftPoint={(xPct, yPct) => setDraftPoints((prev) => [...prev, { xPct, yPct }])}
           />
           {selectedEquipment && (
-            <EquipmentPopover equipment={selectedEquipment} onClose={() => setSelectedId(null)} />
+            <EquipmentPopover equipment={selectedEquipment} onClose={() => selectEquipment(null)} />
+          )}
+          {selectedZone && selectedZoneStats && (
+            <ZoneStatsPopover
+              zone={selectedZone}
+              stats={selectedZoneStats}
+              onClose={() => selectZone(null)}
+              onDelete={() => {
+                removeZone(selectedZone.id);
+                selectZone(null);
+              }}
+            />
           )}
         </div>
         <AssetToolbar equipments={equipments} placedIds={placedIds} />

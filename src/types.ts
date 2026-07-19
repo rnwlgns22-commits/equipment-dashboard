@@ -78,3 +78,12 @@ export interface Placement {
   xPct: number; // 0~100, 도면 원본 이미지 기준 상대좌표
   yPct: number;
 }
+
+// Phase B — 구역(Geofencing). 연결선(ConnectionLine)은 별도 타입 없음: Equipment.연결설비
+// 배열을 그 자리에서 파생시켜 그리기 때문에 저장 상태가 필요 없음 (설계.md §11.1 참고).
+export interface Zone {
+  id: string;
+  name: string;
+  도면ID: string;
+  points: { xPct: number; yPct: number }[]; // 다각형 꼭짓점, 3개 이상
+}

@@ -8,6 +8,17 @@ export default function ControlPanel({
   onUpload,
   showLabels,
   onToggleLabels,
+  showValues,
+  onToggleValues,
+  showConnections,
+  onToggleConnections,
+  showZones,
+  onToggleZones,
+  drawingZone,
+  draftPointCount,
+  onStartDrawingZone,
+  onFinishDrawingZone,
+  onCancelDrawingZone,
 }: {
   floorplans: Floorplan[];
   activeFloorplanId: string | null;
@@ -15,6 +26,17 @@ export default function ControlPanel({
   onUpload: (file: File) => void;
   showLabels: boolean;
   onToggleLabels: (v: boolean) => void;
+  showValues: boolean;
+  onToggleValues: (v: boolean) => void;
+  showConnections: boolean;
+  onToggleConnections: (v: boolean) => void;
+  showZones: boolean;
+  onToggleZones: (v: boolean) => void;
+  drawingZone: boolean;
+  draftPointCount: number;
+  onStartDrawingZone: () => void;
+  onFinishDrawingZone: () => void;
+  onCancelDrawingZone: () => void;
 }) {
   const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,18 +89,62 @@ export default function ControlPanel({
         </div>
       </div>
 
+      <div className="p-4 border-b border-border">
+        <div className="text-sm font-medium mb-2">구역(지오펜싱)</div>
+        {!drawingZone ? (
+          <button
+            type="button"
+            onClick={onStartDrawingZone}
+            className="w-full rounded-lg border border-border px-3 py-1.5 text-sm hover:border-accent/50 hover:text-accent transition-colors"
+          >
+            + 구역 그리기 시작
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-text-dim">점 {draftPointCount}개 찍음 (3개 이상 필요)</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onFinishDrawingZone}
+                disabled={draftPointCount < 3}
+                className="flex-1 rounded-lg bg-accent text-bg text-sm py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                완료
+              </button>
+              <button
+                type="button"
+                onClick={onCancelDrawingZone}
+                className="flex-1 rounded-lg border border-border text-sm py-1.5 text-text-dim hover:text-text"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="p-4">
         <div className="text-sm font-medium mb-2">레이어</div>
         <label className="flex items-center gap-2 text-sm py-1">
           <input type="checkbox" checked={showLabels} onChange={(e) => onToggleLabels(e.target.checked)} />
           설비명 표시
         </label>
-        {['구역 경계선 표시', '데이터 수치 표시', '설비 간 연결선 표시'].map((layer) => (
-          <label key={layer} className="flex items-center gap-2 text-sm py-1 text-text-dim/50">
-            <input type="checkbox" disabled />
-            {layer} · 준비 중
-          </label>
-        ))}
+        <label className="flex items-center gap-2 text-sm py-1">
+          <input type="checkbox" checked={showZones} onChange={(e) => onToggleZones(e.target.checked)} />
+          구역 경계선 표시
+        </label>
+        <label className="flex items-center gap-2 text-sm py-1">
+          <input type="checkbox" checked={showValues} onChange={(e) => onToggleValues(e.target.checked)} />
+          데이터 수치 표시
+        </label>
+        <label className="flex items-center gap-2 text-sm py-1">
+          <input
+            type="checkbox"
+            checked={showConnections}
+            onChange={(e) => onToggleConnections(e.target.checked)}
+          />
+          설비 간 연결선 표시
+        </label>
       </div>
     </aside>
   );

@@ -10,6 +10,7 @@ export default function EquipmentToken({
   imageWidth,
   imageHeight,
   showLabel,
+  showValue,
   selected,
   onSelect,
   onMove,
@@ -20,6 +21,7 @@ export default function EquipmentToken({
   imageWidth: number;
   imageHeight: number;
   showLabel: boolean;
+  showValue: boolean;
   selected: boolean;
   onSelect: (id: string) => void;
   onMove: (id: string, xPct: number, yPct: number) => void;
@@ -47,16 +49,18 @@ export default function EquipmentToken({
     >
       <Circle radius={16} fill="#161a24" stroke={color} strokeWidth={selected ? 4 : 3} />
       <Circle radius={3} fill={color} />
-      <Text
-        text={`${temp}°`}
-        y={20}
-        offsetX={14}
-        width={28}
-        align="center"
-        fontSize={11}
-        fill="#e5e7eb"
-        fontStyle="bold"
-      />
+      {showValue && (
+        <Text
+          text={`${temp}°`}
+          y={20}
+          offsetX={14}
+          width={28}
+          align="center"
+          fontSize={11}
+          fill="#e5e7eb"
+          fontStyle="bold"
+        />
+      )}
       {showLabel && (
         <Text
           text={equipment.설비명}

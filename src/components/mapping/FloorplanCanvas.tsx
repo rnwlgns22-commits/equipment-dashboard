@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Image as KonvaImage } from 'react-konva';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Stage, Layer, Image as KonvaImage, Line, Circle } from 'react-konva';
 import useImage from 'use-image';
 import type Konva from 'konva';
-import type { Equipment, Floorplan, Placement } from '../../types';
+import type { Equipment, Floorplan, Placement, Zone } from '../../types';
 import EquipmentToken from './EquipmentToken';
+import ConnectionLine from './ConnectionLine';
+import ZoneShape from './ZoneShape';
+import { computeConnections } from '../../lib/topology';
 
 const MIN_SCALE = 0.15;
 const MAX_SCALE = 8;
@@ -11,21 +14,45 @@ const MAX_SCALE = 8;
 export default function FloorplanCanvas({
   floorplan,
   placements,
+  equipments,
   equipmentsById,
   showLabels,
+  showValues,
+  showConnections,
   selectedId,
   onSelect,
   onMove,
   onDropEquipment,
+  selectedConnectionKey,
+  onSelectConnection,
+  zones,
+  showZones,
+  selectedZoneId,
+  onSelectZone,
+  drawingZone,
+  draftPoints,
+  onAddDraftPoint,
 }: {
   floorplan: Floorplan | null;
   placements: Placement[];
+  equipments: Equipment[];
   equipmentsById: Map<string, Equipment>;
   showLabels: boolean;
+  showValues: boolean;
+  showConnections: boolean;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onMove: (id: string, xPct: number, yPct: number) => void;
   onDropEquipment: (id: string, xPct: number, yPct: number) => void;
+  selectedConnectionKey: string | null;
+  onSelectConnection: (key: string | null) => void;
+  zones: Zone[];
+  showZones: boolean;
+  selectedZoneId: string | null;
+  onSelectZone: (id: string | null) => void;
+  drawingZone: boolean;
+  draftPoints: { xPct: number; yPct: number }[];
+  onAddDraftPoint: (xPct: number, yPct: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -112,6 +139,29 @@ export default function FloorplanCanvas({
     onDropEquipment(설비ID, xPct, yPct);
   };
 
+  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    const stage = e.target.getStage();
+    if (!stage || !image) return;
+    if (drawingZone) {
+      const pos = stage.getRelativePointerPosition();
+      if (!pos) return;
+      onAddDraftPoint((pos.x / image.naturalWidth) * 100, (pos.y / image.naturalHeight) * 100);
+      return;
+    }
+    if (e.target === stage) {
+      onSelect(null);
+      onSelectConnection(null);
+      onSelectZone(null);
+    }
+  };
+
+  const placedIds = useMemo(() => new Set(placements.map((p) => p.설비ID)), [placements]);
+  const connections = useMemo(
+    () => (showConnections ? computeConnections(equipments, placedIds) : []),
+    [showConnections, equipments, placedIds],
+  );
+  const placementByEquip = useMemo(() => new Map(placements.map((p) => [p.설비ID, p])), [placements]);
+
   // 도면이 없을 때도 이 div(ref 대상)는 항상 마운트해둔다 — 조건부로 아예 안 그리면
   // ResizeObserver가 처음 관측할 대상이 없어서 setup effect(deps [])가 영원히 no-op된다
   // (도면을 나중에 올려도 그 이후로 다시 실행되지 않음, 2026-07-19 발견).
@@ -133,14 +183,74 @@ export default function FloorplanCanvas({
             ref={stageRef}
             width={size.width}
             height={size.height}
-            draggable
+            draggable={!drawingZone}
             onWheel={handleWheel}
-            onClick={(e) => {
-              if (e.target === e.target.getStage()) onSelect(null);
-            }}
+            onClick={handleStageClick}
           >
             <Layer>
               {image && <KonvaImage image={image} listening={false} />}
+
+              {image &&
+                showZones &&
+                zones.map((z) => (
+                  <ZoneShape
+                    key={z.id}
+                    zone={z}
+                    imageWidth={image.naturalWidth}
+                    imageHeight={image.naturalHeight}
+                    selected={selectedZoneId === z.id}
+                    onSelect={() => onSelectZone(z.id)}
+                  />
+                ))}
+
+              {image &&
+                showConnections &&
+                connections.map((c) => {
+                  const a = placementByEquip.get(c.a);
+                  const b = placementByEquip.get(c.b);
+                  if (!a || !b) return null;
+                  const points = [
+                    (a.xPct / 100) * image.naturalWidth,
+                    (a.yPct / 100) * image.naturalHeight,
+                    (b.xPct / 100) * image.naturalWidth,
+                    (b.yPct / 100) * image.naturalHeight,
+                  ];
+                  return (
+                    <ConnectionLine
+                      key={c.key}
+                      points={points}
+                      selected={selectedConnectionKey === c.key}
+                      onSelect={() => onSelectConnection(c.key)}
+                    />
+                  );
+                })}
+
+              {/* 구역 그리기 중인 다각형 미리보기 */}
+              {image && drawingZone && draftPoints.length > 0 && (
+                <>
+                  <Line
+                    points={draftPoints.flatMap((p) => [
+                      (p.xPct / 100) * image.naturalWidth,
+                      (p.yPct / 100) * image.naturalHeight,
+                    ])}
+                    stroke="#22d3ee"
+                    strokeWidth={2}
+                    dash={[6, 4]}
+                    closed={draftPoints.length >= 3}
+                    fill={draftPoints.length >= 3 ? 'rgba(34,211,238,0.1)' : undefined}
+                  />
+                  {draftPoints.map((p, i) => (
+                    <Circle
+                      key={i}
+                      x={(p.xPct / 100) * image.naturalWidth}
+                      y={(p.yPct / 100) * image.naturalHeight}
+                      radius={4}
+                      fill="#22d3ee"
+                    />
+                  ))}
+                </>
+              )}
+
               {placements.map((p) => {
                 const eq = equipmentsById.get(p.설비ID);
                 if (!eq || !image) return null;
@@ -153,6 +263,7 @@ export default function FloorplanCanvas({
                     imageWidth={image.naturalWidth}
                     imageHeight={image.naturalHeight}
                     showLabel={showLabels}
+                    showValue={showValues}
                     selected={selectedId === p.설비ID}
                     onSelect={onSelect}
                     onMove={onMove}
@@ -162,7 +273,9 @@ export default function FloorplanCanvas({
             </Layer>
           </Stage>
           <div className="absolute bottom-3 left-3 text-xs text-text-dim bg-bg-soft/80 rounded-lg px-2 py-1 border border-border">
-            휠: 확대/축소 · 드래그: 이동 · 우측 목록에서 설비를 끌어다 놓으세요
+            {drawingZone
+              ? '캔버스를 클릭해서 구역 꼭짓점을 찍으세요 (3개 이상 필요)'
+              : '휠: 확대/축소 · 드래그: 이동 · 우측 목록에서 설비를 끌어다 놓으세요'}
           </div>
         </>
       )}
