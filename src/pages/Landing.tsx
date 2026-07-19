@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { sampleEquipments, sampleHistories } from '../lib/sampleData';
 import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
-import { runUploadPipeline, type EquipmentCandidate, type HistoryCandidate, type FailedCandidate } from '../lib/uploadPipeline';
+import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
 import { nextEquipmentId } from '../lib/equipmentId';
 import type { Equipment, HistoryRecord } from '../types';
 import UploadReview from '../components/UploadReview';
@@ -33,6 +33,9 @@ export default function Landing() {
     if (files.length === 0) return;
     setMode('parsing');
     setProgress({ done: 0, total: 0 });
+    // xlsx/pdfjs/mammoth를 물고 있는 무거운 모듈이라, 실제로 파일을 넣기 전까진
+    // 번들에 안 실리게 동적 import(랜딩은 초기 진입 라우트라 lazy 라우팅이 안 먹음).
+    const { runUploadPipeline } = await import('../lib/uploadPipeline');
     const result = await runUploadPipeline(files, equipments, (done, total) => setProgress({ done, total }));
     setEquipmentCandidates(result.equipmentCandidates);
     setHistoryCandidates(result.historyCandidates);
