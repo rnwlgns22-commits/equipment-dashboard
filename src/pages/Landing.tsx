@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { sampleEquipments, sampleHistories } from '../lib/sampleData';
+import mascotGreeting from '../assets/mascot/greeting.png';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -14,6 +15,13 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text px-6">
       <div className="max-w-xl w-full text-center space-y-6">
+        <img
+          src={mascotGreeting}
+          alt="환영 인사를 하는 마스코트 캐릭터"
+          className="mx-auto h-28 w-auto animate-mascot-float select-none"
+          draggable={false}
+        />
+
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-bg-soft px-4 py-1.5 text-xs text-text-dim">
           <span className="h-1.5 w-1.5 rounded-full bg-risk-low" />
           파일은 서버로 전송되지 않습니다 — 브라우저 안에서만 처리됩니다

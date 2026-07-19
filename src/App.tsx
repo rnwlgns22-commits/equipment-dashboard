@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import EquipmentList from './pages/EquipmentList';
 import EquipmentDetail from './pages/EquipmentDetail';
 import Mapping from './pages/Mapping';
+import MascotHelp from './components/MascotHelp';
 
 function RequireData({ children }: { children: ReactNode }) {
   const loaded = useAppStore((s) => s.loaded);
@@ -33,6 +34,7 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <MascotHelp />
     </HashRouter>
   );
 }

@@ -7,6 +7,7 @@ import EquipmentToken from './EquipmentToken';
 import ConnectionLine from './ConnectionLine';
 import ZoneShape from './ZoneShape';
 import { computeConnections } from '../../lib/topology';
+import mascotSurprised from '../../assets/mascot/surprised.png';
 
 const MIN_SCALE = 0.15;
 const MAX_SCALE = 8;
@@ -173,7 +174,8 @@ export default function FloorplanCanvas({
       onDrop={handleDrop}
     >
       {!floorplan && (
-        <div className="absolute inset-0 flex items-center justify-center text-text-dim text-sm">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-text-dim text-sm">
+          <img src={mascotSurprised} alt="도면이 없어 놀란 마스코트" className="h-24 w-auto select-none" draggable={false} />
           좌측 패널에서 도면 이미지를 먼저 업로드하세요.
         </div>
       )}

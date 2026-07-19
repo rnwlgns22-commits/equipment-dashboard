@@ -38,3 +38,12 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* 마스코트(뉴비) 전용 — 브랜드 캐릭터에만 쓰는 은은한 움직임, 일반 UI 크롬에는 안 씀 */
+@keyframes mascot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-mascot-float {
+  animation: mascot-float 3.5s ease-in-out infinite;
+}
