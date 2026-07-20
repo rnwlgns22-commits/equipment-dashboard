@@ -11,6 +11,7 @@ import FloorplanCanvas from '../components/mapping/FloorplanCanvas';
 import AssetToolbar from '../components/mapping/AssetToolbar';
 import EquipmentPopover from '../components/mapping/EquipmentPopover';
 import ZoneStatsPopover from '../components/mapping/ZoneStatsPopover';
+import ConnectionPopover from '../components/mapping/ConnectionPopover';
 
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -24,6 +25,7 @@ function readAsDataUrl(file: File): Promise<string> {
 export default function Mapping() {
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
+  const updateEquipment = useAppStore((s) => s.updateEquipment);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
   const statsById = useMemo(() => {
     const { stats } = computeFailureStats(histories);
@@ -157,6 +159,23 @@ export default function Mapping() {
     ? computeZoneStats(selectedZone, activePlacements, equipmentsById, statsById)
     : null;
 
+  // 연결선의 key는 FloorplanCanvas가 computeConnections로 파생시킬 때 정렬된
+  // "설비ID_A|설비ID_B" 형태로 만듦(lib/topology.ts) — 그대로 갈라서 두 설비를 찾음.
+  const selectedConnectionPair = selectedConnectionKey
+    ? (selectedConnectionKey.split('|') as [string, string])
+    : null;
+  const selectedConnectionEquipments = selectedConnectionPair
+    ? ([equipmentsById.get(selectedConnectionPair[0]), equipmentsById.get(selectedConnectionPair[1])] as const)
+    : null;
+  const handleDisconnect = () => {
+    if (!selectedConnectionEquipments) return;
+    const [a, b] = selectedConnectionEquipments;
+    if (!a || !b) return;
+    updateEquipment(a.설비ID, { 연결설비: a.연결설비.filter((id) => id !== b.설비ID) });
+    updateEquipment(b.설비ID, { 연결설비: b.연결설비.filter((id) => id !== a.설비ID) });
+    selectConnection(null);
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <div className="px-6 py-4 border-b border-border shrink-0">
@@ -241,6 +260,14 @@ export default function Mapping() {
                 removeZone(selectedZone.id);
                 selectZone(null);
               }}
+            />
+          )}
+          {selectedConnectionEquipments && selectedConnectionEquipments[0] && selectedConnectionEquipments[1] && (
+            <ConnectionPopover
+              a={selectedConnectionEquipments[0]}
+              b={selectedConnectionEquipments[1]}
+              onDisconnect={handleDisconnect}
+              onClose={() => selectConnection(null)}
             />
           )}
         </div>
