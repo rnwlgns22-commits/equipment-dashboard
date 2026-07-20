@@ -42,10 +42,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     persist(db.equipments.bulkPut(newEquipments));
     persist(db.histories.bulkPut(newHistories));
   },
+  // "데이터 비우고 나가기" 버튼의 목적 자체가 이 컴퓨터에서 흔적을 지우는 건데,
+  // 레이아웃 매핑(도면 이미지·배치·구역)은 별도 store라 여기서 안 지워지고 계속
+  // 남아있었음 — 다음에 다른 데이터를 올려도 예전 도면이 그대로 보이는 문제
+  // (2026-07-20 발견). 매핑도 같이 비움.
   clearData: () => {
     set({ equipments: [], histories: [], loaded: false });
     persist(db.equipments.clear());
     persist(db.histories.clear());
+    useMappingStore.getState().loadSnapshot({ floorplans: [], placements: [], zones: [], workOrders: [] });
   },
   updateEquipment: (설비ID, patch) => {
     set((s) => ({
