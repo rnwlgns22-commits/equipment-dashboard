@@ -41,6 +41,11 @@ async function convertXlsx(file: File): Promise<string> {
   return out.join('\n');
 }
 
+// 텍스트 레이어에서 이 정도도 못 뽑으면 스캔(이미지) PDF로 보고 OCR로 폴백한다 —
+// 실제 볼트 첨부파일 검증(2026-07-20)에서 scan_*.pdf류가 텍스트를 하나도 못 뽑던
+// 문제(README "알려진 제약" 참고)를 이걸로 구제.
+const OCR_FALLBACK_THRESHOLD = 20;
+
 async function convertPdf(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
   const doc = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -51,7 +56,20 @@ async function convertPdf(file: File): Promise<string> {
     const text = content.items.map((it) => ('str' in it ? it.str : '')).join(' ');
     texts.push(text);
   }
-  return texts.join('\n\n');
+  const extracted = texts.join('\n\n');
+  if (extracted.trim().length >= OCR_FALLBACK_THRESHOLD) return extracted;
+
+  // tesseract.js는 여기서만 필요해서 동적 import — 정적으로 물면 이 파일을 쓰는
+  // uploadPipeline 청크가 다시 부풀어 오름(2026-07-20 개발노트의 번들 크기 실수와
+  // 같은 유형이라 주의). OCR 자체가 실패해도(네트워크로 언어데이터를 못 받는 등)
+  // 원래 텍스트 추출 결과를 그대로 반환 — 업로드 자체를 막지 않는다.
+  try {
+    const { ocrPdf } = await import('./ocr');
+    const ocrText = await ocrPdf(doc);
+    return ocrText.trim().length > extracted.trim().length ? ocrText : extracted;
+  } catch {
+    return extracted;
+  }
 }
 
 function stripXmlTags(xml: string): string {
