@@ -60,6 +60,7 @@ interface MappingState extends MappingSnapshot {
   setActiveFloorplan: (id: string) => void;
   upsertPlacement: (p: Placement) => void;
   removePlacement: (설비ID: string, 도면ID: string) => void;
+  removePlacementsForEquipment: (설비ID: string) => void;
   resizePlacement: (설비ID: string, 도면ID: string, scale: number) => void;
   addZone: (z: Zone) => void;
   removeZone: (id: string) => void;
@@ -88,6 +89,12 @@ export const useMappingStore = create<MappingState>()(
       removePlacement: (설비ID, 도면ID) =>
         set((s) => ({
           placements: s.placements.filter((x) => !(x.설비ID === 설비ID && x.도면ID === 도면ID)),
+        })),
+      // 설비 삭제 시(store.ts deleteEquipment) 호출 — 그 설비가 배치된 모든 도면에서
+      // 배치를 같이 제거. 안 그러면 존재하지 않는 설비ID를 가리키는 배치가 계속 쌓임.
+      removePlacementsForEquipment: (설비ID) =>
+        set((s) => ({
+          placements: s.placements.filter((x) => x.설비ID !== 설비ID),
         })),
       resizePlacement: (설비ID, 도면ID, scale) =>
         set((s) => ({

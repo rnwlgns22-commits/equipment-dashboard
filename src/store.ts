@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db } from './db';
+import { useMappingStore } from './mappingStore';
 import type { Equipment, HistoryRecord } from './types';
 
 interface AppState {
@@ -9,6 +10,11 @@ interface AppState {
   loadData: (equipments: Equipment[], histories: HistoryRecord[]) => void;
   appendData: (equipments: Equipment[], histories: HistoryRecord[]) => void;
   clearData: () => void;
+  updateEquipment: (설비ID: string, patch: Partial<Equipment>) => void;
+  deleteEquipment: (설비ID: string) => void;
+  addHistory: (h: HistoryRecord) => void;
+  updateHistory: (id: string, patch: Partial<HistoryRecord>) => void;
+  deleteHistory: (id: string) => void;
 }
 
 // IndexedDB 쓰기는 실패할 수 있음(용량 초과, 프라이빗 브라우징 제약 등). 실패해도 화면의
@@ -18,7 +24,7 @@ function persist(promise: Promise<unknown>): void {
   promise.catch((err) => console.error('IndexedDB 저장 실패 — 새로고침하면 이 변경이 사라질 수 있습니다', err));
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   equipments: [],
   histories: [],
   loaded: false,
@@ -40,6 +46,42 @@ export const useAppStore = create<AppState>((set) => ({
     set({ equipments: [], histories: [], loaded: false });
     persist(db.equipments.clear());
     persist(db.histories.clear());
+  },
+  updateEquipment: (설비ID, patch) => {
+    set((s) => ({
+      equipments: s.equipments.map((e) => (e.설비ID === 설비ID ? { ...e, ...patch } : e)),
+    }));
+    const updated = get().equipments.find((e) => e.설비ID === 설비ID);
+    if (updated) persist(db.equipments.put(updated));
+  },
+  // 설비를 지우면: ①그 설비를 가리키던 다른 설비의 연결설비 배열에서도 제거(끊어진 링크가
+  // 안 남게), ②관련 이력은 지우지 않고 고아 이력으로 남김(점검·수리 기록 자체는 가치가
+  // 있으므로), ③레이아웃 매핑에 배치돼 있었다면 그 배치도 같이 제거(안 그러면 존재하지
+  // 않는 설비를 가리키는 배치가 mappingStore에 계속 쌓임).
+  deleteEquipment: (설비ID) => {
+    set((s) => ({
+      equipments: s.equipments
+        .filter((e) => e.설비ID !== 설비ID)
+        .map((e) => (e.연결설비.includes(설비ID) ? { ...e, 연결설비: e.연결설비.filter((c) => c !== 설비ID) } : e)),
+      histories: s.histories.map((h) => (h.설비ID === 설비ID ? { ...h, 설비ID: undefined } : h)),
+    }));
+    persist(db.equipments.delete(설비ID));
+    persist(db.equipments.bulkPut(get().equipments));
+    persist(db.histories.bulkPut(get().histories));
+    useMappingStore.getState().removePlacementsForEquipment(설비ID);
+  },
+  addHistory: (h) => {
+    set((s) => ({ histories: [...s.histories, h] }));
+    persist(db.histories.put(h));
+  },
+  updateHistory: (id, patch) => {
+    set((s) => ({ histories: s.histories.map((h) => (h.id === id ? { ...h, ...patch } : h)) }));
+    const updated = get().histories.find((h) => h.id === id);
+    if (updated) persist(db.histories.put(updated));
+  },
+  deleteHistory: (id) => {
+    set((s) => ({ histories: s.histories.filter((h) => h.id !== id) }));
+    persist(db.histories.delete(id));
   },
 }));
 
