@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
-import type { HistoryType } from '../types';
+import type { HistoryRecord, HistoryType } from '../types';
+
+const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '' };
 
 export default function HistoryBrowser() {
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
+  const addHistory = useAppStore((s) => s.addHistory);
+  const updateHistory = useAppStore((s) => s.updateHistory);
+  const deleteHistory = useAppStore((s) => s.deleteHistory);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
 
   const [tab, setTab] = useState<'전체' | '고아'>('전체');
@@ -13,6 +18,9 @@ export default function HistoryBrowser() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [query, setQuery] = useState('');
+
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState(emptyAddForm);
 
   const orphanCount = useMemo(() => histories.filter((h) => !h.설비ID).length, [histories]);
 
@@ -30,9 +38,108 @@ export default function HistoryBrowser() {
       .sort((a, b) => b.날짜.localeCompare(a.날짜));
   }, [histories, tab, typeFilter, from, to, query, equipmentsById]);
 
+  const submitAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addForm.날짜 || !addForm.제목.trim()) return;
+    const record: HistoryRecord = {
+      id: `hist-manual-${Date.now()}`,
+      날짜: addForm.날짜,
+      설비ID: addForm.설비ID || undefined,
+      유형: addForm.유형,
+      제목: addForm.제목.trim(),
+      내용: addForm.내용.trim() || undefined,
+      출처파일: '수기 입력',
+    };
+    addHistory(record);
+    setAddForm(emptyAddForm);
+    setAdding(false);
+  };
+
+  const handleDelete = (h: HistoryRecord) => {
+    if (!window.confirm(`"${h.제목}" 이력을 삭제할까요?`)) return;
+    deleteHistory(h.id);
+  };
+
   return (
     <div className="p-6 md:p-8 space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">점검·수리 이력</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">점검·수리 이력</h1>
+        <button
+          type="button"
+          onClick={() => setAdding((v) => !v)}
+          className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition shrink-0"
+        >
+          {adding ? '닫기' : '+ 이력 추가'}
+        </button>
+      </div>
+
+      {adding && (
+        <form
+          onSubmit={submitAdd}
+          className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+        >
+          <label className="block">
+            <span className="text-xs text-text-dim">날짜 *</span>
+            <input
+              required
+              type="date"
+              value={addForm.날짜}
+              onChange={(e) => setAddForm((f) => ({ ...f, 날짜: e.target.value }))}
+              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-text-dim">유형</span>
+            <select
+              value={addForm.유형}
+              onChange={(e) => setAddForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
+              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+            >
+              <option>점검</option>
+              <option>수리</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs text-text-dim">설비</span>
+            <select
+              value={addForm.설비ID}
+              onChange={(e) => setAddForm((f) => ({ ...f, 설비ID: e.target.value }))}
+              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+            >
+              <option value="">설비 미지정</option>
+              {equipments.map((e) => (
+                <option key={e.설비ID} value={e.설비ID}>
+                  {e.설비명} ({e.설비ID})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-xs text-text-dim">제목 *</span>
+            <input
+              required
+              value={addForm.제목}
+              onChange={(e) => setAddForm((f) => ({ ...f, 제목: e.target.value }))}
+              placeholder="예: 공조기 1호기 필터 교체"
+              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+            />
+          </label>
+          <label className="block sm:col-span-2 lg:col-span-4">
+            <span className="text-xs text-text-dim">내용</span>
+            <input
+              value={addForm.내용}
+              onChange={(e) => setAddForm((f) => ({ ...f, 내용: e.target.value }))}
+              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
+          >
+            등록
+          </button>
+        </form>
+      )}
 
       <div className="flex gap-2 border-b border-border">
         <button
@@ -107,8 +214,29 @@ export default function HistoryBrowser() {
                 {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}
               </Link>
             ) : (
-              <span className="text-xs text-text-dim shrink-0">설비 미지정</span>
+              <select
+                value=""
+                onChange={(e) => e.target.value && updateHistory(h.id, { 설비ID: e.target.value })}
+                className="text-xs rounded-lg border border-border bg-bg-soft px-2 py-1 shrink-0 max-w-[10rem]"
+                title="설비를 지정하면 고아 이력에서 빠집니다"
+              >
+                <option value="">설비 지정…</option>
+                {equipments.map((e) => (
+                  <option key={e.설비ID} value={e.설비ID}>
+                    {e.설비명} ({e.설비ID})
+                  </option>
+                ))}
+              </select>
             )}
+            <button
+              type="button"
+              onClick={() => handleDelete(h)}
+              className="text-xs text-text-dim hover:text-risk-high shrink-0"
+              aria-label="이력 삭제"
+              title="삭제"
+            >
+              ✕
+            </button>
           </div>
         ))}
         {filtered.length === 0 && (
