@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import type { Equipment, HistoryRecord } from '../types';
+import type { MappingSnapshot } from '../mappingStore';
 
 // 설비통합 볼트의 frontmatter 규격(CLAUDE.md)에 맞춰 마크다운으로 재구성.
 // 실제 볼트 파일명 관행 그대로: 설비카드 = {ID}_{설비명}.md, 이력 = {날짜}_{ID}_{유형}.md
@@ -115,7 +116,11 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function buildJsonExport(equipments: Equipment[], histories: HistoryRecord[]): Blob {
-  const payload = { exportedAt: new Date().toISOString(), equipments, histories };
+export function buildJsonExport(
+  equipments: Equipment[],
+  histories: HistoryRecord[],
+  mapping?: MappingSnapshot,
+): Blob {
+  const payload = { exportedAt: new Date().toISOString(), equipments, histories, mapping };
   return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 }
