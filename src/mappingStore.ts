@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import type { Floorplan, Placement, WorkOrderStatus, Zone } from './types';
 import type { WorkOrder } from './types';
 
+export const MIN_TOKEN_SCALE = 0.5;
+export const MAX_TOKEN_SCALE = 2.5;
+
 interface MappingState {
   floorplans: Floorplan[];
   activeFloorplanId: string | null;
@@ -13,6 +16,7 @@ interface MappingState {
   setActiveFloorplan: (id: string) => void;
   upsertPlacement: (p: Placement) => void;
   removePlacement: (설비ID: string, 도면ID: string) => void;
+  resizePlacement: (설비ID: string, 도면ID: string, scale: number) => void;
   addZone: (z: Zone) => void;
   removeZone: (id: string) => void;
   setWorkOrderStatus: (설비ID: string, 상태: WorkOrderStatus) => void;
@@ -39,6 +43,14 @@ export const useMappingStore = create<MappingState>()(
       removePlacement: (설비ID, 도면ID) =>
         set((s) => ({
           placements: s.placements.filter((x) => !(x.설비ID === 설비ID && x.도면ID === 도면ID)),
+        })),
+      resizePlacement: (설비ID, 도면ID, scale) =>
+        set((s) => ({
+          placements: s.placements.map((x) =>
+            x.설비ID === 설비ID && x.도면ID === 도면ID
+              ? { ...x, scale: Math.max(MIN_TOKEN_SCALE, Math.min(MAX_TOKEN_SCALE, scale)) }
+              : x,
+          ),
         })),
       addZone: (z) => set((s) => ({ zones: [...s.zones, z] })),
       removeZone: (id) => set((s) => ({ zones: s.zones.filter((z) => z.id !== id) })),

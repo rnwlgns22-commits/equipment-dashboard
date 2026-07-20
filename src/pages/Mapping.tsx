@@ -39,6 +39,7 @@ export default function Mapping() {
     addFloorplan,
     setActiveFloorplan,
     upsertPlacement,
+    resizePlacement,
     addZone,
     removeZone,
     setWorkOrderStatus,
@@ -132,6 +133,9 @@ export default function Mapping() {
   };
 
   const selectedEquipment = selectedId ? equipmentsById.get(selectedId) ?? null : null;
+  const selectedPlacement = selectedId
+    ? activePlacements.find((p) => p.설비ID === selectedId) ?? null
+    : null;
   const selectedZone = selectedZoneId ? activeZones.find((z) => z.id === selectedZoneId) ?? null : null;
   const selectedZoneStats = selectedZone
     ? computeZoneStats(selectedZone, activePlacements, equipmentsById, statsById)
@@ -198,7 +202,14 @@ export default function Mapping() {
             onChangeAsOfDate={setAsOfDate}
           />
           {selectedEquipment && (
-            <EquipmentPopover equipment={selectedEquipment} onClose={() => selectEquipment(null)} />
+            <EquipmentPopover
+              equipment={selectedEquipment}
+              scale={selectedPlacement?.scale ?? 1}
+              onChangeScale={(s) => {
+                if (activeFloorplanId) resizePlacement(selectedEquipment.설비ID, activeFloorplanId, s);
+              }}
+              onClose={() => selectEquipment(null)}
+            />
           )}
           {selectedZone && selectedZoneStats && (
             <ZoneStatsPopover

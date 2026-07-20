@@ -1,12 +1,19 @@
 import { Link } from 'react-router-dom';
 import type { Equipment } from '../../types';
 import { mockTemperature, mockUptimeHours, statusColor } from '../../lib/mockTelemetry';
+import { MIN_TOKEN_SCALE, MAX_TOKEN_SCALE } from '../../mappingStore';
+
+const SCALE_STEP = 0.1;
 
 export default function EquipmentPopover({
   equipment,
+  scale,
+  onChangeScale,
   onClose,
 }: {
   equipment: Equipment;
+  scale: number;
+  onChangeScale: (scale: number) => void;
   onClose: () => void;
 }) {
   const uptime = mockUptimeHours(equipment.설비ID);
@@ -54,6 +61,43 @@ export default function EquipmentPopover({
           <dd className="text-right">{equipment.위치 || '-'}</dd>
         </div>
       </dl>
+
+      <div className="mt-3 pt-3 border-t border-border">
+        <div className="flex items-center justify-between text-xs text-text-dim mb-1.5">
+          <span>도면 위 아이콘 크기</span>
+          <span>{Math.round(scale * 100)}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onChangeScale(scale - SCALE_STEP)}
+            disabled={scale <= MIN_TOKEN_SCALE}
+            className="h-7 w-7 shrink-0 rounded-lg border border-border text-text-dim hover:text-text hover:border-accent/50 disabled:opacity-40 disabled:hover:text-text-dim disabled:hover:border-border"
+            aria-label="아이콘 축소"
+          >
+            −
+          </button>
+          <input
+            type="range"
+            min={MIN_TOKEN_SCALE}
+            max={MAX_TOKEN_SCALE}
+            step={SCALE_STEP}
+            value={scale}
+            onChange={(e) => onChangeScale(Number(e.target.value))}
+            className="flex-1 accent-accent"
+            aria-label="아이콘 크기"
+          />
+          <button
+            type="button"
+            onClick={() => onChangeScale(scale + SCALE_STEP)}
+            disabled={scale >= MAX_TOKEN_SCALE}
+            className="h-7 w-7 shrink-0 rounded-lg border border-border text-text-dim hover:text-text hover:border-accent/50 disabled:opacity-40 disabled:hover:text-text-dim disabled:hover:border-border"
+            aria-label="아이콘 확대"
+          >
+            ＋
+          </button>
+        </div>
+      </div>
 
       <div className="mt-3 pt-3 border-t border-border flex gap-2">
         <button

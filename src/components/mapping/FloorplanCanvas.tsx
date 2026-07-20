@@ -328,6 +328,7 @@ export default function FloorplanCanvas({
                     onWorkOrderClick={() => onWorkOrderClick(eq.설비ID)}
                     dim={viewMode === '히트맵'}
                     overrideColor={overrideColor}
+                    scale={p.scale}
                   />
                 );
               })}

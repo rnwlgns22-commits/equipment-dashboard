@@ -77,6 +77,7 @@ export interface Placement {
   도면ID: string;
   xPct: number; // 0~100, 도면 원본 이미지 기준 상대좌표
   yPct: number;
+  scale?: number; // 도면 위 아이콘 크기 배율, 없으면 1(기본 크기)
 }
 
 // Phase B — 구역(Geofencing). 연결선(ConnectionLine)은 별도 타입 없음: Equipment.연결설비

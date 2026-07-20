@@ -18,6 +18,7 @@ export default function EquipmentToken({
   onWorkOrderClick,
   dim,
   overrideColor,
+  scale,
 }: {
   equipment: Equipment;
   xPct: number;
@@ -33,6 +34,7 @@ export default function EquipmentToken({
   onWorkOrderClick?: () => void;
   dim?: boolean; // 히트맵 모드에서 토큰을 작게/흐리게
   overrideColor?: string; // 타임라인 모드에서 그 시점 상태색으로 링 색 대체
+  scale?: number; // 사용자가 팝오버에서 조절한 아이콘 크기 배율, 없으면 1
 }) {
   const x = (xPct / 100) * imageWidth;
   const y = (yPct / 100) * imageHeight;
@@ -50,6 +52,8 @@ export default function EquipmentToken({
     <Group
       x={x}
       y={y}
+      scaleX={scale ?? 1}
+      scaleY={scale ?? 1}
       opacity={dim ? 0.55 : 1}
       draggable
       onDragEnd={handleDragEnd}
