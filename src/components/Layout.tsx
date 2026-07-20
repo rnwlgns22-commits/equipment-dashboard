@@ -9,7 +9,8 @@ function RouteFallback() {
 
 const navItems = [
   { to: '/dashboard', label: '대시보드' },
-  { to: '/equipment', label: '설비 목록' },
+  { to: '/equipment', label: '설비 목록', end: true },
+  { to: '/equipment/add', label: '설비 추가' },
   { to: '/mapping', label: '레이아웃 매핑' },
   { to: '/graph', label: '관계 그래프' },
   { to: '/history', label: '점검·수리 이력' },
@@ -59,6 +60,7 @@ export default function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-2 text-sm transition-colors ${

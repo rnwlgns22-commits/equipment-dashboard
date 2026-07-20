@@ -11,6 +11,7 @@ import MascotHelp from './components/MascotHelp';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const EquipmentList = lazy(() => import('./pages/EquipmentList'));
 const EquipmentDetail = lazy(() => import('./pages/EquipmentDetail'));
+const AddEquipment = lazy(() => import('./pages/AddEquipment'));
 const Mapping = lazy(() => import('./pages/Mapping'));
 const GraphView = lazy(() => import('./pages/GraphView'));
 const HistoryBrowser = lazy(() => import('./pages/HistoryBrowser'));
@@ -44,6 +45,7 @@ export default function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/equipment" element={<EquipmentList />} />
+          <Route path="/equipment/add" element={<AddEquipment />} />
           <Route path="/equipment/:id" element={<EquipmentDetail />} />
           <Route path="/mapping" element={<Mapping />} />
           <Route path="/graph" element={<GraphView />} />

@@ -4,8 +4,7 @@ import { useAppStore } from '../store';
 import { sampleEquipments, sampleHistories } from '../lib/sampleData';
 import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
 import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
-import { nextEquipmentId } from '../lib/equipmentId';
-import type { Equipment, HistoryRecord } from '../types';
+import { buildRecordsFromCandidates } from '../lib/uploadCommit';
 import UploadReview from '../components/UploadReview';
 import mascotGreeting from '../assets/mascot/greeting.png';
 
@@ -75,44 +74,11 @@ export default function Landing() {
   };
 
   const commitReview = () => {
-    const runningEquipments = [...equipments];
-    const keyToId = new Map<string, string>();
-    const newEquipments: Equipment[] = [];
-
-    for (const c of equipmentCandidates) {
-      const id = nextEquipmentId(c.category, runningEquipments);
-      const equipment: Equipment = {
-        설비ID: id,
-        설비명: c.name,
-        분류: c.category,
-        사이트: c.site,
-        상태: '정상',
-        연결설비: [],
-        상세사양: { 자동인식: '업로드 파일에서 자동 추출됨 — 필요하면 상세 페이지에서 보완하세요' },
-        출처파일: c.relativePath,
-      };
-      newEquipments.push(equipment);
-      runningEquipments.push(equipment);
-      keyToId.set(c.key, id);
-    }
-
-    const newHistories: HistoryRecord[] = historyCandidates.map((h, i) => {
-      let 설비ID: string | undefined;
-      if (h.equipmentRef.startsWith('cand:')) {
-        설비ID = keyToId.get(h.equipmentRef.slice(5));
-      } else if (h.equipmentRef) {
-        설비ID = h.equipmentRef;
-      }
-      return {
-        id: `up-h-${Date.now()}-${i}`,
-        날짜: h.date,
-        설비ID,
-        유형: h.type,
-        제목: h.title,
-        출처파일: h.relativePath,
-      };
-    });
-
+    const { newEquipments, newHistories } = buildRecordsFromCandidates(
+      equipmentCandidates,
+      historyCandidates,
+      equipments,
+    );
     appendData(newEquipments, newHistories);
     cancelReview();
     navigate('/dashboard');
