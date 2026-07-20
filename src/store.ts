@@ -11,14 +11,21 @@ interface AppState {
   clearData: () => void;
 }
 
+// IndexedDB 쓰기는 실패할 수 있음(용량 초과, 프라이빗 브라우징 제약 등). 실패해도 화면의
+// 데이터는 이미 낙관적으로 갱신돼 있으니 앱이 멈추진 않지만, 새로고침하면 그 변경분만
+// 조용히 사라질 수 있어서 최소한 콘솔에는 남겨둔다(2026-07-20 코드리뷰에서 발견).
+function persist(promise: Promise<unknown>): void {
+  promise.catch((err) => console.error('IndexedDB 저장 실패 — 새로고침하면 이 변경이 사라질 수 있습니다', err));
+}
+
 export const useAppStore = create<AppState>((set) => ({
   equipments: [],
   histories: [],
   loaded: false,
   loadData: (equipments, histories) => {
     set({ equipments, histories, loaded: true });
-    void db.equipments.clear().then(() => db.equipments.bulkPut(equipments));
-    void db.histories.clear().then(() => db.histories.bulkPut(histories));
+    persist(db.equipments.clear().then(() => db.equipments.bulkPut(equipments)));
+    persist(db.histories.clear().then(() => db.histories.bulkPut(histories)));
   },
   appendData: (newEquipments, newHistories) => {
     set((s) => ({
@@ -26,13 +33,13 @@ export const useAppStore = create<AppState>((set) => ({
       histories: [...s.histories, ...newHistories],
       loaded: true,
     }));
-    void db.equipments.bulkPut(newEquipments);
-    void db.histories.bulkPut(newHistories);
+    persist(db.equipments.bulkPut(newEquipments));
+    persist(db.histories.bulkPut(newHistories));
   },
   clearData: () => {
     set({ equipments: [], histories: [], loaded: false });
-    void db.equipments.clear();
-    void db.histories.clear();
+    persist(db.equipments.clear());
+    persist(db.histories.clear());
   },
 }));
 

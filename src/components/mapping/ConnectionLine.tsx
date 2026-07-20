@@ -12,7 +12,6 @@ export default function ConnectionLine({
   onSelect: () => void;
 }) {
   const lineRef = useRef<Konva.Line>(null);
-  const animRef = useRef<Konva.Animation | null>(null);
 
   useEffect(() => {
     if (!selected || !lineRef.current) return;
@@ -23,10 +22,8 @@ export default function ConnectionLine({
       lineRef.current.dashOffset(-((frame.time / 40) % 24));
     }, layer);
     anim.start();
-    animRef.current = anim;
     return () => {
       anim.stop();
-      animRef.current = null;
     };
   }, [selected]);
 

@@ -85,6 +85,17 @@ export default function EquipmentToken({
         <Group
           x={14}
           y={-14}
+          // 부모 Group이 draggable이라, click/tap의 cancelBubble만으로는 드래그 시작을
+          // 못 막는다 — Konva는 드래그를 mousedown/touchstart 시점에 시작하기 때문에
+          // (클릭 이벤트 체계와 별개), 배지를 누르면 상태 순환 대신 설비가 끌려다니는
+          // 문제가 있었음(2026-07-20 코드리뷰에서 발견). mousedown/touchstart 단계에서
+          // 미리 끊어야 함.
+          onMouseDown={(e) => {
+            e.cancelBubble = true;
+          }}
+          onTouchStart={(e) => {
+            e.cancelBubble = true;
+          }}
           onClick={(e) => {
             e.cancelBubble = true;
             onWorkOrderClick?.();

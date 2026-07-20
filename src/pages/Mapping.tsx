@@ -74,6 +74,19 @@ export default function Mapping() {
     addFloorplan({ id, name, imageDataUrl: dataUrl });
   };
 
+  // 도면을 바꿀 때 선택·그리기 상태를 안 비우면, A 도면에서 구역을 그리다가(draftPoints가
+  // A 기준 %좌표) B로 넘어가서 "완료"를 누르면 그 좌표가 그대로 B 도면의 구역으로 붙어버림
+  // (2026-07-20 코드리뷰에서 발견). 선택된 설비/연결선/구역도 도면이 바뀌면 화면에 없는
+  // 것을 가리키는 채로 팝오버가 남을 수 있어 같이 초기화.
+  const handleSelectFloorplan = (id: string) => {
+    setActiveFloorplan(id);
+    setSelectedId(null);
+    setSelectedConnectionKey(null);
+    setSelectedZoneId(null);
+    setDrawingZone(false);
+    setDraftPoints([]);
+  };
+
   const handleMove = (설비ID: string, xPct: number, yPct: number) => {
     if (!activeFloorplanId) return;
     upsertPlacement({ 설비ID, 도면ID: activeFloorplanId, xPct, yPct });
@@ -136,7 +149,7 @@ export default function Mapping() {
         <ControlPanel
           floorplans={floorplans}
           activeFloorplanId={activeFloorplanId}
-          onSelectFloorplan={setActiveFloorplan}
+          onSelectFloorplan={handleSelectFloorplan}
           onUpload={handleUpload}
           viewMode={viewMode}
           onChangeViewMode={setViewMode}

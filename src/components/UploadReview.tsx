@@ -49,6 +49,13 @@ export default function UploadReview({
         </div>
       </div>
 
+      {equipmentCandidates.length === 0 && historyCandidates.length === 0 && failed.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-dim">
+          지원하는 형식(hwp/hwpx/xls/xlsx/pdf/pptx/docx)의 파일을 찾지 못했습니다.
+          다른 폴더를 다시 골라 보세요.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="text-sm font-medium mb-2">설비로 인식 ({equipmentCandidates.length})</div>

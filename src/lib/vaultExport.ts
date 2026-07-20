@@ -65,7 +65,10 @@ function historyMarkdown(h: HistoryRecord, equipmentsById: Map<string, Equipment
 
 function historyFileStem(h: HistoryRecord): string {
   const safeTitle = h.제목.replace(/[\\/:*?"<>|]/g, '_');
-  return `${h.날짜}_${h.설비ID ?? '미지정'}_${h.유형}_${safeTitle}`;
+  // 레코드 id를 끝에 붙여 유일성을 보장 — 날짜/설비/유형/제목이 전부 같은 이력 2건이
+  // (예: 같은 날 자동생성된 동일 제목의 점검 2건) id 없이는 zip 안에서 서로 덮어씀
+  // (JSZip은 경로 중복을 경고 없이 그냥 덮어씀, 2026-07-20 코드리뷰에서 발견).
+  return `${h.날짜}_${h.설비ID ?? '미지정'}_${h.유형}_${safeTitle}_${h.id}`;
 }
 
 export async function buildVaultZip(equipments: Equipment[], histories: HistoryRecord[]): Promise<Blob> {

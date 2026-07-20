@@ -30,7 +30,13 @@ export default function Landing() {
   };
 
   const runPipeline = async (files: { file: File; relativePath: string }[]) => {
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      // 드롭한 게 파일이 아니어서(텍스트 선택 등) 0건으로 끝나면, 'drop' 이벤트는
+      // 'dragleave' 없이 바로 발생하므로 여기서 안 돌려놓으면 강조 테두리가 새로고침할
+      // 때까지 안 풀림(2026-07-20 코드리뷰에서 발견).
+      setMode('idle');
+      return;
+    }
     setMode('parsing');
     setProgress({ done: 0, total: 0 });
     // xlsx/pdfjs/mammoth를 물고 있는 무거운 모듈이라, 실제로 파일을 넣기 전까진
