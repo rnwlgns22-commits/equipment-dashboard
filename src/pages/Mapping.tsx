@@ -39,6 +39,7 @@ export default function Mapping() {
     zones,
     workOrders,
     addFloorplan,
+    removeFloorplan,
     setActiveFloorplan,
     upsertPlacement,
     resizePlacement,
@@ -84,6 +85,22 @@ export default function Mapping() {
   // 것을 가리키는 채로 팝오버가 남을 수 있어 같이 초기화.
   const handleSelectFloorplan = (id: string) => {
     setActiveFloorplan(id);
+    setSelectedId(null);
+    setSelectedConnectionKey(null);
+    setSelectedZoneId(null);
+    setDrawingZone(false);
+    setDraftPoints([]);
+  };
+
+  const handleRemoveFloorplan = (id: string) => {
+    const target = floorplans.find((f) => f.id === id);
+    if (!target) return;
+    if (!window.confirm(`"${target.name}" 도면을 삭제할까요? 이 도면 위 설비 배치와 구역도 함께 지워집니다.`)) {
+      return;
+    }
+    removeFloorplan(id);
+    // 활성 도면이 지워졌으면 mappingStore가 다른 도면으로 넘겨주지만, 그 화면이 가리키던
+    // 선택/그리기 상태는 그대로 남아있어 위 handleSelectFloorplan과 같은 이유로 초기화.
     setSelectedId(null);
     setSelectedConnectionKey(null);
     setSelectedZoneId(null);
@@ -188,6 +205,7 @@ export default function Mapping() {
         <ControlPanel
           floorplans={floorplans}
           activeFloorplanId={activeFloorplanId}
+          onRemoveFloorplan={handleRemoveFloorplan}
           onSelectFloorplan={handleSelectFloorplan}
           onUpload={handleUpload}
           viewMode={viewMode}

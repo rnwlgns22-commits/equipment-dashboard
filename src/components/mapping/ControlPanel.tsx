@@ -12,6 +12,7 @@ export default function ControlPanel({
   floorplans,
   activeFloorplanId,
   onSelectFloorplan,
+  onRemoveFloorplan,
   onUpload,
   viewMode,
   onChangeViewMode,
@@ -32,6 +33,7 @@ export default function ControlPanel({
   floorplans: Floorplan[];
   activeFloorplanId: string | null;
   onSelectFloorplan: (id: string) => void;
+  onRemoveFloorplan: (id: string) => void;
   onUpload: (file: File) => void;
   viewMode: ViewMode;
   onChangeViewMode: (m: ViewMode) => void;
@@ -67,18 +69,28 @@ export default function ControlPanel({
         {floorplans.length > 0 && (
           <div className="mt-3 space-y-1">
             {floorplans.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => onSelectFloorplan(f.id)}
-                className={`w-full text-left rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                  f.id === activeFloorplanId
-                    ? 'bg-accent/15 text-accent'
-                    : 'text-text-dim hover:bg-white/5 hover:text-text'
-                }`}
-              >
-                {f.name}
-              </button>
+              <div key={f.id} className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onSelectFloorplan(f.id)}
+                  className={`flex-1 min-w-0 truncate text-left rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                    f.id === activeFloorplanId
+                      ? 'bg-accent/15 text-accent'
+                      : 'text-text-dim hover:bg-white/5 hover:text-text'
+                  }`}
+                >
+                  {f.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveFloorplan(f.id)}
+                  className="shrink-0 text-text-dim hover:text-risk-high px-1.5 py-1.5 text-xs"
+                  aria-label={`${f.name} 도면 삭제`}
+                  title="도면 삭제"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
         )}

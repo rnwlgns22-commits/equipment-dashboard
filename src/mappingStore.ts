@@ -57,6 +57,7 @@ export interface MappingSnapshot {
 interface MappingState extends MappingSnapshot {
   activeFloorplanId: string | null;
   addFloorplan: (f: Floorplan) => void;
+  removeFloorplan: (id: string) => void;
   setActiveFloorplan: (id: string) => void;
   upsertPlacement: (p: Placement) => void;
   removePlacement: (설비ID: string, 도면ID: string) => void;
@@ -78,6 +79,20 @@ export const useMappingStore = create<MappingState>()(
       workOrders: [],
       addFloorplan: (f) =>
         set((s) => ({ floorplans: [...s.floorplans, f], activeFloorplanId: f.id })),
+      // 도면 이미지는 base64라 몇 장만 쌓여도 용량이 꽤 나가는데, 지금까지 지울 방법이
+      // 아예 없었음(잘못 올려도 영구히 남음) — 배치·구역·작업오더도 그 도면 것만 같이
+      // 정리하고, 지운 게 활성 도면이었으면 남은 것 중 하나로(없으면 null로) 전환.
+      removeFloorplan: (id) =>
+        set((s) => {
+          const floorplans = s.floorplans.filter((f) => f.id !== id);
+          return {
+            floorplans,
+            placements: s.placements.filter((p) => p.도면ID !== id),
+            zones: s.zones.filter((z) => z.도면ID !== id),
+            activeFloorplanId:
+              s.activeFloorplanId === id ? (floorplans[0]?.id ?? null) : s.activeFloorplanId,
+          };
+        }),
       setActiveFloorplan: (id) => set({ activeFloorplanId: id }),
       upsertPlacement: (p) =>
         set((s) => {
