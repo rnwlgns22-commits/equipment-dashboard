@@ -66,10 +66,10 @@ export default function EquipmentToken({
         <Text
           text={`${temp}°`}
           y={20}
-          offsetX={14}
-          width={28}
+          offsetX={17}
+          width={34}
           align="center"
-          fontSize={11}
+          fontSize={14}
           fill="#111827"
           stroke="#ffffff"
           strokeWidth={2.5}
@@ -80,11 +80,11 @@ export default function EquipmentToken({
       {showLabel && !dim && (
         <Text
           text={equipment.설비명}
-          y={-34}
-          offsetX={60}
-          width={120}
+          y={-38}
+          offsetX={70}
+          width={140}
           align="center"
-          fontSize={12}
+          fontSize={15}
           fill="#111827"
           stroke="#ffffff"
           strokeWidth={2.5}

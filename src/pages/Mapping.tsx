@@ -40,6 +40,7 @@ export default function Mapping() {
     setActiveFloorplan,
     upsertPlacement,
     resizePlacement,
+    removePlacement,
     addZone,
     removeZone,
     setWorkOrderStatus,
@@ -211,6 +212,11 @@ export default function Mapping() {
               scale={selectedPlacement?.scale ?? 1}
               onChangeScale={(s) => {
                 if (activeFloorplanId) resizePlacement(selectedEquipment.설비ID, activeFloorplanId, s);
+              }}
+              onRemovePlacement={() => {
+                if (!activeFloorplanId) return;
+                removePlacement(selectedEquipment.설비ID, activeFloorplanId);
+                selectEquipment(null);
               }}
               onClose={() => selectEquipment(null)}
             />

@@ -3,17 +3,19 @@ import type { Equipment } from '../../types';
 import { mockTemperature, mockUptimeHours, statusColor } from '../../lib/mockTelemetry';
 import { MIN_TOKEN_SCALE, MAX_TOKEN_SCALE } from '../../mappingStore';
 
-const SCALE_STEP = 0.1;
+const SCALE_STEP = 0.25;
 
 export default function EquipmentPopover({
   equipment,
   scale,
   onChangeScale,
+  onRemovePlacement,
   onClose,
 }: {
   equipment: Equipment;
   scale: number;
   onChangeScale: (scale: number) => void;
+  onRemovePlacement: () => void;
   onClose: () => void;
 }) {
   const uptime = mockUptimeHours(equipment.설비ID);
@@ -123,6 +125,14 @@ export default function EquipmentPopover({
       >
         설비 상세 페이지로 이동 →
       </Link>
+
+      <button
+        type="button"
+        onClick={onRemovePlacement}
+        className="mt-3 w-full rounded-lg border border-border px-2 py-1.5 text-xs text-text-dim hover:text-risk-high hover:border-risk-high/50 transition-colors"
+      >
+        도면에서 배치 삭제
+      </button>
     </div>
   );
 }
