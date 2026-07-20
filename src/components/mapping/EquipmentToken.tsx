@@ -70,7 +70,10 @@ export default function EquipmentToken({
           width={28}
           align="center"
           fontSize={11}
-          fill="#e5e7eb"
+          fill="#111827"
+          stroke="#ffffff"
+          strokeWidth={2.5}
+          fillAfterStrokeEnabled
           fontStyle="bold"
         />
       )}
@@ -82,7 +85,11 @@ export default function EquipmentToken({
           width={120}
           align="center"
           fontSize={12}
-          fill="#e5e7eb"
+          fill="#111827"
+          stroke="#ffffff"
+          strokeWidth={2.5}
+          fillAfterStrokeEnabled
+          fontStyle="bold"
         />
       )}
       {workOrderColor && (

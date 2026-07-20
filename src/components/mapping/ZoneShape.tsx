@@ -36,7 +36,10 @@ export default function ZoneShape({
         x={centroidX}
         y={centroidY}
         offsetX={zone.name.length * 3.5}
-        fill="#e5e7eb"
+        fill="#111827"
+        stroke="#ffffff"
+        strokeWidth={2.5}
+        fillAfterStrokeEnabled
         fontSize={13}
         fontStyle="bold"
         listening={false}

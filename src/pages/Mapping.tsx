@@ -90,7 +90,11 @@ export default function Mapping() {
 
   const handleMove = (설비ID: string, xPct: number, yPct: number) => {
     if (!activeFloorplanId) return;
-    upsertPlacement({ 설비ID, 도면ID: activeFloorplanId, xPct, yPct });
+    // upsertPlacement는 같은 (설비ID, 도면ID) 항목을 통째로 갈아치우므로, scale을 안 넣고
+    // 부르면 드래그로 옮길 때마다 사용자가 조절해둔 아이콘 크기가 100%로 리셋됐음
+    // (2026-07-20 발견 — "아이콘 크기가 고정 안 된다"는 피드백의 원인).
+    const existing = activePlacements.find((p) => p.설비ID === 설비ID);
+    upsertPlacement({ 설비ID, 도면ID: activeFloorplanId, xPct, yPct, scale: existing?.scale });
   };
 
   const handleWorkOrderClick = (설비ID: string) => {

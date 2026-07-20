@@ -4,7 +4,7 @@ import type { Floorplan, Placement, WorkOrderStatus, Zone } from './types';
 import type { WorkOrder } from './types';
 
 export const MIN_TOKEN_SCALE = 0.5;
-export const MAX_TOKEN_SCALE = 2.5;
+export const MAX_TOKEN_SCALE = 3;
 
 interface MappingState {
   floorplans: Floorplan[];
