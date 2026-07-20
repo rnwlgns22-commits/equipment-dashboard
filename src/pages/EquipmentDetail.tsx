@@ -69,6 +69,34 @@ export default function EquipmentDetail() {
     navigate('/equipment');
   };
 
+  const [connectTarget, setConnectTarget] = useState('');
+
+  // 연결은 양방향으로 취급하므로(lib/topology.ts computeConnections, 매핑 화면의
+  // ConnectionPopover와 동일 원칙) 이쪽 화면에서 추가/삭제할 때도 양쪽 설비의
+  // 연결설비 배열을 같이 갱신해야 함 — 한쪽만 고치면 그래프/매핑에서 반쪽짜리
+  // 연결(한쪽에서만 보이는)이 생김.
+  const addConnection = () => {
+    if (!equipment || !connectTarget) return;
+    const other = equipments.find((e) => e.설비ID === connectTarget);
+    if (!other) return;
+    if (!equipment.연결설비.includes(other.설비ID)) {
+      updateEquipment(equipment.설비ID, { 연결설비: [...equipment.연결설비, other.설비ID] });
+    }
+    if (!other.연결설비.includes(equipment.설비ID)) {
+      updateEquipment(other.설비ID, { 연결설비: [...other.연결설비, equipment.설비ID] });
+    }
+    setConnectTarget('');
+  };
+
+  const removeConnection = (otherId: string) => {
+    if (!equipment) return;
+    const other = equipments.find((e) => e.설비ID === otherId);
+    updateEquipment(equipment.설비ID, { 연결설비: equipment.연결설비.filter((id) => id !== otherId) });
+    if (other) {
+      updateEquipment(other.설비ID, { 연결설비: other.연결설비.filter((id) => id !== equipment.설비ID) });
+    }
+  };
+
   const records = histories
     .filter((h) => h.설비ID === id)
     .sort((a, b) => b.날짜.localeCompare(a.날짜));
@@ -76,6 +104,10 @@ export default function EquipmentDetail() {
   const connected = equipment?.연결설비
     .map((cid) => equipments.find((e) => e.설비ID === cid))
     .filter((e): e is NonNullable<typeof e> => Boolean(e)) ?? [];
+
+  const connectableOptions = equipment
+    ? equipments.filter((e) => e.설비ID !== equipment.설비ID && !equipment.연결설비.includes(e.설비ID))
+    : [];
 
   if (!equipment) {
     return (
@@ -206,14 +238,49 @@ export default function EquipmentDetail() {
               ) : (
                 <ul className="space-y-1.5 text-sm">
                   {connected.map((c) => (
-                    <li key={c.설비ID}>
-                      <Link to={`/equipment/${c.설비ID}`} className="text-accent hover:underline">
-                        {c.설비명}
-                      </Link>
-                      <span className="text-text-dim text-xs ml-1">({c.설비ID})</span>
+                    <li key={c.설비ID} className="flex items-center justify-between gap-2">
+                      <span>
+                        <Link to={`/equipment/${c.설비ID}`} className="text-accent hover:underline">
+                          {c.설비명}
+                        </Link>
+                        <span className="text-text-dim text-xs ml-1">({c.설비ID})</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeConnection(c.설비ID)}
+                        className="text-xs text-text-dim hover:text-risk-high shrink-0"
+                        aria-label={`${c.설비명} 연결 해제`}
+                        title="연결 해제"
+                      >
+                        ✕
+                      </button>
                     </li>
                   ))}
                 </ul>
+              )}
+              {connectableOptions.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border flex gap-1.5">
+                  <select
+                    value={connectTarget}
+                    onChange={(e) => setConnectTarget(e.target.value)}
+                    className="flex-1 min-w-0 rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-xs"
+                  >
+                    <option value="">설비 선택…</option>
+                    {connectableOptions.map((e) => (
+                      <option key={e.설비ID} value={e.설비ID}>
+                        {e.설비명} ({e.설비ID})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addConnection}
+                    disabled={!connectTarget}
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  >
+                    연결 추가
+                  </button>
+                </div>
               )}
             </Card>
           </>
