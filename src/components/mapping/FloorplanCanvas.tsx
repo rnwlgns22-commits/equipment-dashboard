@@ -108,6 +108,10 @@ export default function FloorplanCanvas({
   const fittedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!image || !stageRef.current || size.width === 0 || size.height === 0) return;
+    // naturalWidth/Height가 0이면(깨진 이미지, 일부 브라우저의 intrinsic 크기 없는
+    // SVG 등) fitScale이 Infinity/NaN이 돼서 스테이지 변환이 통째로 깨짐 —
+    // graphify 기반 코드리뷰로 발견(2026-07-20), 방어 가드 추가.
+    if (image.naturalWidth === 0 || image.naturalHeight === 0) return;
     if (fittedRef.current === floorplan?.id) return;
     const stage = stageRef.current;
     const fitScale = Math.min(size.width / image.naturalWidth, size.height / image.naturalHeight) * 0.95;

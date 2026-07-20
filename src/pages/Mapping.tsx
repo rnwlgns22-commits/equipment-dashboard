@@ -102,6 +102,17 @@ export default function Mapping() {
     setWorkOrderStatus(설비ID, nextWorkOrderStatus(workOrdersById.get(설비ID)));
   };
 
+  // 보기 모드 버튼은 구역 그리기 도중에도 항상 눌려서(ControlPanel이 drawingZone과
+  // 무관하게 항상 활성 상태), 예를 들어 그리다 말고 "히스토리 타임라인"으로 바꾸면
+  // 하단 힌트가 타임라인 슬라이더로 바뀌어 "지금 점을 찍고 있다"는 표시가 사라지는데
+  // 캔버스는 여전히 클릭마다 구역 점을 추가함(graphify 기반 코드리뷰로 발견,
+  // 2026-07-20). 도면 전환 때와 같은 이유로, 모드가 바뀌면 그리던 구역은 취소.
+  const handleChangeViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    setDrawingZone(false);
+    setDraftPoints([]);
+  };
+
   const selectEquipment = (id: string | null) => {
     setSelectedId(id);
     setSelectedConnectionKey(null);
@@ -161,7 +172,7 @@ export default function Mapping() {
           onSelectFloorplan={handleSelectFloorplan}
           onUpload={handleUpload}
           viewMode={viewMode}
-          onChangeViewMode={setViewMode}
+          onChangeViewMode={handleChangeViewMode}
           showLabels={showLabels}
           onToggleLabels={setShowLabels}
           showValues={showValues}

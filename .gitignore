@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# graphify 산출물(그래프 캐시·HTML·리포트) — 코드 정리용 분석 결과라 재생성 가능,
+# 커밋 불필요(2026-07-20)
+graphify-out
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

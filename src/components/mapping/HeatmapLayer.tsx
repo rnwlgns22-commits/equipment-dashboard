@@ -14,13 +14,19 @@ export default function HeatmapLayer({
   imageHeight: number;
   statsById: Map<string, FailureStat>;
 }) {
+  // 반지름을 고정 픽셀로 두면 도면 이미지 크기에 따라 결과가 극단적으로 달라짐 —
+  // 작은 도면(수백px)에서는 화면 전체가 빨갛게 덮이고, 큰 도면(수천px, 폰카메라
+  // 촬영본 등)에서는 점 하나로 안 보임(graphify 기반 코드리뷰로 발견, 2026-07-20).
+  // 도면의 짧은 변 기준 비율로 잡아서 어떤 크기의 도면에도 비슷한 비중으로 보이게 함.
+  const baseRadius = Math.min(imageWidth, imageHeight) * 0.06;
+
   return (
     <>
       {placements.map((p) => {
         const stat = statsById.get(p.설비ID);
         const count = stat?.최근1년건수 ?? 0;
         if (count <= 0) return null;
-        const radius = 50 + Math.min(count, 6) * 22;
+        const radius = baseRadius + Math.min(count, 6) * baseRadius * 0.4;
         const x = (p.xPct / 100) * imageWidth;
         const y = (p.yPct / 100) * imageHeight;
         return (

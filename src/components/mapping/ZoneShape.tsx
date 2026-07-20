@@ -35,7 +35,10 @@ export default function ZoneShape({
         text={zone.name}
         x={centroidX}
         y={centroidY}
-        offsetX={zone.name.length * 4.2}
+        width={200}
+        offsetX={100}
+        offsetY={10}
+        align="center"
         fill="#111827"
         stroke="#ffffff"
         strokeWidth={2.5}
