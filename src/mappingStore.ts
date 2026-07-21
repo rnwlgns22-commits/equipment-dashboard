@@ -68,6 +68,7 @@ interface MappingState extends MappingSnapshot {
   removeZone: (id: string) => void;
   renameZone: (id: string, name: string) => void;
   setWorkOrderStatus: (설비ID: string, 상태: WorkOrderStatus) => void;
+  updateWorkOrderDetail: (설비ID: string, patch: Partial<Pick<WorkOrder, '담당자' | '메모'>>) => void;
   loadSnapshot: (data: MappingSnapshot) => void;
 }
 
@@ -132,10 +133,22 @@ export const useMappingStore = create<MappingState>()(
       // 구역 이름도 생성할 때 window.prompt로 한 번 정하면 그 뒤로 못 고쳤음.
       renameZone: (id, name) =>
         set((s) => ({ zones: s.zones.map((z) => (z.id === id ? { ...z, name } : z)) })),
+      // 예전엔 상태만 통째로 새 객체로 갈아치워서, 배지를 한 번 더 클릭하면(대기→진행중→
+      // 완료 순환) 그 사이 채워둔 담당자·메모가 조용히 날아갔음(2026-07-22 발견) — 기존
+      // 항목을 찾아 상태만 덮어쓰도록 수정.
       setWorkOrderStatus: (설비ID, 상태) =>
-        set((s) => ({
-          workOrders: [...s.workOrders.filter((w) => w.설비ID !== 설비ID), { 설비ID, 상태 }],
-        })),
+        set((s) => {
+          const existing = s.workOrders.find((w) => w.설비ID === 설비ID);
+          return {
+            workOrders: [...s.workOrders.filter((w) => w.설비ID !== 설비ID), { ...existing, 설비ID, 상태 }],
+          };
+        }),
+      updateWorkOrderDetail: (설비ID, patch) =>
+        set((s) => {
+          const existing = s.workOrders.find((w) => w.설비ID === 설비ID);
+          const next: WorkOrder = existing ? { ...existing, ...patch } : { 설비ID, 상태: '대기', ...patch };
+          return { workOrders: [...s.workOrders.filter((w) => w.설비ID !== 설비ID), next] };
+        }),
       loadSnapshot: (data) =>
         set({
           floorplans: data.floorplans,

@@ -93,9 +93,14 @@ export interface Zone {
 // Phase C — 작업오더(Work Order). 도면과 무관하게 설비 자체에 붙는 상태라 도면ID 없음.
 export type WorkOrderStatus = '대기' | '진행중' | '완료';
 
+// 담당자·메모(2026-07-22 추가) — 상태 배지 클릭만으로는 "누가·왜 진행중인지"가
+// 안 남아서, 팝오버에서 채울 수 있는 상세 필드 추가. 완료로 바뀌면 이 필드들을
+// 담아 점검·수리 이력에도 자동 반영(Mapping.tsx handleWorkOrderClick 참고).
 export interface WorkOrder {
   설비ID: string;
   상태: WorkOrderStatus;
+  담당자?: string;
+  메모?: string;
 }
 
 export type ViewMode = '일반' | '유지보수' | '히트맵' | '타임라인';

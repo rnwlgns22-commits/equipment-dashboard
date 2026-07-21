@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { Equipment } from '../../types';
+import type { Equipment, WorkOrder } from '../../types';
 import { mockTemperature, mockUptimeHours, statusColor } from '../../lib/mockTelemetry';
 import { MIN_TOKEN_SCALE, MAX_TOKEN_SCALE } from '../../mappingStore';
+import { workOrderColor as computeWorkOrderColor } from '../../lib/workOrders';
 
 const SCALE_STEP = 0.25;
 
@@ -11,16 +13,31 @@ export default function EquipmentPopover({
   onChangeScale,
   onRemovePlacement,
   onClose,
+  showWorkOrder,
+  workOrder,
+  onUpdateWorkOrderDetail,
 }: {
   equipment: Equipment;
   scale: number;
   onChangeScale: (scale: number) => void;
   onRemovePlacement: () => void;
   onClose: () => void;
+  showWorkOrder: boolean; // 유지보수 모드에서만 작업오더 상세 섹션을 보여줌
+  workOrder?: WorkOrder;
+  onUpdateWorkOrderDetail: (patch: Partial<Pick<WorkOrder, '담당자' | '메모'>>) => void;
 }) {
   const uptime = mockUptimeHours(equipment.설비ID);
   const days = Math.floor(uptime / 24);
   const hours = uptime % 24;
+
+  // 담당자·메모는 키 입력마다 store에 쓰지 않고(불필요한 IndexedDB 쓰기 방지,
+  // ZoneStatsPopover 이름변경과 같은 관례) blur 시점에 커밋.
+  const [assigneeDraft, setAssigneeDraft] = useState(workOrder?.담당자 ?? '');
+  const [noteDraft, setNoteDraft] = useState(workOrder?.메모 ?? '');
+  useEffect(() => {
+    setAssigneeDraft(workOrder?.담당자 ?? '');
+    setNoteDraft(workOrder?.메모 ?? '');
+  }, [equipment.설비ID, workOrder?.담당자, workOrder?.메모]);
 
   return (
     <div className="absolute top-4 right-4 w-72 rounded-2xl border border-border bg-card shadow-xl p-4 z-10">
@@ -63,6 +80,43 @@ export default function EquipmentPopover({
           <dd className="text-right">{equipment.위치 || '-'}</dd>
         </div>
       </dl>
+
+      {showWorkOrder && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-text-dim">작업오더</span>
+            <span
+              className="text-xs rounded-full px-2 py-0.5"
+              style={{
+                background: `${computeWorkOrderColor(workOrder?.상태 ?? '대기', null)}22`,
+                color: computeWorkOrderColor(workOrder?.상태 ?? '대기', null),
+              }}
+            >
+              {workOrder?.상태 ?? '대기'}
+            </span>
+          </div>
+          <input
+            value={assigneeDraft}
+            onChange={(e) => setAssigneeDraft(e.target.value)}
+            onBlur={() => onUpdateWorkOrderDetail({ 담당자: assigneeDraft.trim() || undefined })}
+            placeholder="담당자"
+            aria-label="작업오더 담당자"
+            className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-xs outline-none focus:border-accent/60"
+          />
+          <textarea
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onBlur={() => onUpdateWorkOrderDetail({ 메모: noteDraft.trim() || undefined })}
+            placeholder="메모 (작업 내용, 특이사항 등)"
+            aria-label="작업오더 메모"
+            rows={2}
+            className="mt-1.5 w-full rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-xs outline-none focus:border-accent/60 resize-none"
+          />
+          <p className="mt-1.5 text-[11px] text-text-dim">
+            배지를 눌러 상태를 완료로 바꾸면 이 담당자·메모가 점검·수리 이력에 자동 기록됩니다.
+          </p>
+        </div>
+      )}
 
       <div className="mt-3 pt-3 border-t border-border">
         <div className="flex items-center justify-between text-xs text-text-dim mb-1.5">

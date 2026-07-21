@@ -3,7 +3,7 @@ import { useAppStore } from '../store';
 import { useMappingStore } from '../mappingStore';
 import { computeFailureStats } from '../lib/stats';
 import { computeZoneStats } from '../lib/geo';
-import { nextWorkOrderStatus } from '../lib/workOrders';
+import { advanceWorkOrder } from '../lib/workOrders';
 import { historyDateRange } from '../lib/timeline';
 import type { ViewMode } from '../types';
 import ControlPanel from '../components/mapping/ControlPanel';
@@ -26,6 +26,7 @@ export default function Mapping() {
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const updateEquipment = useAppStore((s) => s.updateEquipment);
+  const addHistory = useAppStore((s) => s.addHistory);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
   const statsById = useMemo(() => {
     const { stats } = computeFailureStats(histories);
@@ -49,9 +50,14 @@ export default function Mapping() {
     removeZone,
     renameZone,
     setWorkOrderStatus,
+    updateWorkOrderDetail,
   } = useMappingStore();
   const workOrdersById = useMemo(
     () => new Map(workOrders.map((w) => [w.설비ID, w.상태])),
+    [workOrders],
+  );
+  const workOrdersFullById = useMemo(
+    () => new Map(workOrders.map((w) => [w.설비ID, w])),
     [workOrders],
   );
 
@@ -120,7 +126,14 @@ export default function Mapping() {
   };
 
   const handleWorkOrderClick = (설비ID: string) => {
-    setWorkOrderStatus(설비ID, nextWorkOrderStatus(workOrdersById.get(설비ID)));
+    const { next, historyToAdd } = advanceWorkOrder(
+      설비ID,
+      workOrdersById.get(설비ID),
+      workOrdersFullById.get(설비ID),
+      new Date(),
+    );
+    setWorkOrderStatus(설비ID, next);
+    if (historyToAdd) addHistory(historyToAdd);
   };
 
   // 보기 모드 버튼은 구역 그리기 도중에도 항상 눌려서(ControlPanel이 drawingZone과
@@ -270,6 +283,9 @@ export default function Mapping() {
                 selectEquipment(null);
               }}
               onClose={() => selectEquipment(null)}
+              showWorkOrder={viewMode === '유지보수'}
+              workOrder={workOrdersFullById.get(selectedEquipment.설비ID)}
+              onUpdateWorkOrderDetail={(patch) => updateWorkOrderDetail(selectedEquipment.설비ID, patch)}
             />
           )}
           {selectedZone && selectedZoneStats && (

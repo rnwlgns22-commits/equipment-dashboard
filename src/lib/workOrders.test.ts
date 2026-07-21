@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dueStateOf, nextWorkOrderStatus, workOrderColor, compareInspectionPriority } from './workOrders';
+import { dueStateOf, nextWorkOrderStatus, workOrderColor, compareInspectionPriority, advanceWorkOrder } from './workOrders';
 
 describe('dueStateOf', () => {
   const now = new Date('2026-07-20T00:00:00Z');
@@ -48,6 +48,39 @@ describe('workOrderColor', () => {
   it('대기 상태에서 연체면 빨강, 임박이면 노랑', () => {
     expect(workOrderColor('대기', 'overdue')).toBe('#f87171');
     expect(workOrderColor('대기', 'soon')).toBe('#fbbf24');
+  });
+});
+
+describe('advanceWorkOrder', () => {
+  const now = new Date('2026-07-22T00:00:00Z');
+
+  it('대기→진행중 전환은 아직 완료가 아니므로 이력을 만들지 않는다', () => {
+    const result = advanceWorkOrder('E-001', '대기', undefined, now);
+    expect(result.next).toBe('진행중');
+    expect(result.historyToAdd).toBeNull();
+  });
+
+  it('진행중→완료 전환 시 담당자·메모를 담은 수리 이력을 만든다', () => {
+    const result = advanceWorkOrder('E-001', '진행중', { 담당자: '홍길동', 메모: '베어링 소음 점검' }, now);
+    expect(result.next).toBe('완료');
+    expect(result.historyToAdd).not.toBeNull();
+    expect(result.historyToAdd?.설비ID).toBe('E-001');
+    expect(result.historyToAdd?.유형).toBe('수리');
+    expect(result.historyToAdd?.날짜).toBe('2026-07-22');
+    expect(result.historyToAdd?.내용).toBe('담당자: 홍길동\n베어링 소음 점검');
+  });
+
+  it('담당자·메모가 없어도 완료 이력은 만들되 내용은 비워둔다', () => {
+    const result = advanceWorkOrder('E-001', '진행중', undefined, now);
+    expect(result.next).toBe('완료');
+    expect(result.historyToAdd?.내용).toBeUndefined();
+    expect(result.historyToAdd?.제목).toBe('작업오더 완료');
+  });
+
+  it('완료→대기 전환(순환 재시작)은 이력을 만들지 않는다', () => {
+    const result = advanceWorkOrder('E-001', '완료', { 담당자: '홍길동' }, now);
+    expect(result.next).toBe('대기');
+    expect(result.historyToAdd).toBeNull();
   });
 });
 
