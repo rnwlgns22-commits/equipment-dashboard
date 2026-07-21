@@ -16,6 +16,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
   const addInspectionSchedule = useAppStore((s) => s.addInspectionSchedule);
   const updateInspectionSchedule = useAppStore((s) => s.updateInspectionSchedule);
   const deleteInspectionSchedule = useAppStore((s) => s.deleteInspectionSchedule);
+  const addHistory = useAppStore((s) => s.addHistory);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
   const now = useMemo(() => new Date(), []);
 
@@ -80,9 +81,23 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
 
   // 현장에서 점검을 실제로 마쳤을 때 한 번에 갱신 — 최근점검일을 오늘로, 다음점검일을
   // 주기일만큼 뒤로 재계산. 매핑 화면의 작업오더 상태 순환과 같은 "즉시 갱신" 취지.
+  // 완료할 때마다 그 설비의 이력(HistoryRecord)도 같이 남김(2026-07-21 추가) — 이전엔
+  // 최근점검일/점검사항이 완료할 때마다 덮어써지기만 해서 "언제 몇 번 점검했는지"가
+  // 남지 않았음. 특히 법정점검은 과거 점검 이행 증빙 자체가 핵심이라 이력 기반 감사
+  // 추적이 필요함(수정 폼으로 값을 바로잡는 것과는 다른, 명확한 "완료 이벤트"라
+  // 여기서만 이력을 만듦 — 추가/수정 폼의 최근점검일 입력은 과거 기록 보정용이라 제외).
   const markDoneToday = (s: InspectionSchedule) => {
     const today = now.toISOString().slice(0, 10);
     updateInspectionSchedule(s.id, { 최근점검일: today, 다음점검일: addDaysUTC(today, s.주기일) });
+    addHistory({
+      id: `hist-insp-${s.id}-${Date.now()}`,
+      날짜: today,
+      설비ID: s.설비ID,
+      유형: '점검',
+      제목: `${s.항목명} (${s.종류})`,
+      내용: s.점검사항,
+      출처파일: s.종류 === '법정점검' ? '법정점검 기록' : '정기점검 기록',
+    });
   };
 
   const handleDelete = (s: InspectionSchedule) => {

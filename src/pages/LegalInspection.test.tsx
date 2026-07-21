@@ -104,6 +104,45 @@ describe('법정점검/정기점검', () => {
     expect(updated.다음점검일! > today).toBe(true);
   });
 
+  // 완료할 때마다 그 설비의 이력에도 남아야 "언제 몇 번 점검했는지" 감사 추적이 됨
+  // (2026-07-21 요청) — 법정점검이든 정기점검이든 동일하게 적용(같은 보드 공유).
+  it('"오늘 완료" 클릭 시 해당 설비의 이력(점검)도 함께 생성된다', async () => {
+    useAppStore.setState({
+      inspectionSchedules: [
+        { id: 'insp-1', 설비ID: 'E-001', 종류: '법정점검', 항목명: '승강기 정기검사', 주기일: 30, 점검사항: '이상 없음' },
+      ],
+    });
+    const user = userEvent.setup();
+    renderLegal();
+
+    await user.click(screen.getByRole('button', { name: '오늘 완료' }));
+
+    const today = new Date().toISOString().slice(0, 10);
+    const histories = useAppStore.getState().histories;
+    expect(histories).toHaveLength(1);
+    expect(histories[0].설비ID).toBe('E-001');
+    expect(histories[0].유형).toBe('점검');
+    expect(histories[0].날짜).toBe(today);
+    expect(histories[0].제목).toBe('승강기 정기검사 (법정점검)');
+    expect(histories[0].내용).toBe('이상 없음');
+  });
+
+  it('정기점검 완료 시에도 동일하게 이력이 생성된다', async () => {
+    useAppStore.setState({
+      inspectionSchedules: [
+        { id: 'insp-2', 설비ID: 'E-001', 종류: '정기점검', 항목명: '필터 청소', 주기일: 30 },
+      ],
+    });
+    const user = userEvent.setup();
+    renderRegular();
+
+    await user.click(screen.getByRole('button', { name: '오늘 완료' }));
+
+    const histories = useAppStore.getState().histories;
+    expect(histories).toHaveLength(1);
+    expect(histories[0].제목).toBe('필터 청소 (정기점검)');
+  });
+
   it('삭제(확인 후) 시 store에서 제거된다', async () => {
     useAppStore.setState({
       inspectionSchedules: [
