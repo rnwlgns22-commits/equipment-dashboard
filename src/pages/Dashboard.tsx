@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -70,6 +70,38 @@ export default function Dashboard() {
   const highRiskStats = stats.filter((s) => s.위험등급 !== '하').slice(0, 8);
   const brainSignals = useMemo(() => computeBrainSignals(equipments, histories).slice(0, 6), [equipments, histories]);
 
+  // KPI 타일을 눌러 펼치는 확장 카드용 상세 데이터(2026-07-22 요청) — 한 번에 하나만
+  // 펼쳐지도록 상태를 여기서 관리(타일마다 각자 열림상태를 들고 있으면 여러 개가
+  // 동시에 겹쳐 뜰 수 있음).
+  const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
+
+  const equipmentCountByCategory = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of equipments) counts.set(e.분류, (counts.get(e.분류) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [equipments]);
+
+  const problemEquipments = useMemo(
+    () => equipments.filter((e) => e.상태 === '수리중' || e.상태 === '정지'),
+    [equipments],
+  );
+
+  const dueSoonEquipments = useMemo(
+    () =>
+      equipments
+        .map((e) => ({ e, d: daysUntil(e.다음점검일, now) }))
+        .filter((x): x is { e: (typeof equipments)[number]; d: number } => x.d !== null && x.d >= 0 && x.d <= 7)
+        .sort((a, b) => a.d - b.d),
+    [equipments, now],
+  );
+
+  const highOnlyStats = useMemo(() => stats.filter((s) => s.위험등급 === '상'), [stats]);
+
+  const lowStockParts = useMemo(
+    () => parts.filter((p) => p.안전재고 !== undefined && p.현재수량 <= p.안전재고),
+    [parts],
+  );
+
   // 법정점검/정기점검 도래 — 임박(7일 이내)이거나 이미 지난 항목만, 법정점검을
   // 최우선순위로 두고 그 안에서 가장 급한 순(compareInspectionPriority).
   const dueInspections = useMemo(
@@ -91,27 +123,197 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-        <KpiTile label="총 설비 수" value={equipments.length} />
+        <KpiTile
+          label="총 설비 수"
+          value={equipments.length}
+          isOpen={expandedKpi === '총 설비 수'}
+          onOpen={() => setExpandedKpi('총 설비 수')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs text-text-dim mb-1.5">분류별</div>
+                <div className="space-y-1">
+                  {equipmentCountByCategory.map(([분류, count]) => (
+                    <div key={분류} className="flex justify-between">
+                      <span>{분류}</span>
+                      <span className="text-text-dim">{count}개</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Link to="/equipment" className="block text-center text-xs text-accent hover:underline pt-2 border-t border-border">
+                설비 목록 전체보기 →
+              </Link>
+            </div>
+          }
+        />
         <KpiTile
           label="상태별 (정상 · 수리중 · 정지)"
           value={`${statusCounts.정상} · ${statusCounts.수리중} · ${statusCounts.정지}`}
+          isOpen={expandedKpi === '상태별'}
+          onOpen={() => setExpandedKpi('상태별')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex justify-between"><span>정상</span><span className="text-text-dim">{statusCounts.정상}개</span></div>
+                <div className="flex justify-between"><span>수리중</span><span className="text-text-dim">{statusCounts.수리중}개</span></div>
+                <div className="flex justify-between"><span>정지</span><span className="text-text-dim">{statusCounts.정지}개</span></div>
+                <div className="flex justify-between"><span>폐기</span><span className="text-text-dim">{statusCounts.폐기}개</span></div>
+              </div>
+              {problemEquipments.length > 0 && (
+                <div className="pt-2 border-t border-border space-y-1.5">
+                  <div className="text-xs text-text-dim mb-1">수리중 · 정지 설비</div>
+                  {problemEquipments.map((e) => (
+                    <Link
+                      key={e.설비ID}
+                      to={`/equipment/${e.설비ID}`}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1.5 hover:border-white/20 transition-colors"
+                    >
+                      <span className="truncate">{e.설비명}</span>
+                      <span className={`text-xs shrink-0 ${e.상태 === '정지' ? 'text-risk-high' : 'text-risk-mid'}`}>{e.상태}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          }
         />
-        <KpiTile label="점검 임박 (7일 이내)" value={dueSoonCount} accentClass="text-risk-mid" />
+        <KpiTile
+          label="점검 임박 (7일 이내)"
+          value={dueSoonCount}
+          accentClass="text-risk-mid"
+          isOpen={expandedKpi === '점검 임박'}
+          onOpen={() => setExpandedKpi('점검 임박')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            dueSoonEquipments.length === 0 ? (
+              <p className="text-text-dim">임박한 점검이 없습니다.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {dueSoonEquipments.map(({ e, d }) => (
+                  <Link
+                    key={e.설비ID}
+                    to={`/equipment/${e.설비ID}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1.5 hover:border-white/20 transition-colors"
+                  >
+                    <span className="truncate">{e.설비명}</span>
+                    <span className="text-xs text-text-dim shrink-0">{e.다음점검일} · {d}일 후</span>
+                  </Link>
+                ))}
+              </div>
+            )
+          }
+        />
         <KpiTile
           label="위험 등급 상"
-          value={stats.filter((s) => s.위험등급 === '상').length}
+          value={highOnlyStats.length}
           accentClass="text-risk-high"
+          isOpen={expandedKpi === '위험 등급 상'}
+          onOpen={() => setExpandedKpi('위험 등급 상')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            highOnlyStats.length === 0 ? (
+              <p className="text-text-dim">위험 등급 상인 설비가 없습니다.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {highOnlyStats.map((s) => (
+                  <Link
+                    key={s.설비ID}
+                    to={`/equipment/${s.설비ID}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1.5 hover:border-white/20 transition-colors"
+                  >
+                    <span className="truncate">{equipmentName(equipments, s.설비ID)}</span>
+                    <span className="text-xs text-text-dim shrink-0">최근 1년 {s.최근1년건수}건</span>
+                  </Link>
+                ))}
+              </div>
+            )
+          }
         />
         <KpiTile
           label="법정·정기점검 도래"
           value={dueInspections.length}
           accentClass={dueInspections.some((s) => s.due === 'overdue') ? 'text-risk-high' : 'text-risk-mid'}
+          isOpen={expandedKpi === '법정정기점검 도래'}
+          onOpen={() => setExpandedKpi('법정정기점검 도래')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            dueInspections.length === 0 ? (
+              <p className="text-text-dim">임박하거나 기한이 지난 법정·정기점검이 없습니다.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {dueInspections.map((s) => (
+                  <Link
+                    key={s.id}
+                    to={`/equipment/${s.설비ID}`}
+                    className="block rounded-lg border border-border px-3 py-1.5 hover:border-white/20 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate">{equipmentName(equipments, s.설비ID)} · {s.항목명}</span>
+                      <span className={`text-xs shrink-0 rounded-full px-2 py-0.5 ${s.due === 'overdue' ? 'bg-risk-high/15 text-risk-high' : 'bg-risk-mid/15 text-risk-mid'}`}>
+                        {s.종류} · {s.due === 'overdue' ? '기한 지남' : '임박'}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )
+          }
         />
-        <KpiTile label="누적 수리비용" value={`${totalCost.toLocaleString()}원`} />
+        <KpiTile
+          label="누적 수리비용"
+          value={`${totalCost.toLocaleString()}원`}
+          isOpen={expandedKpi === '누적 수리비용'}
+          onOpen={() => setExpandedKpi('누적 수리비용')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            costTop10.length === 0 ? (
+              <p className="text-text-dim">비용이 기록된 수리 이력이 없습니다.</p>
+            ) : (
+              <div className="space-y-1.5">
+                <div className="text-xs text-text-dim mb-1">수리비용 Top10 설비</div>
+                {costTop10.map((row, i) => (
+                  <Link
+                    key={row.설비ID}
+                    to={`/equipment/${row.설비ID}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1.5 hover:border-white/20 transition-colors"
+                  >
+                    <span className="truncate">{i + 1}. {equipmentName(equipments, row.설비ID)}</span>
+                    <span className="text-xs text-text-dim shrink-0">{row.총비용.toLocaleString()}원 · {row.건수}건</span>
+                  </Link>
+                ))}
+              </div>
+            )
+          }
+        />
         <KpiTile
           label="재고부족 자재"
           value={lowStockCount}
           accentClass={lowStockCount > 0 ? 'text-risk-high' : undefined}
+          isOpen={expandedKpi === '재고부족 자재'}
+          onOpen={() => setExpandedKpi('재고부족 자재')}
+          onClose={() => setExpandedKpi(null)}
+          detail={
+            lowStockParts.length === 0 ? (
+              <p className="text-text-dim">재고부족 자재가 없습니다.</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  {lowStockParts.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1.5">
+                      <span className="truncate">{p.자재명}</span>
+                      <span className="text-xs text-risk-high shrink-0">{p.현재수량}{p.단위} / 안전 {p.안전재고}{p.단위}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/inventory" className="block text-center text-xs text-accent hover:underline pt-2 border-t border-border">
+                  자재·재고관리로 이동 →
+                </Link>
+              </div>
+            )
+          }
         />
       </div>
 
