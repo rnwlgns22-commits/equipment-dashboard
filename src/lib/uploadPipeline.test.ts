@@ -64,3 +64,51 @@ describe('runUploadPipeline — 설비대장 vs 이력 vs 실패 우선순위', 
     expect(result.historyCandidates).toHaveLength(0);
   });
 });
+
+// 2026-07-21 실제 요청: "1. 산출기초조사서.xlsx"(공공기관 표준 견적서) 업로드 시
+// 어떤 설비를 어떻게 고쳤는지 + 비용까지 이력 후보에 자동으로 채워져야 함.
+describe('runUploadPipeline — 산출기초조사서', () => {
+  it('산출기초조사서 형식이면 품명 기반 제목·비용·날짜가 채워진 수리 이력 후보가 된다', async () => {
+    const rows = [
+      ['산  출  기  초  조  사  서'],
+      ['', '', '', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '', ''],
+      ['금4,444,000원 (금사백사십사만사천원)'],
+      ['', '', '', '', '', '', '', '(단위 : 원)'],
+      [],
+      ['품   명', '규 격', '단위', '수량', '산  출  조  사  근  거', '', '산출근거(적용금액)', '', '', ''],
+      ['', '', '', '', '원신엘리베이터', '현승엘리베이터', '단 가', '금 액'],
+      ['1. 인건비'],
+      ['핸드레일[로터리 2번출구 하행(우측)] 인건비', '', 'M', 37.44, 108000, 142500, 108000, 4039999.9999999995],
+      [],
+      [],
+      [],
+      [],
+      ['계', '', '', '', '', '', '', 4039999.9999999995],
+      ['부가세', '', '', '', '', '', '', 404000],
+      ['합      계', '', '', '', '', '', 4444000],
+      ['2026. 7.  '],
+    ];
+    const file = makeXlsxFile('1. 산출기초조사서.xlsx', rows);
+    const result = await runUploadPipeline([{ file, relativePath: file.name }], []);
+
+    expect(result.failed).toHaveLength(0);
+    expect(result.equipmentCandidates).toHaveLength(0);
+    expect(result.historyCandidates).toHaveLength(1);
+    const h = result.historyCandidates[0];
+    expect(h.title).toBe('핸드레일[로터리 2번출구 하행(우측)]');
+    expect(h.type).toBe('수리');
+    expect(h.date).toBe('2026-07-01');
+    expect(h.비용).toBe(4444000);
+  });
+
+  it('날짜를 못 찾으면 설비/이력 후보 대신 실패로 남는다(가짜 값 대신 사람 확인 유도)', async () => {
+    const rows = [['산  출  기  초  조  사  서'], ['금1,000원 (금천원)'], ['품   명', '단위', '수량', '금액']];
+    const file = makeXlsxFile('산출기초조사서_날짜없음.xlsx', rows);
+    const result = await runUploadPipeline([{ file, relativePath: file.name }], []);
+
+    expect(result.historyCandidates).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0].reason).toContain('날짜');
+  });
+});

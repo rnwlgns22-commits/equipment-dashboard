@@ -46,6 +46,7 @@ export function buildRecordsFromCandidates(
       설비ID,
       유형: h.type,
       제목: h.title,
+      비용: h.비용,
       출처파일: h.relativePath,
     };
   });

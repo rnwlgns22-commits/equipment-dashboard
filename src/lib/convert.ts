@@ -24,6 +24,18 @@ function rowToBullet(cells: string[]): string | null {
   return '- ' + vals.join(' · ');
 }
 
+// 산출기초조사서 등 열 구조(품명/수량/단가/금액)를 그대로 읽어야 하는 전용 파서용 —
+// convertXlsx의 rowToBullet은 셀을 " · "로 이어붙여 열 위치 정보를 날려버려서 못 씀.
+// raw:false(convertXlsx가 쓰는 옵션)는 셀 표시서식으로 반올림된 문자열을 주는데, 금액
+// 파싱엔 원래 숫자값이 필요해서 여기선 기본(raw:true) 그대로 두고 String()만 씌운다.
+export async function readXlsxRowsRaw(file: File): Promise<string[][]> {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
+  return rows.map((row) => row.map((c) => (c === null || c === undefined ? '' : String(c))));
+}
+
 async function convertXlsx(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });

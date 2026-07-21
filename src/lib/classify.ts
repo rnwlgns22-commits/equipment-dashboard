@@ -73,16 +73,25 @@ export function findDates(text: string): Date[] {
 // "26년 6월 기준" 같은 월간 현황 요약 문서는 일(day)이 없어 findDates가 하나도
 // 못 잡음 — 정확한 날짜가 없을 때만 "그 달 1일"로 근사(2026-07-21, 실제 업로드
 // 실패 사례 "승강기 안전장치 현황 및 상태_26.6월기준.xlsx"에서 발견).
-const YEAR_MONTH_ONLY_PATTERN = /(20\d{2}|\d{2})\s*년\s*(\d{1,2})\s*월(?!\s*\d{1,2}\s*일)/;
+// 두 번째 패턴은 산출기초조사서 등 공문서 하단에 흔한 "2026. 7.  " 표기(일 없이
+// 점으로만 구분) — 뒤에 숫자가 더 오면 실제 YYYY.MM.DD라 findDates가 이미 잡으므로
+// 여기까지 오지 않음(2026-07-21, 산출기초조사서 업로드 지원 추가하며 발견).
+const YEAR_MONTH_ONLY_PATTERNS = [
+  /(20\d{2}|\d{2})\s*년\s*(\d{1,2})\s*월(?!\s*\d{1,2}\s*일)/,
+  /(?<!\d)(20\d{2})\s*\.\s*(\d{1,2})\s*\.(?!\s*\d)/,
+];
 
 function findYearMonthOnly(text: string): Date | null {
-  const m = YEAR_MONTH_ONLY_PATTERN.exec(text);
-  if (!m) return null;
-  let y = parseInt(m[1], 10);
-  if (y < 100) y += 2000;
-  const mo = parseInt(m[2], 10);
-  if (y < 2000 || y > 2035 || mo < 1 || mo > 12) return null;
-  return new Date(Date.UTC(y, mo - 1, 1));
+  for (const pattern of YEAR_MONTH_ONLY_PATTERNS) {
+    const m = pattern.exec(text);
+    if (!m) continue;
+    let y = parseInt(m[1], 10);
+    if (y < 100) y += 2000;
+    const mo = parseInt(m[2], 10);
+    if (y < 2000 || y > 2035 || mo < 1 || mo > 12) continue;
+    return new Date(Date.UTC(y, mo - 1, 1));
+  }
+  return null;
 }
 
 export function maxDate(text: string): Date | null {

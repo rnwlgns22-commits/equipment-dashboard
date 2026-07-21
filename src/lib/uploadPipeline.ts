@@ -1,7 +1,8 @@
 import type { Category, Equipment } from '../types';
 import type { DroppedFile } from './readDroppedFiles';
-import { convertFile, CONVERTIBLE_EXTS } from './convert';
+import { convertFile, readXlsxRowsRaw, CONVERTIBLE_EXTS } from './convert';
 import { classifyCategory, guessHistoryType, looksLikeLedger, maxDate } from './classify';
+import { looksLikeCostEstimateDoc, parseCostEstimateDoc, summarizeItems } from './costEstimateDoc';
 
 export interface EquipmentCandidate {
   key: string;
@@ -22,6 +23,7 @@ export interface HistoryCandidate {
   title: string;
   equipmentRef: string; // '' | 기존 설비ID | `cand:${equipmentCandidateKey}`
   content: string;
+  비용?: number; // 산출기초조사서 등에서 자동 추출된 금액(2026-07-21 추가)
 }
 
 export interface FailedCandidate {
@@ -60,6 +62,39 @@ export async function runUploadPipeline(
   for (const { file, relativePath } of targets) {
     seq += 1;
     const key = `up-${seq}`;
+    const ext = file.name.toLowerCase().split('.').pop();
+
+    // 산출기초조사서(견적/원가계산 표준 서식) 전용 처리 — 일반 xlsx→불릿 변환은 셀을
+    // " · "로 이어붙여 열 위치(품명/수량/단가/금액)를 날려버려서 비용을 못 뽑는다.
+    // 이 형식만 원본 행 그대로 읽어 전용 파서로 이력 후보(비용 포함)를 직접 만든다
+    // (2026-07-21, 실제 산출기초조사서 업로드 요청으로 추가).
+    if (ext === 'xlsx' || ext === 'xls') {
+      const rows = await readXlsxRowsRaw(file);
+      if (looksLikeCostEstimateDoc(file.name, rows)) {
+        done += 1;
+        onProgress?.(done, targets.length);
+        const parsed = parseCostEstimateDoc(rows);
+        if (!parsed.날짜) {
+          failed.push({ key, fileName: file.name, relativePath, reason: '산출기초조사서 형식이지만 날짜를 찾지 못함' });
+          continue;
+        }
+        const stem = file.name.replace(/\.[^.]+$/, '');
+        const title = summarizeItems(parsed.항목) || stem;
+        historyCandidates.push({
+          key,
+          fileName: file.name,
+          relativePath,
+          date: parsed.날짜,
+          type: '수리',
+          title,
+          equipmentRef: '',
+          content: rows.map((r) => r.filter((c) => c.trim()).join(' · ')).filter(Boolean).join('\n'),
+          비용: parsed.총액,
+        });
+        continue;
+      }
+    }
+
     const { content, error } = await convertFile(file);
     done += 1;
     onProgress?.(done, targets.length);

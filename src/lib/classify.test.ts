@@ -95,6 +95,17 @@ describe('findDates / maxDate', () => {
     expect(maxDate('26년 6월 기준, 실제 점검일 2026.06.15')?.toISOString().slice(0, 10)).toBe('2026-06-15');
   });
 
+  // 2026-07-21 산출기초조사서(공문서 하단 날짜 표기) 업로드 지원 추가하며 발견 —
+  // "2026. 7.  "처럼 일(day) 없이 점으로만 연.월을 구분하는 형식은 년/월 한글이
+  // 없어서 기존 YEAR_MONTH_ONLY_PATTERN이 못 잡았음.
+  it('일 없이 점으로만 구분된 "YYYY. M." 형식도 그 달 1일로 근사한다', () => {
+    expect(maxDate('2026. 7.  ')?.toISOString().slice(0, 10)).toBe('2026-07-01');
+  });
+
+  it('점 형식이라도 일(day)까지 있으면 findDates가 먼저 잡아 정확한 날짜를 쓴다', () => {
+    expect(maxDate('2026. 7. 15')?.toISOString().slice(0, 10)).toBe('2026-07-15');
+  });
+
   it('findDates 자체는 일(day) 없는 "년 월"까지 확장하지 않는다', () => {
     expect(findDates('26년 6월 기준 현황').length).toBe(0);
   });

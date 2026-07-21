@@ -134,6 +134,15 @@ export default function UploadReview({
                     </option>
                   ))}
                 </select>
+                <input
+                  type="number"
+                  min={0}
+                  value={h.비용 ?? ''}
+                  onChange={(e) => onUpdateHistory(h.key, { 비용: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="비용(원)"
+                  aria-label="비용(원)"
+                  className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                />
               </div>
             ))}
             {historyCandidates.length === 0 && <p className="text-xs text-text-dim py-4 text-center">없음</p>}
