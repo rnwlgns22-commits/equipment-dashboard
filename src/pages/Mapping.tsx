@@ -40,12 +40,14 @@ export default function Mapping() {
     workOrders,
     addFloorplan,
     removeFloorplan,
+    renameFloorplan,
     setActiveFloorplan,
     upsertPlacement,
     resizePlacement,
     removePlacement,
     addZone,
     removeZone,
+    renameZone,
     setWorkOrderStatus,
   } = useMappingStore();
   const workOrdersById = useMemo(
@@ -206,6 +208,7 @@ export default function Mapping() {
           floorplans={floorplans}
           activeFloorplanId={activeFloorplanId}
           onRemoveFloorplan={handleRemoveFloorplan}
+          onRenameFloorplan={renameFloorplan}
           onSelectFloorplan={handleSelectFloorplan}
           onUpload={handleUpload}
           viewMode={viewMode}
@@ -278,6 +281,7 @@ export default function Mapping() {
                 removeZone(selectedZone.id);
                 selectZone(null);
               }}
+              onRename={(name) => renameZone(selectedZone.id, name)}
             />
           )}
           {selectedConnectionEquipments && selectedConnectionEquipments[0] && selectedConnectionEquipments[1] && (

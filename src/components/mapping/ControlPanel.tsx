@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import type { Floorplan, ViewMode } from '../../types';
 
 const MODE_LABELS: { mode: ViewMode; label: string }[] = [
@@ -13,6 +13,7 @@ export default function ControlPanel({
   activeFloorplanId,
   onSelectFloorplan,
   onRemoveFloorplan,
+  onRenameFloorplan,
   onUpload,
   viewMode,
   onChangeViewMode,
@@ -34,6 +35,7 @@ export default function ControlPanel({
   activeFloorplanId: string | null;
   onSelectFloorplan: (id: string) => void;
   onRemoveFloorplan: (id: string) => void;
+  onRenameFloorplan: (id: string, name: string) => void;
   onUpload: (file: File) => void;
   viewMode: ViewMode;
   onChangeViewMode: (m: ViewMode) => void;
@@ -57,6 +59,21 @@ export default function ControlPanel({
     e.target.value = '';
   };
 
+  // 도면 이름은 업로드 시 파일명으로 자동 부여되고 지금까지 고칠 방법이 없었음 —
+  // 더블클릭으로 인라인 편집(구역 이름 편집 방식과 통일).
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
+
+  const startRenaming = (f: Floorplan) => {
+    setRenamingId(f.id);
+    setDraftName(f.name);
+  };
+  const commitRename = () => {
+    const trimmed = draftName.trim();
+    if (renamingId && trimmed) onRenameFloorplan(renamingId, trimmed);
+    setRenamingId(null);
+  };
+
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-bg-soft flex flex-col overflow-y-auto">
       <div className="p-4 border-b border-border">
@@ -68,30 +85,47 @@ export default function ControlPanel({
 
         {floorplans.length > 0 && (
           <div className="mt-3 space-y-1">
-            {floorplans.map((f) => (
-              <div key={f.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => onSelectFloorplan(f.id)}
-                  className={`flex-1 min-w-0 truncate text-left rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                    f.id === activeFloorplanId
-                      ? 'bg-accent/15 text-accent'
-                      : 'text-text-dim hover:bg-white/5 hover:text-text'
-                  }`}
-                >
-                  {f.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRemoveFloorplan(f.id)}
-                  className="shrink-0 text-text-dim hover:text-risk-high px-1.5 py-1.5 text-xs"
-                  aria-label={`${f.name} 도면 삭제`}
-                  title="도면 삭제"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+            {floorplans.map((f) =>
+              renamingId === f.id ? (
+                <input
+                  key={f.id}
+                  autoFocus
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Escape') setRenamingId(null);
+                  }}
+                  className="w-full rounded-lg border border-accent/50 bg-bg-soft px-3 py-1.5 text-sm outline-none"
+                />
+              ) : (
+                <div key={f.id} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onSelectFloorplan(f.id)}
+                    onDoubleClick={() => startRenaming(f)}
+                    title="더블클릭해서 이름 바꾸기"
+                    className={`flex-1 min-w-0 truncate text-left rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                      f.id === activeFloorplanId
+                        ? 'bg-accent/15 text-accent'
+                        : 'text-text-dim hover:bg-white/5 hover:text-text'
+                    }`}
+                  >
+                    {f.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveFloorplan(f.id)}
+                    className="shrink-0 text-text-dim hover:text-risk-high px-1.5 py-1.5 text-xs"
+                    aria-label={`${f.name} 도면 삭제`}
+                    title="도면 삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ),
+            )}
           </div>
         )}
       </div>

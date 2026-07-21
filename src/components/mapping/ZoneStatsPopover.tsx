@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Zone } from '../../types';
 import type { ZoneStats } from '../../lib/geo';
 
@@ -6,20 +7,59 @@ export default function ZoneStatsPopover({
   stats,
   onClose,
   onDelete,
+  onRename,
 }: {
   zone: Zone;
   stats: ZoneStats;
   onClose: () => void;
   onDelete: () => void;
+  onRename: (name: string) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState(zone.name);
+
+  const startEditing = () => {
+    setDraftName(zone.name);
+    setEditing(true);
+  };
+
+  const commitRename = () => {
+    const trimmed = draftName.trim();
+    if (trimmed) onRename(trimmed);
+    setEditing(false);
+  };
+  const saveRename = (e: React.FormEvent) => {
+    e.preventDefault();
+    commitRename();
+  };
+
   return (
     <div className="absolute top-4 right-4 w-64 rounded-2xl border border-border bg-card shadow-xl p-4 z-10">
       <div className="flex items-start justify-between gap-2">
-        <div className="font-medium">📍 {zone.name}</div>
+        {editing ? (
+          <form onSubmit={saveRename} className="flex-1 flex gap-1.5">
+            <input
+              autoFocus
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              onBlur={commitRename}
+              className="flex-1 min-w-0 rounded border border-accent/50 bg-bg-soft px-2 py-1 text-sm outline-none"
+            />
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={startEditing}
+            className="font-medium text-left hover:text-accent transition-colors"
+            title="클릭해서 이름 바꾸기"
+          >
+            📍 {zone.name}
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}
-          className="text-text-dim hover:text-text text-sm leading-none"
+          className="text-text-dim hover:text-text text-sm leading-none shrink-0"
           aria-label="닫기"
         >
           ✕

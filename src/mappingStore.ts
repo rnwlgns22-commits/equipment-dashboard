@@ -58,6 +58,7 @@ interface MappingState extends MappingSnapshot {
   activeFloorplanId: string | null;
   addFloorplan: (f: Floorplan) => void;
   removeFloorplan: (id: string) => void;
+  renameFloorplan: (id: string, name: string) => void;
   setActiveFloorplan: (id: string) => void;
   upsertPlacement: (p: Placement) => void;
   removePlacement: (설비ID: string, 도면ID: string) => void;
@@ -65,6 +66,7 @@ interface MappingState extends MappingSnapshot {
   resizePlacement: (설비ID: string, 도면ID: string, scale: number) => void;
   addZone: (z: Zone) => void;
   removeZone: (id: string) => void;
+  renameZone: (id: string, name: string) => void;
   setWorkOrderStatus: (설비ID: string, 상태: WorkOrderStatus) => void;
   loadSnapshot: (data: MappingSnapshot) => void;
 }
@@ -93,6 +95,12 @@ export const useMappingStore = create<MappingState>()(
               s.activeFloorplanId === id ? (floorplans[0]?.id ?? null) : s.activeFloorplanId,
           };
         }),
+      // 도면 이름은 업로드 시 파일명으로 자동 부여되고 지금까지 고칠 방법이 없었음
+      // (예: "IMG_20260719_scan.png" 같은 파일명 그대로 영구히 남음).
+      renameFloorplan: (id, name) =>
+        set((s) => ({
+          floorplans: s.floorplans.map((f) => (f.id === id ? { ...f, name } : f)),
+        })),
       setActiveFloorplan: (id) => set({ activeFloorplanId: id }),
       upsertPlacement: (p) =>
         set((s) => {
@@ -121,6 +129,9 @@ export const useMappingStore = create<MappingState>()(
         })),
       addZone: (z) => set((s) => ({ zones: [...s.zones, z] })),
       removeZone: (id) => set((s) => ({ zones: s.zones.filter((z) => z.id !== id) })),
+      // 구역 이름도 생성할 때 window.prompt로 한 번 정하면 그 뒤로 못 고쳤음.
+      renameZone: (id, name) =>
+        set((s) => ({ zones: s.zones.map((z) => (z.id === id ? { ...z, name } : z)) })),
       setWorkOrderStatus: (설비ID, 상태) =>
         set((s) => ({
           workOrders: [...s.workOrders.filter((w) => w.설비ID !== 설비ID), { 설비ID, 상태 }],
