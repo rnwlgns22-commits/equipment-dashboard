@@ -6,6 +6,7 @@ import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
 import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
 import { buildRecordsFromCandidates } from '../lib/uploadCommit';
 import UploadReview from '../components/UploadReview';
+import ThemeToggle from '../components/ThemeToggle';
 import mascotGreeting from '../assets/mascot/greeting.png';
 
 type Mode = 'idle' | 'dragging' | 'parsing' | 'review';
@@ -106,7 +107,8 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text px-6 relative">
+      <ThemeToggle className="absolute top-5 right-5" />
       <div className="max-w-xl w-full text-center space-y-6">
         <img
           src={mascotGreeting}

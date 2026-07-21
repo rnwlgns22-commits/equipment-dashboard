@@ -17,7 +17,7 @@ import { computeFailureStats, equipmentName } from '../lib/stats';
 import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown, repairCostTop10, totalRepairCost } from '../lib/aggregate';
 import { computeBrainSignals } from '../lib/brain';
 import { dueStateOf, compareInspectionPriority } from '../lib/workOrders';
-import { COLORS } from '../lib/colors';
+import { useThemeColors } from '../lib/colors';
 import Card from '../components/Card';
 import KpiTile from '../components/KpiTile';
 
@@ -35,6 +35,7 @@ function daysUntil(dateStr: string | undefined, now: Date): number | null {
 }
 
 export default function Dashboard() {
+  const colors = useThemeColors();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const inspectionSchedules = useAppStore((s) => s.inspectionSchedules);
@@ -121,18 +122,18 @@ export default function Dashboard() {
               <AreaChart data={trend} margin={{ left: -20 }}>
                 <defs>
                   <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={COLORS.accent} stopOpacity={0.4} />
-                    <stop offset="100%" stopColor={COLORS.accent} stopOpacity={0} />
+                    <stop offset="0%" stopColor={colors.accent} stopOpacity={0.4} />
+                    <stop offset="100%" stopColor={colors.accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke={COLORS.border} vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: COLORS.textDim, fontSize: 11 }} interval={2} />
-                <YAxis tick={{ fill: COLORS.textDim, fontSize: 11 }} allowDecimals={false} />
+                <CartesianGrid stroke={colors.border} vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: colors.textDim, fontSize: 11 }} interval={2} />
+                <YAxis tick={{ fill: colors.textDim, fontSize: 11 }} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ background: '#161a24', border: `1px solid ${COLORS.border}`, borderRadius: 8 }}
-                  labelStyle={{ color: COLORS.textDim }}
+                  contentStyle={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 8 }}
+                  labelStyle={{ color: colors.textDim }}
                 />
-                <Area type="monotone" dataKey="건수" stroke={COLORS.accent} fill="url(#trendFill)" strokeWidth={2} />
+                <Area type="monotone" dataKey="건수" stroke={colors.accent} fill="url(#trendFill)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -226,14 +227,14 @@ export default function Dashboard() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byCategory} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid stroke={COLORS.border} horizontal={false} />
-                <XAxis type="number" tick={{ fill: COLORS.textDim, fontSize: 11 }} allowDecimals={false} />
-                <YAxis type="category" dataKey="분류" tick={{ fill: COLORS.textDim, fontSize: 12 }} width={48} />
+                <CartesianGrid stroke={colors.border} horizontal={false} />
+                <XAxis type="number" tick={{ fill: colors.textDim, fontSize: 11 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="분류" tick={{ fill: colors.textDim, fontSize: 12 }} width={48} />
                 <Tooltip
-                  contentStyle={{ background: '#161a24', border: `1px solid ${COLORS.border}`, borderRadius: 8 }}
+                  contentStyle={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 8 }}
                   cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                 />
-                <Bar dataKey="건수" fill={COLORS.accent} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="건수" fill={colors.accent} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -243,17 +244,17 @@ export default function Dashboard() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bySite} margin={{ left: -20 }}>
-                <CartesianGrid stroke={COLORS.border} vertical={false} />
-                <XAxis dataKey="사이트" tick={{ fill: COLORS.textDim, fontSize: 12 }} />
-                <YAxis tick={{ fill: COLORS.textDim, fontSize: 11 }} allowDecimals={false} />
+                <CartesianGrid stroke={colors.border} vertical={false} />
+                <XAxis dataKey="사이트" tick={{ fill: colors.textDim, fontSize: 12 }} />
+                <YAxis tick={{ fill: colors.textDim, fontSize: 11 }} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ background: '#161a24', border: `1px solid ${COLORS.border}`, borderRadius: 8 }}
+                  contentStyle={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 8 }}
                   cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                 />
-                <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
-                <Bar dataKey="정상" stackId="s" fill={COLORS.riskLow} />
-                <Bar dataKey="수리중" stackId="s" fill={COLORS.riskMid} />
-                <Bar dataKey="정지" stackId="s" fill={COLORS.riskHigh} />
+                <Legend wrapperStyle={{ fontSize: 11, color: colors.textDim }} />
+                <Bar dataKey="정상" stackId="s" fill={colors.riskLow} />
+                <Bar dataKey="수리중" stackId="s" fill={colors.riskMid} />
+                <Bar dataKey="정지" stackId="s" fill={colors.riskHigh} />
               </BarChart>
             </ResponsiveContainer>
           </div>

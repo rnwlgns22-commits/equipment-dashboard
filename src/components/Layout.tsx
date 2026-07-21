@@ -2,6 +2,7 @@ import { Suspense, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store';
+import ThemeToggle from './ThemeToggle';
 
 function RouteFallback() {
   return <div className="p-8 text-text-dim text-sm">불러오는 중…</div>;
@@ -39,7 +40,7 @@ export default function Layout() {
           ☰
         </button>
         <div className="text-sm font-medium">설비관리 대시보드</div>
-        <div className="w-5" />
+        <ThemeToggle />
       </div>
 
       {mobileOpen && (
@@ -54,9 +55,12 @@ export default function Layout() {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="px-5 py-6">
-          <div className="text-lg font-semibold tracking-tight">설비관리 대시보드</div>
-          <div className="text-xs text-text-dim mt-1">클라이언트 전용 · 서버 없음</div>
+        <div className="px-5 py-6 space-y-3">
+          <div>
+            <div className="text-lg font-semibold tracking-tight">설비관리 대시보드</div>
+            <div className="text-xs text-text-dim mt-1">클라이언트 전용 · 서버 없음</div>
+          </div>
+          <ThemeToggle />
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => (

@@ -4,19 +4,19 @@ import ForceGraph3D from 'react-force-graph-3d';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
-import { COLORS } from '../lib/colors';
+import { useThemeColors, type ThemeColors } from '../lib/colors';
 import type { Category } from '../types';
 
 const CATEGORY_ORDER: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
 
-function categoryColor(cat: Category): string {
+function categoryColor(cat: Category, colors: ThemeColors): string {
   const idx = CATEGORY_ORDER.indexOf(cat);
-  return COLORS.categorical[idx % COLORS.categorical.length];
+  return colors.categorical[idx % colors.categorical.length];
 }
 
-function riskStroke(risk: string): string | null {
-  if (risk === '상') return COLORS.riskHigh;
-  if (risk === '중') return COLORS.riskMid;
+function riskStroke(risk: string, colors: ThemeColors): string | null {
+  if (risk === '상') return colors.riskHigh;
+  if (risk === '중') return colors.riskMid;
   return null;
 }
 
@@ -32,6 +32,7 @@ interface GraphNode {
 }
 
 export default function GraphView() {
+  const colors = useThemeColors();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
@@ -62,7 +63,7 @@ export default function GraphView() {
         id: e.설비ID,
         name: e.설비명,
         category: e.분류,
-        color: categoryColor(e.분류),
+        color: categoryColor(e.분류, colors),
         val: Math.max(1, stat?.고장건수 ?? 1),
         risk: stat?.위험등급 ?? '하',
       };
@@ -80,7 +81,7 @@ export default function GraphView() {
       }
     }
     return { nodes, links };
-  }, [equipments, equipmentsById, statsById]);
+  }, [equipments, equipmentsById, statsById, colors]);
 
   const selectedEquipment = selectedId ? equipmentsById.get(selectedId) ?? null : null;
   const selectedStat = selectedId ? statsById.get(selectedId) ?? null : null;
@@ -89,7 +90,7 @@ export default function GraphView() {
     graphData,
     width: size.width,
     height: size.height,
-    backgroundColor: '#0b0e14',
+    backgroundColor: colors.bg,
     nodeLabel: (n: GraphNode) => n.name,
     nodeVal: (n: GraphNode) => n.val,
     nodeColor: (n: GraphNode) => n.color,
@@ -146,7 +147,7 @@ export default function GraphView() {
                 ctx.fillStyle = n.color;
                 ctx.fill();
                 ctx.shadowBlur = 0;
-                const stroke = riskStroke(n.risk);
+                const stroke = riskStroke(n.risk, colors);
                 if (stroke) {
                   ctx.lineWidth = 2;
                   ctx.strokeStyle = stroke;
@@ -154,7 +155,7 @@ export default function GraphView() {
                 }
                 if (globalScale > 1.1) {
                   ctx.font = `${10 / globalScale}px system-ui`;
-                  ctx.fillStyle = '#e5e7eb';
+                  ctx.fillStyle = colors.text;
                   ctx.textAlign = 'center';
                   ctx.fillText(n.name, n.x ?? 0, (n.y ?? 0) + r + 10 / globalScale);
                 }
