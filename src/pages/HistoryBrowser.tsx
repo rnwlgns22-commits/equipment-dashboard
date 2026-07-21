@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import type { HistoryRecord, HistoryType } from '../types';
 
-const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '' };
+const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
 
 export default function HistoryBrowser() {
   const equipments = useAppStore((s) => s.equipments);
@@ -90,6 +90,7 @@ export default function HistoryBrowser() {
   const submitAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!addForm.날짜 || !addForm.제목.trim()) return;
+    const 비용 = Number(addForm.비용);
     const record: HistoryRecord = {
       id: `hist-manual-${Date.now()}`,
       날짜: addForm.날짜,
@@ -97,6 +98,7 @@ export default function HistoryBrowser() {
       유형: addForm.유형,
       제목: addForm.제목.trim(),
       내용: addForm.내용.trim() || undefined,
+      비용: addForm.비용 && 비용 > 0 ? 비용 : undefined,
       출처파일: '수기 입력',
     };
     addHistory(record);
@@ -173,11 +175,22 @@ export default function HistoryBrowser() {
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
-          <label className="block sm:col-span-2 lg:col-span-4">
+          <label className="block sm:col-span-2 lg:col-span-3">
             <span className="text-xs text-text-dim">내용</span>
             <input
               value={addForm.내용}
               onChange={(e) => setAddForm((f) => ({ ...f, 내용: e.target.value }))}
+              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-text-dim">비용(원)</span>
+            <input
+              type="number"
+              min={0}
+              value={addForm.비용}
+              onChange={(e) => setAddForm((f) => ({ ...f, 비용: e.target.value }))}
+              placeholder="예: 50000"
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
@@ -322,6 +335,7 @@ export default function HistoryBrowser() {
                 {h.유형}
               </span>
               <span className="text-sm flex-1 truncate">{h.제목}</span>
+              {h.비용 ? <span className="text-xs text-text-dim shrink-0">{h.비용.toLocaleString()}원</span> : null}
               {h.설비ID ? (
                 <Link to={`/equipment/${h.설비ID}`} className="text-xs text-accent hover:underline shrink-0">
                   {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}

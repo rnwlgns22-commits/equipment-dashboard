@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown } from './aggregate';
+import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown, repairCostTop10, totalRepairCost } from './aggregate';
 import type { Equipment, HistoryRecord } from '../types';
 
-function repair(설비ID: string | undefined, 날짜: string): HistoryRecord {
-  return { id: `h-${설비ID}-${날짜}`, 날짜, 설비ID, 유형: '수리', 제목: '수리', 출처파일: 'test' };
+function repair(설비ID: string | undefined, 날짜: string, 비용?: number): HistoryRecord {
+  return { id: `h-${설비ID}-${날짜}-${비용 ?? 0}`, 날짜, 설비ID, 유형: '수리', 제목: '수리', 비용, 출처파일: 'test' };
 }
 function stub(설비ID: string, 분류: Equipment['분류'], 사이트: string, 상태: Equipment['상태']): Equipment {
   return { 설비ID, 설비명: 설비ID, 분류, 사이트, 상태, 연결설비: [], 상세사양: {}, 출처파일: 'test' };
@@ -74,5 +74,45 @@ describe('siteStatusBreakdown', () => {
     const equipments = [stub('A', '공조', 'C동', '정상'), stub('B', '공조', 'A동', '정상')];
     const result = siteStatusBreakdown(equipments);
     expect(result.map((r) => r.사이트)).toEqual(['A동', 'C동']);
+  });
+});
+
+describe('repairCostTop10', () => {
+  it('설비별 수리비용을 합산하고 비용이 큰 순으로 정렬한다', () => {
+    const histories = [repair('A', '2026-01-01', 10000), repair('A', '2026-02-01', 5000), repair('B', '2026-01-01', 30000)];
+    const result = repairCostTop10(histories);
+    expect(result[0]).toEqual({ 설비ID: 'B', 총비용: 30000, 건수: 1 });
+    expect(result[1]).toEqual({ 설비ID: 'A', 총비용: 15000, 건수: 2 });
+  });
+
+  it('비용이 기록되지 않은 이력은 집계에서 뺀다(0원 착시 방지)', () => {
+    const result = repairCostTop10([repair('A', '2026-01-01')]);
+    expect(result).toEqual([]);
+  });
+
+  it('점검 이력이나 고아 이력은 빼고, 최대 10건만 반환한다', () => {
+    const histories = [
+      { id: 'i1', 날짜: '2026-01-01', 설비ID: 'A', 유형: '점검' as const, 제목: 'x', 비용: 9999, 출처파일: 'test' },
+      repair(undefined, '2026-01-01', 5000),
+      ...Array.from({ length: 12 }, (_, i) => repair(`E${i}`, '2026-01-01', 1000 + i)),
+    ];
+    const result = repairCostTop10(histories);
+    expect(result).toHaveLength(10);
+    expect(result.every((r) => r.설비ID !== 'A' || r.총비용 !== 9999)).toBe(true);
+  });
+});
+
+describe('totalRepairCost', () => {
+  it('수리 이력의 비용만 합산한다', () => {
+    const histories = [
+      repair('A', '2026-01-01', 10000),
+      repair('B', '2026-01-01', 5000),
+      { id: 'i1', 날짜: '2026-01-01', 설비ID: 'A', 유형: '점검' as const, 제목: 'x', 비용: 3000, 출처파일: 'test' },
+    ];
+    expect(totalRepairCost(histories)).toBe(15000);
+  });
+
+  it('이력이 없으면 0을 반환한다', () => {
+    expect(totalRepairCost([])).toBe(0);
   });
 });

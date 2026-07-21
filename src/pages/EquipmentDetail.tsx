@@ -104,20 +104,22 @@ export default function EquipmentDetail() {
   // 기록을 남기려면 이력 브라우저로 건너가 설비를 다시 골라야 했음 — 설비ID가 이미
   // 정해져 있는 이 화면에서 바로 추가/삭제할 수 있게 함(2026-07-21).
   const [addingHistory, setAddingHistory] = useState(false);
-  const [historyForm, setHistoryForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '' });
+  const [historyForm, setHistoryForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '', 비용: '' });
 
   const submitHistory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!equipment || !historyForm.날짜 || !historyForm.제목.trim()) return;
+    const 비용 = Number(historyForm.비용);
     addHistory({
       id: `hist-manual-${Date.now()}`,
       날짜: historyForm.날짜,
       설비ID: equipment.설비ID,
       유형: historyForm.유형,
       제목: historyForm.제목.trim(),
+      비용: historyForm.비용 && 비용 > 0 ? 비용 : undefined,
       출처파일: '수기 입력',
     });
-    setHistoryForm({ 날짜: '', 유형: '점검', 제목: '' });
+    setHistoryForm({ 날짜: '', 유형: '점검', 제목: '', 비용: '' });
     setAddingHistory(false);
   };
 
@@ -490,6 +492,17 @@ export default function EquipmentDetail() {
                 className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
               />
             </label>
+            <label className="block">
+              <span className="text-xs text-text-dim">비용(원)</span>
+              <input
+                type="number"
+                min={0}
+                value={historyForm.비용}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, 비용: e.target.value }))}
+                placeholder="예: 50000"
+                className="mt-1 w-28 rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+              />
+            </label>
             <button
               type="submit"
               className="rounded-lg bg-accent text-bg text-sm font-medium px-3 py-1.5 hover:brightness-110 transition"
@@ -514,6 +527,7 @@ export default function EquipmentDetail() {
                   <div>
                     <div className="text-xs text-text-dim">
                       {r.날짜} · {r.유형}
+                      {r.비용 ? ` · ${r.비용.toLocaleString()}원` : ''}
                     </div>
                     <div className="text-sm">{r.제목}</div>
                   </div>

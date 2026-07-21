@@ -41,6 +41,7 @@ export interface HistoryRecord {
   유형: HistoryType;
   제목: string;
   내용?: string;
+  비용?: number; // 수리비용(원) — 주로 유형=수리에 기록, 점검엔 대개 비워둠
   출처파일: string;
 }
 
@@ -115,4 +116,21 @@ export interface InspectionSchedule {
   최근점검일?: string;
   다음점검일?: string; // 최근점검일 + 주기일로 계산, 최근점검일 없으면 미정
   점검사항?: string; // 가장 최근 점검의 결과/특이사항 메모
+}
+
+// 자재·재고관리(2026-07-21 추가) — 참고한 타 CMMS(Jump, N·Core, Dream 등)에 공통으로
+// 있던 기능. 입출고 원장까지는 과함(단일 관리자 워크플로엔 현재수량 직접 조정으로
+// 충분) — 안전재고 이하로 떨어졌는지만 대시보드/목록에서 바로 보이면 충분하다는
+// 판단으로 스냅샷 수량 모델을 택함.
+export interface Part {
+  id: string;
+  자재명: string;
+  규격?: string;
+  단위: string; // 예: EA, box, L
+  현재수량: number;
+  안전재고?: number; // 이 값 이하로 떨어지면 재고부족으로 표시
+  단가?: number; // 원
+  보관위치?: string;
+  연결설비ID: string[]; // 이 자재를 쓰는 설비(선택)
+  비고?: string;
 }

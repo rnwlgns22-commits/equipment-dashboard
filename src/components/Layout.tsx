@@ -16,6 +16,7 @@ const navItems = [
   { to: '/history', label: '점검·수리 이력' },
   { to: '/legal-inspection', label: '법정점검' },
   { to: '/regular-inspection', label: '정기점검' },
+  { to: '/inventory', label: '자재·재고관리' },
   { to: '/settings', label: '설정 / 데이터' },
 ];
 

@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import { useAppStore } from '../store';
 import { computeFailureStats, equipmentName } from '../lib/stats';
-import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown } from '../lib/aggregate';
+import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown, repairCostTop10, totalRepairCost } from '../lib/aggregate';
 import { computeBrainSignals } from '../lib/brain';
 import { dueStateOf } from '../lib/workOrders';
 import { COLORS } from '../lib/colors';
@@ -38,12 +38,19 @@ export default function Dashboard() {
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const inspectionSchedules = useAppStore((s) => s.inspectionSchedules);
+  const parts = useAppStore((s) => s.parts);
 
   const now = useMemo(() => new Date(), []);
   const { stats } = useMemo(() => computeFailureStats(histories, now), [histories, now]);
   const trend = useMemo(() => monthlyFailureTrend(histories, 24, now), [histories, now]);
   const byCategory = useMemo(() => failuresByCategory(equipments, histories), [equipments, histories]);
   const bySite = useMemo(() => siteStatusBreakdown(equipments), [equipments]);
+  const costTop10 = useMemo(() => repairCostTop10(histories), [histories]);
+  const totalCost = useMemo(() => totalRepairCost(histories), [histories]);
+  const lowStockCount = useMemo(
+    () => parts.filter((p) => p.안전재고 !== undefined && p.현재수량 <= p.안전재고).length,
+    [parts],
+  );
 
   const statusCounts = useMemo(() => {
     const c = { 정상: 0, 수리중: 0, 정지: 0, 폐기: 0 };
@@ -81,7 +88,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         <KpiTile label="총 설비 수" value={equipments.length} />
         <KpiTile
           label="상태별 (정상 · 수리중 · 정지)"
@@ -97,6 +104,12 @@ export default function Dashboard() {
           label="법정·정기점검 도래"
           value={dueInspections.length}
           accentClass={dueInspections.some((s) => s.due === 'overdue') ? 'text-risk-high' : 'text-risk-mid'}
+        />
+        <KpiTile label="누적 수리비용" value={`${totalCost.toLocaleString()}원`} />
+        <KpiTile
+          label="재고부족 자재"
+          value={lowStockCount}
+          accentClass={lowStockCount > 0 ? 'text-risk-high' : undefined}
         />
       </div>
 
@@ -178,6 +191,30 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <div className="mt-1 text-xs text-text-dim">다음 점검일 {s.다음점검일}</div>
+                </Link>
+              ))
+            )}
+          </div>
+        </Card>
+
+        <Card title="수리비용 Top10 설비">
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            {costTop10.length === 0 ? (
+              <p className="text-sm text-text-dim">비용이 기록된 수리 이력이 없습니다.</p>
+            ) : (
+              costTop10.map((row, i) => (
+                <Link
+                  key={row.설비ID}
+                  to={`/equipment/${row.설비ID}`}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 hover:border-white/20 transition-colors"
+                >
+                  <span className="text-sm truncate">
+                    <span className="text-text-dim mr-1">{i + 1}.</span>
+                    {equipmentName(equipments, row.설비ID)}
+                  </span>
+                  <span className="text-xs text-text-dim shrink-0">
+                    {row.총비용.toLocaleString()}원 · {row.건수}건
+                  </span>
                 </Link>
               ))
             )}

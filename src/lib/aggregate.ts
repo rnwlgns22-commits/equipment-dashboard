@@ -41,6 +41,34 @@ export function failuresByCategory(equipments: Equipment[], histories: HistoryRe
     .sort((a, b) => b.건수 - a.건수);
 }
 
+export interface RepairCostRow {
+  설비ID: string;
+  총비용: number;
+  건수: number;
+}
+
+// 수리비용 Top10(2026-07-21 추가) — 비용이 기록된 수리 이력만 합산. 비용 미입력
+// 이력은 0원 취급하지 않고 그냥 빼서, "비용을 기록 안 한 설비"가 0원짜리 1위로
+// 착시를 주는 걸 방지.
+export function repairCostTop10(histories: HistoryRecord[]): RepairCostRow[] {
+  const totals = new Map<string, { 총비용: number; 건수: number }>();
+  for (const h of histories) {
+    if (h.유형 !== '수리' || !h.설비ID || !h.비용 || h.비용 <= 0) continue;
+    const row = totals.get(h.설비ID) ?? { 총비용: 0, 건수: 0 };
+    row.총비용 += h.비용;
+    row.건수 += 1;
+    totals.set(h.설비ID, row);
+  }
+  return [...totals.entries()]
+    .map(([설비ID, row]) => ({ 설비ID, ...row }))
+    .sort((a, b) => b.총비용 - a.총비용)
+    .slice(0, 10);
+}
+
+export function totalRepairCost(histories: HistoryRecord[]): number {
+  return histories.reduce((sum, h) => (h.유형 === '수리' && h.비용 ? sum + h.비용 : sum), 0);
+}
+
 const STATUS_ORDER: EquipmentStatus[] = ['정상', '수리중', '정지', '폐기'];
 
 export interface SiteStatusRow {
