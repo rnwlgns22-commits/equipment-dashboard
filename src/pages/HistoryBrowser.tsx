@@ -22,6 +22,22 @@ export default function HistoryBrowser() {
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState(emptyAddForm);
 
+  // 지금까지 이력을 고친다는 게 "설비 재지정" 하나뿐이었음 — 날짜·유형·제목에 오타가
+  // 있어도 지우고 다시 등록하는 것 말고는 방법이 없었음.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '' });
+
+  const startEditing = (h: HistoryRecord) => {
+    setEditingId(h.id);
+    setEditForm({ 날짜: h.날짜, 유형: h.유형, 제목: h.제목 });
+  };
+  const saveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !editForm.날짜 || !editForm.제목.trim()) return;
+    updateHistory(editingId, { 날짜: editForm.날짜, 유형: editForm.유형, 제목: editForm.제목.trim() });
+    setEditingId(null);
+  };
+
   const orphanCount = useMemo(() => histories.filter((h) => !h.설비ID).length, [histories]);
 
   const filtered = useMemo(() => {
@@ -195,50 +211,99 @@ export default function HistoryBrowser() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map((h) => (
-          <div
-            key={h.id}
-            className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3"
-          >
-            <span className="text-xs text-text-dim w-24 shrink-0">{h.날짜}</span>
-            <span
-              className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${
-                h.유형 === '수리' ? 'bg-risk-high/15 text-risk-high' : 'bg-accent/15 text-accent'
-              }`}
+        {filtered.map((h) =>
+          editingId === h.id ? (
+            <form
+              key={h.id}
+              onSubmit={saveEdit}
+              className="flex items-center gap-2 rounded-xl border border-accent/50 bg-card px-4 py-3"
             >
-              {h.유형}
-            </span>
-            <span className="text-sm flex-1 truncate">{h.제목}</span>
-            {h.설비ID ? (
-              <Link to={`/equipment/${h.설비ID}`} className="text-xs text-accent hover:underline shrink-0">
-                {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}
-              </Link>
-            ) : (
+              <input
+                type="date"
+                required
+                value={editForm.날짜}
+                onChange={(e) => setEditForm((f) => ({ ...f, 날짜: e.target.value }))}
+                className="w-32 shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+              />
               <select
-                value=""
-                onChange={(e) => e.target.value && updateHistory(h.id, { 설비ID: e.target.value })}
-                className="text-xs rounded-lg border border-border bg-bg-soft px-2 py-1 shrink-0 max-w-[10rem]"
-                title="설비를 지정하면 고아 이력에서 빠집니다"
+                value={editForm.유형}
+                onChange={(e) => setEditForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
+                className="shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
               >
-                <option value="">설비 지정…</option>
-                {equipments.map((e) => (
-                  <option key={e.설비ID} value={e.설비ID}>
-                    {e.설비명} ({e.설비ID})
-                  </option>
-                ))}
+                <option>점검</option>
+                <option>수리</option>
               </select>
-            )}
-            <button
-              type="button"
-              onClick={() => handleDelete(h)}
-              className="text-xs text-text-dim hover:text-risk-high shrink-0"
-              aria-label="이력 삭제"
-              title="삭제"
+              <input
+                required
+                value={editForm.제목}
+                onChange={(e) => setEditForm((f) => ({ ...f, 제목: e.target.value }))}
+                className="flex-1 min-w-0 rounded border border-border bg-bg-soft px-2 py-1 text-sm"
+              />
+              <button type="submit" className="text-xs text-accent hover:underline shrink-0">
+                저장
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingId(null)}
+                className="text-xs text-text-dim hover:text-text shrink-0"
+              >
+                취소
+              </button>
+            </form>
+          ) : (
+            <div
+              key={h.id}
+              className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3"
             >
-              ✕
-            </button>
-          </div>
-        ))}
+              <span className="text-xs text-text-dim w-24 shrink-0">{h.날짜}</span>
+              <span
+                className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${
+                  h.유형 === '수리' ? 'bg-risk-high/15 text-risk-high' : 'bg-accent/15 text-accent'
+                }`}
+              >
+                {h.유형}
+              </span>
+              <span className="text-sm flex-1 truncate">{h.제목}</span>
+              {h.설비ID ? (
+                <Link to={`/equipment/${h.설비ID}`} className="text-xs text-accent hover:underline shrink-0">
+                  {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}
+                </Link>
+              ) : (
+                <select
+                  value=""
+                  onChange={(e) => e.target.value && updateHistory(h.id, { 설비ID: e.target.value })}
+                  className="text-xs rounded-lg border border-border bg-bg-soft px-2 py-1 shrink-0 max-w-[10rem]"
+                  title="설비를 지정하면 고아 이력에서 빠집니다"
+                >
+                  <option value="">설비 지정…</option>
+                  {equipments.map((e) => (
+                    <option key={e.설비ID} value={e.설비ID}>
+                      {e.설비명} ({e.설비ID})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                type="button"
+                onClick={() => startEditing(h)}
+                className="text-xs text-text-dim hover:text-accent shrink-0"
+                aria-label="이력 수정"
+                title="수정"
+              >
+                ✎
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(h)}
+                className="text-xs text-text-dim hover:text-risk-high shrink-0"
+                aria-label="이력 삭제"
+                title="삭제"
+              >
+                ✕
+              </button>
+            </div>
+          ),
+        )}
         {filtered.length === 0 && (
           <p className="text-sm text-text-dim text-center py-8">조건에 맞는 이력이 없습니다.</p>
         )}
