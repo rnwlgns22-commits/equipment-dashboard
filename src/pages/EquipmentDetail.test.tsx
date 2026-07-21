@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import EquipmentDetail from './EquipmentDetail';
@@ -113,6 +113,38 @@ describe('EquipmentDetail', () => {
     const remaining = useAppStore.getState().equipments;
     expect(remaining.find((e) => e.설비ID === 'E-001')).toBeUndefined();
     expect(remaining.find((e) => e.설비ID === 'E-002')?.연결설비).toEqual([]);
+    vi.restoreAllMocks();
+  });
+
+  // 예전엔 이력 추가/삭제가 /history 화면에만 있어서 설비를 보다가 바로 기록을 남길
+  // 방법이 없었음(2026-07-21 요청) — 이 화면에서 바로 추가/삭제되는지 검증.
+  it('+ 이력 추가 폼으로 등록하면 이 설비ID로 store에 반영된다', async () => {
+    const user = userEvent.setup();
+    renderDetail('E-001');
+
+    await user.click(screen.getByRole('button', { name: '+ 이력 추가' }));
+    fireEvent.change(screen.getByLabelText(/날짜 \*/), { target: { value: '2026-07-21' } });
+    await user.type(screen.getByLabelText(/제목 \*/), '필터 교체');
+    await user.click(screen.getByRole('button', { name: '등록' }));
+
+    const added = useAppStore.getState().histories[0];
+    expect(added.설비ID).toBe('E-001');
+    expect(added.제목).toBe('필터 교체');
+    expect(added.날짜).toBe('2026-07-21');
+    expect(await screen.findByText('필터 교체')).toBeInTheDocument();
+  });
+
+  it('이력 목록의 ✕ 버튼(확인 후)으로 삭제하면 store에서 제거된다', async () => {
+    useAppStore.setState({
+      histories: [{ id: 'h-1', 날짜: '2026-07-01', 설비ID: 'E-001', 유형: '점검', 제목: '정기점검', 출처파일: '테스트' }],
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const user = userEvent.setup();
+    renderDetail('E-001');
+
+    await user.click(screen.getByLabelText('정기점검 이력 삭제'));
+
+    expect(useAppStore.getState().histories).toHaveLength(0);
     vi.restoreAllMocks();
   });
 });

@@ -4,6 +4,7 @@ import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
 import Card from '../components/Card';
 import EquipmentFormFields, { emptyEquipmentForm, equipmentFieldsFromForm, type EquipmentFormState } from '../components/EquipmentFormFields';
+import type { HistoryRecord, HistoryType } from '../types';
 import mascotSurprised from '../assets/mascot/surprised.png';
 
 function formFromEquipment(e: {
@@ -39,6 +40,8 @@ export default function EquipmentDetail() {
   const histories = useAppStore((s) => s.histories);
   const updateEquipment = useAppStore((s) => s.updateEquipment);
   const deleteEquipment = useAppStore((s) => s.deleteEquipment);
+  const addHistory = useAppStore((s) => s.addHistory);
+  const deleteHistory = useAppStore((s) => s.deleteHistory);
 
   const equipment = equipments.find((e) => e.설비ID === id);
   const { stats } = useMemo(() => computeFailureStats(histories), [histories]);
@@ -95,6 +98,32 @@ export default function EquipmentDetail() {
     if (other) {
       updateEquipment(other.설비ID, { 연결설비: other.연결설비.filter((id) => id !== equipment.설비ID) });
     }
+  };
+
+  // 예전엔 이력 추가/삭제가 /history 화면에만 있어서, 설비 하나를 보다가 점검·수리
+  // 기록을 남기려면 이력 브라우저로 건너가 설비를 다시 골라야 했음 — 설비ID가 이미
+  // 정해져 있는 이 화면에서 바로 추가/삭제할 수 있게 함(2026-07-21).
+  const [addingHistory, setAddingHistory] = useState(false);
+  const [historyForm, setHistoryForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '' });
+
+  const submitHistory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!equipment || !historyForm.날짜 || !historyForm.제목.trim()) return;
+    addHistory({
+      id: `hist-manual-${Date.now()}`,
+      날짜: historyForm.날짜,
+      설비ID: equipment.설비ID,
+      유형: historyForm.유형,
+      제목: historyForm.제목.trim(),
+      출처파일: '수기 입력',
+    });
+    setHistoryForm({ 날짜: '', 유형: '점검', 제목: '' });
+    setAddingHistory(false);
+  };
+
+  const handleDeleteHistory = (r: HistoryRecord) => {
+    if (!window.confirm(`"${r.제목}" 이력을 삭제할까요?`)) return;
+    deleteHistory(r.id);
   };
 
   const records = histories
@@ -287,7 +316,63 @@ export default function EquipmentDetail() {
         )}
       </div>
 
-      <Card title={`점검·고장 이력 (${records.length}건)`}>
+      <Card>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-medium text-text-dim">점검·고장 이력 ({records.length}건)</h3>
+          <button
+            type="button"
+            onClick={() => setAddingHistory((v) => !v)}
+            className="text-xs text-accent hover:underline shrink-0"
+          >
+            {addingHistory ? '닫기' : '+ 이력 추가'}
+          </button>
+        </div>
+
+        {addingHistory && (
+          <form
+            onSubmit={submitHistory}
+            className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-border bg-bg-soft/60 p-3"
+          >
+            <label className="block">
+              <span className="text-xs text-text-dim">날짜 *</span>
+              <input
+                required
+                type="date"
+                value={historyForm.날짜}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, 날짜: e.target.value }))}
+                className="mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-text-dim">유형</span>
+              <select
+                value={historyForm.유형}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
+                className="mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
+              >
+                <option>점검</option>
+                <option>수리</option>
+              </select>
+            </label>
+            <label className="block flex-1 min-w-[10rem]">
+              <span className="text-xs text-text-dim">제목 *</span>
+              <input
+                required
+                value={historyForm.제목}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, 제목: e.target.value }))}
+                placeholder="예: 필터 교체"
+                className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-accent text-bg text-sm font-medium px-3 py-1.5 hover:brightness-110 transition"
+            >
+              등록
+            </button>
+          </form>
+        )}
+
         {records.length === 0 ? (
           <p className="text-sm text-text-dim">이력이 없습니다.</p>
         ) : (
@@ -299,10 +384,23 @@ export default function EquipmentDetail() {
                     r.유형 === '수리' ? 'bg-risk-high' : 'bg-accent'
                   }`}
                 />
-                <div className="text-xs text-text-dim">
-                  {r.날짜} · {r.유형}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-text-dim">
+                      {r.날짜} · {r.유형}
+                    </div>
+                    <div className="text-sm">{r.제목}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteHistory(r)}
+                    className="text-xs text-text-dim hover:text-risk-high shrink-0"
+                    aria-label={`${r.제목} 이력 삭제`}
+                    title="삭제"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="text-sm">{r.제목}</div>
               </li>
             ))}
           </ol>
