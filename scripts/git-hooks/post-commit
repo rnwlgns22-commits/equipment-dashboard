@@ -1,0 +1,29 @@
+#!/bin/sh
+# _웹서비스를 건드린 커밋이면 그 즉시 GitHub 백업 저장소(websvc-backup)로
+# subtree push. 커밋 자체를 막으면 안 되므로 백그라운드로 던지고 로그만 남김
+# (git subtree push는 매번 전체 히스토리를 훑어서 77커밋 기준 1~2분 걸림 —
+# 2026-07-21 확인).
+#
+# 이 파일 자체는 .git/hooks/post-commit(추적 안 됨)의 추적용 사본 — 새로 clone
+# 하거나 .git이 재생성된 경우 아래로 다시 설치할 것:
+#   cp _웹서비스/scripts/git-hooks/post-commit .git/hooks/post-commit
+#   chmod +x .git/hooks/post-commit
+
+if ! git diff-tree --no-commit-id --name-only -r HEAD -- _웹서비스 | grep -q .; then
+  exit 0
+fi
+
+if ! git remote get-url websvc-backup >/dev/null 2>&1; then
+  echo "[post-commit] websvc-backup 원격이 없어서 백업 push를 건너뜀 — 'git remote add websvc-backup https://github.com/rnwlgns22-commits/equipment-dashboard.git'로 다시 등록할 것"
+  exit 0
+fi
+
+log="$(git rev-parse --git-dir)/websvc-backup-push.log"
+{
+  echo "=== $(date '+%Y-%m-%d %H:%M:%S') commit $(git rev-parse --short HEAD) ==="
+  git subtree push --prefix=_웹서비스 websvc-backup main
+  echo "=== done ==="
+} >>"$log" 2>&1 &
+disown
+
+echo "[post-commit] _웹서비스 변경 감지 — websvc-backup으로 백그라운드 push 시작 (로그: $log)"
