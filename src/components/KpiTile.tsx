@@ -29,7 +29,7 @@ export default function KpiTile({
   accentClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="text-xs text-text-dim">{label}</div>
       <div className={`mt-2 text-3xl font-semibold tabular-nums ${accentClass}`}>
         {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}

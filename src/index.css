@@ -19,10 +19,14 @@
 
 html.light {
   color-scheme: light;
-  --color-bg: #f7f8fa;
-  --color-bg-soft: #ffffff;
+  /* 다크 테마와 같은 3단 명암 구조(bg < bg-soft < card, 카드가 가장 밝음)를
+     그대로 유지 — 처음엔 셋 다 흰색에 가까워서(#f7f8fa/#ffffff/#ffffff) 박스
+     경계가 거의 안 보였음(2026-07-22 지적). bg를 눈에 띄게 회색으로 낮추고
+     bg-soft를 그 중간톤으로, border도 또렷하게 올림. */
+  --color-bg: #e7eaef;
+  --color-bg-soft: #f3f5f8;
   --color-card: #ffffff;
-  --color-border: #e2e5ea;
+  --color-border: #d5dbe3;
   --color-text: #0f172a;
   --color-text-dim: #64748b;
 }
