@@ -1,4 +1,4 @@
-import type { WorkOrderStatus } from '../types';
+import type { InspectionKind, WorkOrderStatus } from '../types';
 
 export type DueState = 'overdue' | 'soon' | null;
 
@@ -25,4 +25,21 @@ export function workOrderColor(status: WorkOrderStatus, dueState: DueState): str
   if (status === '완료') return '#4ade80';
   if (status === '진행중') return '#22d3ee';
   return dueState === 'overdue' ? '#f87171' : '#fbbf24';
+}
+
+const INSPECTION_KIND_PRIORITY: Record<InspectionKind, number> = { 법정점검: 0, 정기점검: 1 };
+
+// 법정점검(법령상 의무, 어기면 과태료·행정처분 위험)이 정기점검(내부 유지보수
+// 루틴)보다 항상 우선순위가 높음 — 다음점검일로만 정렬하면 임박한 정기점검이
+// 이미 기한을 넘긴 법정점검보다 위에 뜰 수 있어서, 종류를 1차 정렬키로 두고
+// 그 안에서만 다음점검일(빠른 순)로 정렬한다(2026-07-21 요청: "법정점검을
+// 최우선순위로").
+export function compareInspectionPriority(
+  a: { 종류: InspectionKind; 다음점검일?: string },
+  b: { 종류: InspectionKind; 다음점검일?: string },
+): number {
+  return (
+    INSPECTION_KIND_PRIORITY[a.종류] - INSPECTION_KIND_PRIORITY[b.종류] ||
+    (a.다음점검일 ?? '').localeCompare(b.다음점검일 ?? '')
+  );
 }

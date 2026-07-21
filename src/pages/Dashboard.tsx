@@ -16,7 +16,7 @@ import { useAppStore } from '../store';
 import { computeFailureStats, equipmentName } from '../lib/stats';
 import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown, repairCostTop10, totalRepairCost } from '../lib/aggregate';
 import { computeBrainSignals } from '../lib/brain';
-import { dueStateOf } from '../lib/workOrders';
+import { dueStateOf, compareInspectionPriority } from '../lib/workOrders';
 import { COLORS } from '../lib/colors';
 import Card from '../components/Card';
 import KpiTile from '../components/KpiTile';
@@ -69,13 +69,14 @@ export default function Dashboard() {
   const highRiskStats = stats.filter((s) => s.위험등급 !== '하').slice(0, 8);
   const brainSignals = useMemo(() => computeBrainSignals(equipments, histories).slice(0, 6), [equipments, histories]);
 
-  // 법정점검/정기점검 도래 — 임박(7일 이내)이거나 이미 지난 항목만, 가장 급한 순.
+  // 법정점검/정기점검 도래 — 임박(7일 이내)이거나 이미 지난 항목만, 법정점검을
+  // 최우선순위로 두고 그 안에서 가장 급한 순(compareInspectionPriority).
   const dueInspections = useMemo(
     () =>
       inspectionSchedules
         .map((s) => ({ ...s, due: dueStateOf(s.다음점검일, now) }))
         .filter((s) => s.due !== null)
-        .sort((a, b) => (a.다음점검일 ?? '').localeCompare(b.다음점검일 ?? '')),
+        .sort(compareInspectionPriority),
     [inspectionSchedules, now],
   );
 
