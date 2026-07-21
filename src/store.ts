@@ -24,6 +24,7 @@ interface AppState {
   addPart: (p: Part) => void;
   updatePart: (id: string, patch: Partial<Part>) => void;
   deletePart: (id: string) => void;
+  loadParts: (parts: Part[]) => void;
 }
 
 // IndexedDB 쓰기는 실패할 수 있음(용량 초과, 프라이빗 브라우징 제약 등). 실패해도 화면의
@@ -144,6 +145,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   deletePart: (id) => {
     set((s) => ({ parts: s.parts.filter((p) => p.id !== id) }));
     persist(db.parts.delete(id));
+  },
+  // JSON 백업 가져오기 전용 — loadInspectionSchedules와 같은 "전체 교체" 의미.
+  loadParts: (parts) => {
+    set({ parts });
+    persist(db.parts.clear().then(() => db.parts.bulkPut(parts)));
   },
 }));
 

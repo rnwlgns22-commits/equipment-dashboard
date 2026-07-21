@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import type { Equipment, HistoryRecord, InspectionSchedule } from '../types';
+import type { Equipment, HistoryRecord, InspectionSchedule, Part } from '../types';
 import type { MappingSnapshot } from '../mappingStore';
 
 // 설비통합 볼트의 frontmatter 규격(CLAUDE.md)에 맞춰 마크다운으로 재구성.
@@ -54,6 +54,7 @@ function historyMarkdown(h: HistoryRecord, equipmentsById: Map<string, Equipment
     `날짜: ${h.날짜}`,
     `설비ID: ${h.설비ID ?? ''}`,
     `유형: ${h.유형}`,
+    ...(h.비용 ? [`비용: ${h.비용}`] : []),
     '---',
     '',
     `# ${h.제목}`,
@@ -61,6 +62,39 @@ function historyMarkdown(h: HistoryRecord, equipmentsById: Map<string, Equipment
   ];
   if (equipment) fm.push(`설비: [[${equipmentFileStem(equipment)}]]`, '');
   if (h.내용) fm.push(h.내용, '');
+  if (h.비용) fm.push(`비용: ${h.비용.toLocaleString()}원`, '');
+  return fm.join('\n');
+}
+
+function partFileStem(p: Part): string {
+  return `${p.id}_${p.자재명}`.replace(/[\\/:*?"<>|]/g, '_');
+}
+
+function partMarkdown(p: Part, equipmentsById: Map<string, Equipment>): string {
+  const links = p.연결설비ID
+    .map((id) => equipmentsById.get(id))
+    .filter((t): t is Equipment => Boolean(t))
+    .map((t) => `"[[${equipmentFileStem(t)}]]"`);
+
+  const fm = [
+    '---',
+    'type: 자재',
+    `자재ID: ${p.id}`,
+    `자재명: ${p.자재명}`,
+    `규격: ${p.규격 ?? ''}`,
+    `단위: ${p.단위}`,
+    `현재수량: ${p.현재수량}`,
+    `안전재고: ${p.안전재고 ?? ''}`,
+    `단가: ${p.단가 ?? ''}`,
+    `보관위치: ${p.보관위치 ?? ''}`,
+    `연결설비: [${links.join(', ')}]`,
+    'tags: [자재]',
+    '---',
+    '',
+    `# ${p.자재명}`,
+    '',
+  ];
+  if (p.비고) fm.push(p.비고, '');
   return fm.join('\n');
 }
 
@@ -72,7 +106,11 @@ function historyFileStem(h: HistoryRecord): string {
   return `${h.날짜}_${h.설비ID ?? '미지정'}_${h.유형}_${safeTitle}_${h.id}`;
 }
 
-export async function buildVaultZip(equipments: Equipment[], histories: HistoryRecord[]): Promise<Blob> {
+export async function buildVaultZip(
+  equipments: Equipment[],
+  histories: HistoryRecord[],
+  parts: Part[] = [],
+): Promise<Blob> {
   const zip = new JSZip();
   const equipmentsById = new Map(equipments.map((e) => [e.설비ID, e]));
 
@@ -91,13 +129,20 @@ export async function buildVaultZip(equipments: Equipment[], histories: HistoryR
     dir.file(`${historyFileStem(h)}.md`, historyMarkdown(h, equipmentsById));
   }
 
+  if (parts.length > 0) {
+    const partDir = root.folder('40_자재관리')!;
+    for (const p of parts) {
+      partDir.file(`${partFileStem(p)}.md`, partMarkdown(p, equipmentsById));
+    }
+  }
+
   root.file(
     '읽어주세요.md',
     [
       '# 내보낸 데이터 안내',
       '',
       `내보낸 시각: ${new Date().toISOString()}`,
-      `설비 ${equipments.length}개, 점검·수리 이력 ${histories.length}건.`,
+      `설비 ${equipments.length}개, 점검·수리 이력 ${histories.length}건, 자재 ${parts.length}건.`,
       '',
       '이 폴더를 옵시디언 볼트 안에 그대로 복사하면 설비관리 시스템의 frontmatter 규격에',
       '맞는 노트로 바로 열립니다(설비통합/CLAUDE.md 규격 기준).',
@@ -121,7 +166,8 @@ export function buildJsonExport(
   histories: HistoryRecord[],
   mapping?: MappingSnapshot,
   inspectionSchedules?: InspectionSchedule[],
+  parts?: Part[],
 ): Blob {
-  const payload = { exportedAt: new Date().toISOString(), equipments, histories, mapping, inspectionSchedules };
+  const payload = { exportedAt: new Date().toISOString(), equipments, histories, mapping, inspectionSchedules, parts };
   return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 }
