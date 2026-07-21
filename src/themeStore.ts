@@ -4,10 +4,12 @@ export type Theme = 'dark' | 'light';
 
 const STORAGE_KEY = 'fms-theme';
 
+// 기본은 다크 — OS가 라이트를 선호해도 사용자가 직접 토글하기 전엔 다크로 시작한다
+// (2026-07-22 요청). localStorage에 저장된 선택이 있으면 그것만 우선한다.
 function detectInitialTheme(): Theme {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === 'light' || saved === 'dark') return saved;
-  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  return 'dark';
 }
 
 function applyThemeClass(theme: Theme) {
