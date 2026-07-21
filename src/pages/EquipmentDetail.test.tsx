@@ -147,4 +147,56 @@ describe('EquipmentDetail', () => {
     expect(useAppStore.getState().histories).toHaveLength(0);
     vi.restoreAllMocks();
   });
+
+  // 상세사양은 그동안 업로드 파이프라인이 채운 값을 보기만 했음(2026-07-21 요청 전) —
+  // 기본정보 수정모드와 별개로 추가/수정/삭제되는지 검증.
+  describe('상세사양 편집', () => {
+    it('+ 사양 추가 폼으로 등록하면 store에 반영된다', async () => {
+      const user = userEvent.setup();
+      renderDetail('E-001');
+
+      await user.click(screen.getByRole('button', { name: '+ 사양 추가' }));
+      await user.type(screen.getByPlaceholderText('항목명 (예: 정격전압)'), '정격전압');
+      await user.type(screen.getByPlaceholderText('값'), '380V');
+      await user.click(screen.getByRole('button', { name: '추가' }));
+
+      const updated = useAppStore.getState().equipments.find((e) => e.설비ID === 'E-001');
+      expect(updated?.상세사양).toEqual({ 정격전압: '380V' });
+      expect(await screen.findByText('380V', { exact: false })).toBeInTheDocument();
+    });
+
+    it('기존 사양 값을 수정하면 store가 갱신된다', async () => {
+      useAppStore.setState({
+        equipments: [equipment({ 설비ID: 'E-001', 설비명: '공조기 1호기', 상세사양: { 정격전압: '220V' } })],
+      });
+      const user = userEvent.setup();
+      renderDetail('E-001');
+
+      await user.click(screen.getByLabelText('정격전압 수정'));
+      const input = screen.getByDisplayValue('220V');
+      await user.clear(input);
+      await user.type(input, '380V');
+      await user.click(screen.getByRole('button', { name: '저장' }));
+
+      const updated = useAppStore.getState().equipments.find((e) => e.설비ID === 'E-001');
+      expect(updated?.상세사양).toEqual({ 정격전압: '380V' });
+    });
+
+    it('사양을 삭제(확인 후)하면 그 키만 store에서 제거된다', async () => {
+      useAppStore.setState({
+        equipments: [
+          equipment({ 설비ID: 'E-001', 설비명: '공조기 1호기', 상세사양: { 정격전압: '220V', 정격전류: '10A' } }),
+        ],
+      });
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const user = userEvent.setup();
+      renderDetail('E-001');
+
+      await user.click(screen.getByLabelText('정격전압 삭제'));
+
+      const updated = useAppStore.getState().equipments.find((e) => e.설비ID === 'E-001');
+      expect(updated?.상세사양).toEqual({ 정격전류: '10A' });
+      vi.restoreAllMocks();
+    });
+  });
 });

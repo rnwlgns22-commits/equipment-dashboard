@@ -126,6 +126,44 @@ export default function EquipmentDetail() {
     deleteHistory(r.id);
   };
 
+  // 상세사양(Record<string,string>)은 지금까지 업로드 파이프라인이 채운 값을 보기만
+  // 했음(2026-07-21 요청 전) — 기본정보 수정모드와 별개로 항목을 추가/수정/삭제할 수
+  // 있게 함. 키 자체를 바꾸는 건 지원 안 함(의미가 다른 새 항목이 되므로 삭제 후
+  // 새로 추가하는 편이 헷갈리지 않음 — 값만 그 자리에서 바로 고치는 걸 지원).
+  const [addingSpec, setAddingSpec] = useState(false);
+  const [specKey, setSpecKey] = useState('');
+  const [specValue, setSpecValue] = useState('');
+  const [editingSpecKey, setEditingSpecKey] = useState<string | null>(null);
+  const [editingSpecValue, setEditingSpecValue] = useState('');
+
+  const addSpec = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!equipment || !specKey.trim() || !specValue.trim()) return;
+    updateEquipment(equipment.설비ID, { 상세사양: { ...equipment.상세사양, [specKey.trim()]: specValue.trim() } });
+    setSpecKey('');
+    setSpecValue('');
+    setAddingSpec(false);
+  };
+
+  const startEditingSpec = (k: string, v: string) => {
+    setEditingSpecKey(k);
+    setEditingSpecValue(v);
+  };
+
+  const saveSpecEdit = (k: string) => {
+    if (!equipment || !editingSpecValue.trim()) return;
+    updateEquipment(equipment.설비ID, { 상세사양: { ...equipment.상세사양, [k]: editingSpecValue.trim() } });
+    setEditingSpecKey(null);
+  };
+
+  const deleteSpec = (k: string) => {
+    if (!equipment) return;
+    if (!window.confirm(`"${k}" 항목을 삭제할까요?`)) return;
+    const rest = { ...equipment.상세사양 };
+    delete rest[k];
+    updateEquipment(equipment.설비ID, { 상세사양: rest });
+  };
+
   const records = histories
     .filter((h) => h.설비ID === id)
     .sort((a, b) => b.날짜.localeCompare(a.날짜));
@@ -217,33 +255,121 @@ export default function EquipmentDetail() {
               </div>
             </form>
           ) : (
-            <>
-              <dl className="text-sm space-y-2">
-                <Row label="분류" value={equipment.분류} />
-                <Row label="사이트" value={equipment.사이트 || '미분류'} />
-                <Row label="위치" value={equipment.위치} />
-                <Row label="제조사" value={equipment.제조사} />
-                <Row label="모델명" value={equipment.모델명} />
-                <Row label="설치일" value={equipment.설치일} />
-                <Row label="상태" value={equipment.상태} />
-                <Row label="점검주기일" value={equipment.점검주기일 ? `${equipment.점검주기일}일` : undefined} />
-                <Row label="최근점검일" value={equipment.최근점검일} />
-                <Row label="다음점검일" value={equipment.다음점검일} />
-              </dl>
-              {Object.keys(equipment.상세사양).length > 0 && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="text-xs text-text-dim mb-2">상세 사양</div>
-                  <ul className="text-sm space-y-1">
-                    {Object.entries(equipment.상세사양).map(([k, v]) => (
-                      <li key={k}>
-                        - <span className="text-text-dim">{k}</span>: {v}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
+            <dl className="text-sm space-y-2">
+              <Row label="분류" value={equipment.분류} />
+              <Row label="사이트" value={equipment.사이트 || '미분류'} />
+              <Row label="위치" value={equipment.위치} />
+              <Row label="제조사" value={equipment.제조사} />
+              <Row label="모델명" value={equipment.모델명} />
+              <Row label="설치일" value={equipment.설치일} />
+              <Row label="상태" value={equipment.상태} />
+              <Row label="점검주기일" value={equipment.점검주기일 ? `${equipment.점검주기일}일` : undefined} />
+              <Row label="최근점검일" value={equipment.최근점검일} />
+              <Row label="다음점검일" value={equipment.다음점검일} />
+            </dl>
           )}
+
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-xs text-text-dim">상세 사양</div>
+              <button
+                type="button"
+                onClick={() => setAddingSpec((v) => !v)}
+                className="text-xs text-accent hover:underline"
+              >
+                {addingSpec ? '닫기' : '+ 사양 추가'}
+              </button>
+            </div>
+
+            {addingSpec && (
+              <form onSubmit={addSpec} className="flex flex-wrap gap-2 mb-3">
+                <input
+                  required
+                  value={specKey}
+                  onChange={(e) => setSpecKey(e.target.value)}
+                  placeholder="항목명 (예: 정격전압)"
+                  className="flex-1 min-w-[8rem] rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+                />
+                <input
+                  required
+                  value={specValue}
+                  onChange={(e) => setSpecValue(e.target.value)}
+                  placeholder="값"
+                  className="flex-1 min-w-[8rem] rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-accent text-bg text-xs font-medium px-3 py-1.5 hover:brightness-110 transition"
+                >
+                  추가
+                </button>
+              </form>
+            )}
+
+            {Object.keys(equipment.상세사양).length === 0 ? (
+              <p className="text-sm text-text-dim">등록된 상세 사양이 없습니다.</p>
+            ) : (
+              <ul className="text-sm space-y-1.5">
+                {Object.entries(equipment.상세사양).map(([k, v]) =>
+                  editingSpecKey === k ? (
+                    <li key={k} className="flex items-center gap-2">
+                      <span className="text-text-dim shrink-0">{k}:</span>
+                      <input
+                        autoFocus
+                        value={editingSpecValue}
+                        onChange={(e) => setEditingSpecValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveSpecEdit(k);
+                          if (e.key === 'Escape') setEditingSpecKey(null);
+                        }}
+                        className="flex-1 min-w-0 rounded border border-accent/50 bg-bg-soft px-2 py-1 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => saveSpecEdit(k)}
+                        className="text-xs text-accent hover:underline shrink-0"
+                      >
+                        저장
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingSpecKey(null)}
+                        className="text-xs text-text-dim shrink-0"
+                      >
+                        취소
+                      </button>
+                    </li>
+                  ) : (
+                    <li key={k} className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate">
+                        <span className="text-text-dim">{k}</span>: {v}
+                      </span>
+                      <span className="flex gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => startEditingSpec(k, v)}
+                          className="text-xs text-text-dim hover:text-accent"
+                          aria-label={`${k} 수정`}
+                          title="수정"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteSpec(k)}
+                          className="text-xs text-text-dim hover:text-risk-high"
+                          aria-label={`${k} 삭제`}
+                          title="삭제"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    </li>
+                  ),
+                )}
+              </ul>
+            )}
+          </div>
         </Card>
 
         {!editing && (

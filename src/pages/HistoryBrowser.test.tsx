@@ -107,4 +107,47 @@ describe('HistoryBrowser', () => {
       expect(useAppStore.getState().histories[0].설비ID).toBe('E-001');
     });
   });
+
+  // 목록이 많아지면 하나씩 지우는 게 번거로워서 추가된 다중선택+일괄삭제 검증
+  // (2026-07-21 요청).
+  describe('다중선택/일괄삭제', () => {
+    beforeEach(() => {
+      useAppStore.setState({
+        equipments: [],
+        histories: [
+          { id: 'h-1', 날짜: '2026-07-01', 유형: '점검', 제목: '이력 A', 출처파일: '테스트' },
+          { id: 'h-2', 날짜: '2026-07-02', 유형: '수리', 제목: '이력 B', 출처파일: '테스트' },
+          { id: 'h-3', 날짜: '2026-07-03', 유형: '점검', 제목: '이력 C', 출처파일: '테스트' },
+        ],
+        loaded: true,
+      });
+    });
+
+    it('전체선택 후 선택 삭제(확인 후)하면 store가 전부 비워진다', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByLabelText('전체선택'));
+      expect(screen.getByText('3건 선택됨')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '선택 삭제' }));
+
+      expect(useAppStore.getState().histories).toHaveLength(0);
+      vi.restoreAllMocks();
+    });
+
+    it('일부만 선택해 삭제하면 선택한 것만 지워진다', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByLabelText('이력 A 선택'));
+      await user.click(screen.getByLabelText('이력 C 선택'));
+      await user.click(screen.getByRole('button', { name: '선택 삭제' }));
+
+      const remaining = useAppStore.getState().histories.map((h) => h.제목);
+      expect(remaining).toEqual(['이력 B']);
+      vi.restoreAllMocks();
+    });
+  });
 });

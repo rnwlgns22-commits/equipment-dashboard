@@ -54,6 +54,39 @@ export default function HistoryBrowser() {
       .sort((a, b) => b.날짜.localeCompare(a.날짜));
   }, [histories, tab, typeFilter, from, to, query, equipmentsById]);
 
+  // 목록이 많아지면 하나씩 지우는 게 번거로워서(2026-07-21 요청) 행마다 체크박스 +
+  // 상단 일괄삭제 추가. 필터가 바뀌어도 선택은 유지(필터 view와 무관하게 지워짐).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((h) => selected.has(h.id));
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filtered.forEach((h) => next.delete(h.id));
+      } else {
+        filtered.forEach((h) => next.add(h.id));
+      }
+      return next;
+    });
+  };
+
+  const bulkDelete = () => {
+    if (selected.size === 0) return;
+    if (!window.confirm(`선택한 이력 ${selected.size}건을 삭제할까요?`)) return;
+    selected.forEach((id) => deleteHistory(id));
+    setSelected(new Set());
+  };
+
   const submitAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!addForm.날짜 || !addForm.제목.trim()) return;
@@ -207,8 +240,26 @@ export default function HistoryBrowser() {
           onChange={(e) => setTo(e.target.value)}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
         />
-        <span className="ml-auto self-center text-xs text-text-dim">{filtered.length}건</span>
+        <label className="ml-auto flex items-center gap-1.5 text-xs text-text-dim">
+          <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} />
+          전체선택
+        </label>
+        <span className="self-center text-xs text-text-dim">{filtered.length}건</span>
       </div>
+
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-sm">
+          <span>{selected.size}건 선택됨</span>
+          <div className="flex gap-3 shrink-0">
+            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-text-dim hover:text-text">
+              선택 해제
+            </button>
+            <button type="button" onClick={bulkDelete} className="text-xs text-risk-high hover:underline">
+              선택 삭제
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         {filtered.map((h) =>
@@ -255,6 +306,13 @@ export default function HistoryBrowser() {
               key={h.id}
               className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3"
             >
+              <input
+                type="checkbox"
+                checked={selected.has(h.id)}
+                onChange={() => toggleSelect(h.id)}
+                aria-label={`${h.제목} 선택`}
+                className="shrink-0"
+              />
               <span className="text-xs text-text-dim w-24 shrink-0">{h.날짜}</span>
               <span
                 className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${
