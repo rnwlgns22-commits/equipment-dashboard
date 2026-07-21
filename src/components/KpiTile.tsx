@@ -43,6 +43,17 @@ export default function KpiTile({
   const layoutId = `kpi-card-${label}`;
   const valueNode = typeof value === 'number' ? <AnimatedNumber value={value} /> : value;
 
+  // 배경 클릭·X 버튼 말고 ESC로도 닫을 수 있어야 함(2026-07-22 요청) — 열려있을 때만
+  // 리스너를 붙이고 닫히면 바로 뗀다.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   return (
     <>
       <motion.div
