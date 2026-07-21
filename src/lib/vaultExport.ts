@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import type { Equipment, HistoryRecord } from '../types';
+import type { Equipment, HistoryRecord, InspectionSchedule } from '../types';
 import type { MappingSnapshot } from '../mappingStore';
 
 // 설비통합 볼트의 frontmatter 규격(CLAUDE.md)에 맞춰 마크다운으로 재구성.
@@ -120,7 +120,8 @@ export function buildJsonExport(
   equipments: Equipment[],
   histories: HistoryRecord[],
   mapping?: MappingSnapshot,
+  inspectionSchedules?: InspectionSchedule[],
 ): Blob {
-  const payload = { exportedAt: new Date().toISOString(), equipments, histories, mapping };
+  const payload = { exportedAt: new Date().toISOString(), equipments, histories, mapping, inspectionSchedules };
   return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 }

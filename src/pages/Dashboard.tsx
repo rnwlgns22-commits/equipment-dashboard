@@ -16,6 +16,7 @@ import { useAppStore } from '../store';
 import { computeFailureStats, equipmentName } from '../lib/stats';
 import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown } from '../lib/aggregate';
 import { computeBrainSignals } from '../lib/brain';
+import { dueStateOf } from '../lib/workOrders';
 import { COLORS } from '../lib/colors';
 import Card from '../components/Card';
 import KpiTile from '../components/KpiTile';
@@ -36,6 +37,7 @@ function daysUntil(dateStr: string | undefined, now: Date): number | null {
 export default function Dashboard() {
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
+  const inspectionSchedules = useAppStore((s) => s.inspectionSchedules);
 
   const now = useMemo(() => new Date(), []);
   const { stats } = useMemo(() => computeFailureStats(histories, now), [histories, now]);
@@ -60,6 +62,16 @@ export default function Dashboard() {
   const highRiskStats = stats.filter((s) => s.위험등급 !== '하').slice(0, 8);
   const brainSignals = useMemo(() => computeBrainSignals(equipments, histories).slice(0, 6), [equipments, histories]);
 
+  // 법정점검/정기점검 도래 — 임박(7일 이내)이거나 이미 지난 항목만, 가장 급한 순.
+  const dueInspections = useMemo(
+    () =>
+      inspectionSchedules
+        .map((s) => ({ ...s, due: dueStateOf(s.다음점검일, now) }))
+        .filter((s) => s.due !== null)
+        .sort((a, b) => (a.다음점검일 ?? '').localeCompare(b.다음점검일 ?? '')),
+    [inspectionSchedules, now],
+  );
+
   return (
     <div className="p-6 md:p-8 space-y-6">
       <div>
@@ -69,7 +81,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <KpiTile label="총 설비 수" value={equipments.length} />
         <KpiTile
           label="상태별 (정상 · 수리중 · 정지)"
@@ -80,6 +92,11 @@ export default function Dashboard() {
           label="위험 등급 상"
           value={stats.filter((s) => s.위험등급 === '상').length}
           accentClass="text-risk-high"
+        />
+        <KpiTile
+          label="법정·정기점검 도래"
+          value={dueInspections.length}
+          accentClass={dueInspections.some((s) => s.due === 'overdue') ? 'text-risk-high' : 'text-risk-mid'}
         />
       </div>
 
@@ -134,6 +151,36 @@ export default function Dashboard() {
                 </div>
               </Link>
             ))}
+          </div>
+        </Card>
+
+        <Card title="법정·정기점검 도래" className="xl:col-span-1">
+          <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+            {dueInspections.length === 0 ? (
+              <p className="text-sm text-text-dim">임박하거나 기한이 지난 법정·정기점검이 없습니다.</p>
+            ) : (
+              dueInspections.slice(0, 8).map((s) => (
+                <Link
+                  key={s.id}
+                  to={`/equipment/${s.설비ID}`}
+                  className="block rounded-xl border border-border p-3 hover:border-white/20 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium truncate">
+                      {equipmentName(equipments, s.설비ID)} · {s.항목명}
+                    </span>
+                    <span
+                      className={`text-xs shrink-0 rounded-full px-2 py-0.5 ${
+                        s.due === 'overdue' ? 'bg-risk-high/15 text-risk-high' : 'bg-risk-mid/15 text-risk-mid'
+                      }`}
+                    >
+                      {s.종류} · {s.due === 'overdue' ? '기한 지남' : '임박'}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-text-dim">다음 점검일 {s.다음점검일}</div>
+                </Link>
+              ))
+            )}
           </div>
         </Card>
 

@@ -14,6 +14,8 @@ const navItems = [
   { to: '/mapping', label: '레이아웃 매핑' },
   { to: '/graph', label: '관계 그래프' },
   { to: '/history', label: '점검·수리 이력' },
+  { to: '/legal-inspection', label: '법정점검' },
+  { to: '/regular-inspection', label: '정기점검' },
   { to: '/settings', label: '설정 / 데이터' },
 ];
 

@@ -15,6 +15,8 @@ const AddEquipment = lazy(() => import('./pages/AddEquipment'));
 const Mapping = lazy(() => import('./pages/Mapping'));
 const GraphView = lazy(() => import('./pages/GraphView'));
 const HistoryBrowser = lazy(() => import('./pages/HistoryBrowser'));
+const LegalInspection = lazy(() => import('./pages/LegalInspection'));
+const RegularInspection = lazy(() => import('./pages/RegularInspection'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function RequireData({ children }: { children: ReactNode }) {
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="/mapping" element={<Mapping />} />
           <Route path="/graph" element={<GraphView />} />
           <Route path="/history" element={<HistoryBrowser />} />
+          <Route path="/legal-inspection" element={<LegalInspection />} />
+          <Route path="/regular-inspection" element={<RegularInspection />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

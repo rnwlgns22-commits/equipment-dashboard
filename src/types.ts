@@ -98,3 +98,21 @@ export interface WorkOrder {
 }
 
 export type ViewMode = '일반' | '유지보수' | '히트맵' | '타임라인';
+
+// 법정점검/정기점검(2026-07-21 추가) — Equipment.점검주기일/최근점검일/다음점검일은
+// 설비당 "점검" 한 종류만 표현 가능한데, 실제로는 같은 설비에 법정점검(엘리베이터
+// 안전검사 등 법령상 의무)과 정기점검(내부 유지보수 루틴)이 여러 항목 따로 걸릴 수
+// 있어서 별도 모델로 분리. 종류(법정/정기)만 다르고 구조는 동일하게 둠 —
+// InspectionScheduleBoard 컴포넌트가 종류별로 필터링해서 재사용.
+export type InspectionKind = '법정점검' | '정기점검';
+
+export interface InspectionSchedule {
+  id: string;
+  설비ID: string;
+  종류: InspectionKind;
+  항목명: string; // 예: "승강기 정기검사(법정)", "필터 청소(정기)"
+  주기일: number;
+  최근점검일?: string;
+  다음점검일?: string; // 최근점검일 + 주기일로 계산, 최근점검일 없으면 미정
+  점검사항?: string; // 가장 최근 점검의 결과/특이사항 메모
+}
