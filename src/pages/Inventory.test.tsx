@@ -100,4 +100,31 @@ describe('자재·재고관리', () => {
     expect(parts).toHaveLength(1);
     expect(parts[0].연결설비ID).toEqual([]);
   });
+
+  // 등록 폼엔 사용 설비 선택이 있었지만 인라인 수정 폼엔 없어서, 잘못 연결했거나
+  // 나중에 설비를 알게 된 경우 고칠 방법이 없었음(2026-07-21 발견 — 이력 비용
+  // 필드가 수정 폼에서 빠졌던 것과 같은 클래스의 버그).
+  it('인라인 수정 폼에서 사용 설비를 추가/해제할 수 있다', async () => {
+    useAppStore.setState({ parts: [part({ id: 'p1', 자재명: '필터', 연결설비ID: [] })] });
+    const user = userEvent.setup();
+    renderInventory();
+
+    await user.click(screen.getByLabelText('필터 수정'));
+    await user.click(screen.getByRole('button', { name: '공조기 1호기' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(useAppStore.getState().parts[0].연결설비ID).toEqual(['E-001']);
+  });
+
+  it('인라인 수정 폼에서 기존 연결 설비를 해제할 수 있다', async () => {
+    useAppStore.setState({ parts: [part({ id: 'p1', 자재명: '필터', 연결설비ID: ['E-001'] })] });
+    const user = userEvent.setup();
+    renderInventory();
+
+    await user.click(screen.getByLabelText('필터 수정'));
+    await user.click(screen.getByRole('button', { name: '공조기 1호기' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(useAppStore.getState().parts[0].연결설비ID).toEqual([]);
+  });
 });

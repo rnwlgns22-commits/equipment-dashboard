@@ -25,11 +25,11 @@ export default function HistoryBrowser() {
   // 지금까지 이력을 고친다는 게 "설비 재지정" 하나뿐이었음 — 날짜·유형·제목에 오타가
   // 있어도 지우고 다시 등록하는 것 말고는 방법이 없었음.
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '', 비용: '' });
+  const [editForm, setEditForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '', 내용: '', 비용: '' });
 
   const startEditing = (h: HistoryRecord) => {
     setEditingId(h.id);
-    setEditForm({ 날짜: h.날짜, 유형: h.유형, 제목: h.제목, 비용: h.비용 ? String(h.비용) : '' });
+    setEditForm({ 날짜: h.날짜, 유형: h.유형, 제목: h.제목, 내용: h.내용 ?? '', 비용: h.비용 ? String(h.비용) : '' });
   };
   const saveEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +39,7 @@ export default function HistoryBrowser() {
       날짜: editForm.날짜,
       유형: editForm.유형,
       제목: editForm.제목.trim(),
+      내용: editForm.내용.trim() || undefined,
       비용: editForm.비용 && 비용 > 0 ? 비용 : undefined,
     });
     setEditingId(null);
@@ -286,7 +287,7 @@ export default function HistoryBrowser() {
             <form
               key={h.id}
               onSubmit={saveEdit}
-              className="flex items-center gap-2 rounded-xl border border-accent/50 bg-card px-4 py-3"
+              className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/50 bg-card px-4 py-3"
             >
               <input
                 type="date"
@@ -317,6 +318,13 @@ export default function HistoryBrowser() {
                 placeholder="비용(원)"
                 aria-label="비용(원)"
                 className="w-24 shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+              />
+              <input
+                value={editForm.내용}
+                onChange={(e) => setEditForm((f) => ({ ...f, 내용: e.target.value }))}
+                placeholder="내용"
+                aria-label="내용"
+                className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-sm"
               />
               <button type="submit" className="text-xs text-accent hover:underline shrink-0">
                 저장

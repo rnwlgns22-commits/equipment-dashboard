@@ -36,6 +36,7 @@ export default function Inventory() {
   const [linkTargets, setLinkTargets] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
+  const [editLinkTargets, setEditLinkTargets] = useState<string[]>([]);
   const [query, setQuery] = useState('');
 
   const list = useMemo(
@@ -85,6 +86,7 @@ export default function Inventory() {
       보관위치: p.보관위치 ?? '',
       비고: p.비고 ?? '',
     });
+    setEditLinkTargets(p.연결설비ID);
   };
 
   const saveEdit = (e: React.FormEvent) => {
@@ -100,9 +102,14 @@ export default function Inventory() {
       안전재고: editForm.안전재고 ? Number(editForm.안전재고) : undefined,
       단가: editForm.단가 ? Number(editForm.단가) : undefined,
       보관위치: editForm.보관위치.trim() || undefined,
+      연결설비ID: editLinkTargets,
       비고: editForm.비고.trim() || undefined,
     });
     setEditingId(null);
+  };
+
+  const toggleEditLinkTarget = (id: string) => {
+    setEditLinkTargets((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const adjustQty = (p: Part, delta: number) => {
@@ -347,6 +354,26 @@ export default function Inventory() {
                     className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
                   />
                 </label>
+                <div className="block sm:col-span-2 lg:col-span-4">
+                  <span className="text-xs text-text-dim">사용 설비 (선택)</span>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {equipments.length === 0 && <span className="text-xs text-text-dim">등록된 설비가 없습니다.</span>}
+                    {equipments.map((e) => (
+                      <button
+                        key={e.설비ID}
+                        type="button"
+                        onClick={() => toggleEditLinkTarget(e.설비ID)}
+                        className={`text-xs rounded-full px-2.5 py-1 border transition-colors ${
+                          editLinkTargets.includes(e.설비ID)
+                            ? 'border-accent bg-accent/15 text-accent'
+                            : 'border-border text-text-dim hover:text-text'
+                        }`}
+                      >
+                        {e.설비명}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
                   <button
                     type="submit"

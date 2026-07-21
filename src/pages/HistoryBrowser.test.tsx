@@ -73,6 +73,25 @@ describe('HistoryBrowser', () => {
       expect(useAppStore.getState().histories[0].비용).toBe(75000);
     });
 
+    // 등록 폼엔 내용 필드가 있는데 인라인 수정 폼엔 없어서 오타를 고치거나 나중에
+    // 내용을 채워넣을 방법이 없었음 — 비용과 같은 클래스의 버그(2026-07-21 발견).
+    it('인라인 수정 폼에서 내용을 채우거나 고칠 수 있다', async () => {
+      useAppStore.setState({
+        histories: [{ id: 'h-1', 날짜: '2026-07-01', 유형: '점검', 제목: '원본 제목', 내용: '원본 내용', 출처파일: '테스트' }],
+      });
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByLabelText('이력 수정'));
+      const contentInput = screen.getByLabelText('내용');
+      expect(contentInput).toHaveValue('원본 내용');
+      await user.clear(contentInput);
+      await user.type(contentInput, '수정된 내용');
+      await user.click(screen.getByRole('button', { name: '저장' }));
+
+      expect(useAppStore.getState().histories[0].내용).toBe('수정된 내용');
+    });
+
     it('비용이 있는 이력을 인라인 수정에서 비우면 비용이 지워진다', async () => {
       useAppStore.setState({
         histories: [{ id: 'h-1', 날짜: '2026-07-01', 유형: '수리', 제목: '원본 제목', 비용: 30000, 출처파일: '테스트' }],
