@@ -25,16 +25,22 @@ export default function HistoryBrowser() {
   // 지금까지 이력을 고친다는 게 "설비 재지정" 하나뿐이었음 — 날짜·유형·제목에 오타가
   // 있어도 지우고 다시 등록하는 것 말고는 방법이 없었음.
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '' });
+  const [editForm, setEditForm] = useState({ 날짜: '', 유형: '점검' as HistoryType, 제목: '', 비용: '' });
 
   const startEditing = (h: HistoryRecord) => {
     setEditingId(h.id);
-    setEditForm({ 날짜: h.날짜, 유형: h.유형, 제목: h.제목 });
+    setEditForm({ 날짜: h.날짜, 유형: h.유형, 제목: h.제목, 비용: h.비용 ? String(h.비용) : '' });
   };
   const saveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingId || !editForm.날짜 || !editForm.제목.trim()) return;
-    updateHistory(editingId, { 날짜: editForm.날짜, 유형: editForm.유형, 제목: editForm.제목.trim() });
+    const 비용 = Number(editForm.비용);
+    updateHistory(editingId, {
+      날짜: editForm.날짜,
+      유형: editForm.유형,
+      제목: editForm.제목.trim(),
+      비용: editForm.비용 && 비용 > 0 ? 비용 : undefined,
+    });
     setEditingId(null);
   };
 
@@ -302,6 +308,15 @@ export default function HistoryBrowser() {
                 value={editForm.제목}
                 onChange={(e) => setEditForm((f) => ({ ...f, 제목: e.target.value }))}
                 className="flex-1 min-w-0 rounded border border-border bg-bg-soft px-2 py-1 text-sm"
+              />
+              <input
+                type="number"
+                min={0}
+                value={editForm.비용}
+                onChange={(e) => setEditForm((f) => ({ ...f, 비용: e.target.value }))}
+                placeholder="비용(원)"
+                aria-label="비용(원)"
+                className="w-24 shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
               />
               <button type="submit" className="text-xs text-accent hover:underline shrink-0">
                 저장

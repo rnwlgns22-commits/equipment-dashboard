@@ -59,6 +59,36 @@ describe('HistoryBrowser', () => {
       expect(useAppStore.getState().histories[0].제목).toBe('수정된 제목');
     });
 
+    // 생성 당시엔 비용을 안 남겼다가 나중에 실제 수리비용을 알게 되는 경우가 흔함
+    // (2026-07-21 사용자 지적: 인라인 수정 폼에 비용 필드가 아예 없었음) — 등록 폼뿐
+    // 아니라 인라인 수정에서도 비용을 넣고 뺄 수 있어야 함.
+    it('인라인 수정 폼에서 비용을 추가할 수 있다', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByLabelText('이력 수정'));
+      await user.type(screen.getByLabelText('비용(원)'), '75000');
+      await user.click(screen.getByRole('button', { name: '저장' }));
+
+      expect(useAppStore.getState().histories[0].비용).toBe(75000);
+    });
+
+    it('비용이 있는 이력을 인라인 수정에서 비우면 비용이 지워진다', async () => {
+      useAppStore.setState({
+        histories: [{ id: 'h-1', 날짜: '2026-07-01', 유형: '수리', 제목: '원본 제목', 비용: 30000, 출처파일: '테스트' }],
+      });
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByLabelText('이력 수정'));
+      const costInput = screen.getByLabelText('비용(원)');
+      expect(costInput).toHaveValue(30000);
+      await user.clear(costInput);
+      await user.click(screen.getByRole('button', { name: '저장' }));
+
+      expect(useAppStore.getState().histories[0].비용).toBeUndefined();
+    });
+
     it('✕ 버튼(확인 후)으로 삭제하면 store에서 제거된다', async () => {
       const user = userEvent.setup();
       vi.spyOn(window, 'confirm').mockReturnValue(true);
