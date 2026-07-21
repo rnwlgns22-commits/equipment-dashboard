@@ -82,6 +82,22 @@ describe('findDates / maxDate', () => {
   it('날짜가 없으면 maxDate는 null을 반환한다', () => {
     expect(maxDate('날짜 없는 문서')).toBeNull();
   });
+
+  // 2026-07-21 실제 업로드 실패 사례("승강기 안전장치 현황 및 상태_26.6월기준.xlsx")에서
+  // 발견 — 월간 현황 요약처럼 일(day) 없이 "OO년 OO월"만 있으면 findDates는 못 잡지만
+  // maxDate는 그 달 1일로 근사해야 한다(정확한 날짜가 있으면 그쪽을 우선).
+  it('일(day) 없이 "N년 N월"만 있어도 maxDate는 그 달 1일로 근사한다', () => {
+    expect(maxDate('26년 6월 기준 현황')?.toISOString().slice(0, 10)).toBe('2026-06-01');
+    expect(maxDate('2026년 6월 기준 현황')?.toISOString().slice(0, 10)).toBe('2026-06-01');
+  });
+
+  it('정확한 날짜가 있으면 연-월만 있는 근사보다 우선한다', () => {
+    expect(maxDate('26년 6월 기준, 실제 점검일 2026.06.15')?.toISOString().slice(0, 10)).toBe('2026-06-15');
+  });
+
+  it('findDates 자체는 일(day) 없는 "년 월"까지 확장하지 않는다', () => {
+    expect(findDates('26년 6월 기준 현황').length).toBe(0);
+  });
 });
 
 describe('looksLikeLedger', () => {

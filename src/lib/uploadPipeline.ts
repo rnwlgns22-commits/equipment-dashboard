@@ -72,7 +72,15 @@ export async function runUploadPipeline(
     const stem = file.name.replace(/\.[^.]+$/, '');
     const site = siteFromPath(relativePath);
 
-    if (looksLikeLedger(stem, content)) {
+    // 순서가 중요함(2026-07-21 수정) — 예전엔 looksLikeLedger()가 "분류만 되면
+    // (기타가 아니면) 설비대장"으로 봐서, 여러 설비를 한 표에 늘어놓은 월간 현황
+    // 요약 문서(예: 승강기 14대 상태를 십자표로 정리한 xlsx)까지 전부 "설비 1개"로
+    // 뭉개버리고 이력은 아예 만들지도 않았음(실제 업로드 실패 사례로 발견). 명시적
+    // 설비대장 신호(제작회사/설치장소)가 없다면 날짜 존재 여부를 먼저 봐서 이력으로
+    // 처리하고, 그것도 없을 때만 기존 분류-fallback으로 설비대장 취급 — 어느 것도
+    // 아니면 가짜 설비를 만드는 대신 실패로 남긴다.
+    const hasExplicitLedgerMarkers = content.includes('제작회사') || content.includes('설치장소');
+    if (hasExplicitLedgerMarkers) {
       equipmentCandidates.push({ key, fileName: file.name, relativePath, site, category: classifyCategory(stem, content), name: stem, content });
       continue;
     }
@@ -89,6 +97,11 @@ export async function runUploadPipeline(
         equipmentRef: '',
         content,
       });
+      continue;
+    }
+
+    if (looksLikeLedger(stem, content)) {
+      equipmentCandidates.push({ key, fileName: file.name, relativePath, site, category: classifyCategory(stem, content), name: stem, content });
       continue;
     }
 

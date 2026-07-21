@@ -70,10 +70,25 @@ export function findDates(text: string): Date[] {
   return found;
 }
 
+// "26년 6월 기준" 같은 월간 현황 요약 문서는 일(day)이 없어 findDates가 하나도
+// 못 잡음 — 정확한 날짜가 없을 때만 "그 달 1일"로 근사(2026-07-21, 실제 업로드
+// 실패 사례 "승강기 안전장치 현황 및 상태_26.6월기준.xlsx"에서 발견).
+const YEAR_MONTH_ONLY_PATTERN = /(20\d{2}|\d{2})\s*년\s*(\d{1,2})\s*월(?!\s*\d{1,2}\s*일)/;
+
+function findYearMonthOnly(text: string): Date | null {
+  const m = YEAR_MONTH_ONLY_PATTERN.exec(text);
+  if (!m) return null;
+  let y = parseInt(m[1], 10);
+  if (y < 100) y += 2000;
+  const mo = parseInt(m[2], 10);
+  if (y < 2000 || y > 2035 || mo < 1 || mo > 12) return null;
+  return new Date(Date.UTC(y, mo - 1, 1));
+}
+
 export function maxDate(text: string): Date | null {
   const dates = findDates(text);
-  if (dates.length === 0) return null;
-  return new Date(Math.max(...dates.map((d) => d.getTime())));
+  if (dates.length > 0) return new Date(Math.max(...dates.map((d) => d.getTime())));
+  return findYearMonthOnly(text);
 }
 
 export function classifyCategory(name: string, content: string): Category {
