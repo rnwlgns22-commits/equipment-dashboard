@@ -148,7 +148,7 @@ describe('HistoryBrowser', () => {
       const user = userEvent.setup();
       renderPage();
 
-      await user.click(screen.getByRole('button', { name: /설비 매칭 안 됨/ }));
+      await user.click(screen.getByRole('tab', { name: /설비 매칭 안 됨/ }));
       expect(screen.getByText('원본 제목')).toBeInTheDocument();
 
       await user.selectOptions(screen.getByTitle('설비를 지정하면 고아 이력에서 빠집니다'), 'E-001');

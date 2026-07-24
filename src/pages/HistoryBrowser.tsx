@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
+import AnimatedTabs from '../components/AnimatedTabs';
 import type { HistoryRecord, HistoryType } from '../types';
 
 const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
@@ -210,26 +211,15 @@ export default function HistoryBrowser() {
         </form>
       )}
 
-      <div className="flex gap-2 border-b border-border">
-        <button
-          type="button"
-          onClick={() => setTab('전체')}
-          className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-            tab === '전체' ? 'border-accent text-accent' : 'border-transparent text-text-dim hover:text-text'
-          }`}
-        >
-          전체 이력 ({histories.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('고아')}
-          className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-            tab === '고아' ? 'border-accent text-accent' : 'border-transparent text-text-dim hover:text-text'
-          }`}
-        >
-          설비 매칭 안 됨 ({orphanCount})
-        </button>
-      </div>
+      <AnimatedTabs
+        layoutId="history-tab"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: '전체', label: '전체 이력', count: histories.length },
+          { value: '고아', label: '설비 매칭 안 됨', count: orphanCount },
+        ]}
+      />
 
       <div className="flex flex-wrap gap-2">
         <input
