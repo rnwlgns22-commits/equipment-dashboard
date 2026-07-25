@@ -19,6 +19,7 @@ const LegalInspection = lazy(() => import('./pages/LegalInspection'));
 const RegularInspection = lazy(() => import('./pages/RegularInspection'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const FeatureGuide = lazy(() => import('./pages/FeatureGuide'));
+const ClipLibrary = lazy(() => import('./pages/ClipLibrary'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function RequireData({ children }: { children: ReactNode }) {
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/regular-inspection" element={<RegularInspection />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/guide" element={<FeatureGuide />} />
+          <Route path="/clips" element={<ClipLibrary />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
