@@ -117,7 +117,7 @@ export default function ControlPanel({
                   <button
                     type="button"
                     onClick={() => onRemoveFloorplan(f.id)}
-                    className="shrink-0 text-text-dim hover:text-risk-high px-1.5 py-1.5 text-xs"
+                    className="shrink-0 text-text-dim hover:text-risk-high p-1.5 -m-0.5 text-xs rounded-lg hover:bg-white/5"
                     aria-label={`${f.name} 도면 삭제`}
                     title="도면 삭제"
                   >

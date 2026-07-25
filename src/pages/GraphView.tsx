@@ -176,7 +176,7 @@ export default function GraphView() {
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
-                className="text-text-dim hover:text-text text-sm leading-none"
+                className="text-text-dim hover:text-text text-sm leading-none p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                 aria-label="닫기"
               >
                 ✕

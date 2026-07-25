@@ -379,7 +379,7 @@ export default function HistoryBrowser() {
               <button
                 type="button"
                 onClick={() => startEditing(h)}
-                className="text-xs text-text-dim hover:text-accent shrink-0"
+                className="text-xs text-text-dim hover:text-accent shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                 aria-label="이력 수정"
                 title="수정"
               >
@@ -388,7 +388,7 @@ export default function HistoryBrowser() {
               <button
                 type="button"
                 onClick={() => handleDelete(h)}
-                className="text-xs text-text-dim hover:text-risk-high shrink-0"
+                className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                 aria-label="이력 삭제"
                 title="삭제"
               >

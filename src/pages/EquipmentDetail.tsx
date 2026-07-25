@@ -356,7 +356,7 @@ export default function EquipmentDetail() {
                         <button
                           type="button"
                           onClick={() => startEditingSpec(k, v)}
-                          className="text-xs text-text-dim hover:text-accent"
+                          className="text-xs text-text-dim hover:text-accent p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                           aria-label={`${k} 수정`}
                           title="수정"
                         >
@@ -365,7 +365,7 @@ export default function EquipmentDetail() {
                         <button
                           type="button"
                           onClick={() => deleteSpec(k)}
-                          className="text-xs text-text-dim hover:text-risk-high"
+                          className="text-xs text-text-dim hover:text-risk-high p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                           aria-label={`${k} 삭제`}
                           title="삭제"
                         >
@@ -540,7 +540,7 @@ export default function EquipmentDetail() {
                   <button
                     type="button"
                     onClick={() => handleDeleteHistory(r)}
-                    className="text-xs text-text-dim hover:text-risk-high shrink-0"
+                    className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                     aria-label={`${r.제목} 이력 삭제`}
                     title="삭제"
                   >

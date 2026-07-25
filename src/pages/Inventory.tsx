@@ -440,7 +440,7 @@ export default function Inventory() {
                     onClick={() => adjustQty(p, -1)}
                     aria-label={`${p.자재명} 재고 1 감소`}
                     title="재고 1 감소"
-                    className="h-6 w-6 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
+                    className="h-7 w-7 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
                   >
                     −
                   </button>
@@ -449,14 +449,14 @@ export default function Inventory() {
                     onClick={() => adjustQty(p, 1)}
                     aria-label={`${p.자재명} 재고 1 증가`}
                     title="재고 1 증가"
-                    className="h-6 w-6 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
+                    className="h-7 w-7 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
                   >
                     +
                   </button>
                   <button
                     type="button"
                     onClick={() => startEditing(p)}
-                    className="text-xs text-text-dim hover:text-accent"
+                    className="text-xs text-text-dim hover:text-accent p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                     aria-label={`${p.자재명} 수정`}
                     title="수정"
                   >
@@ -465,7 +465,7 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => handleDelete(p)}
-                    className="text-xs text-text-dim hover:text-risk-high"
+                    className="text-xs text-text-dim hover:text-risk-high p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                     aria-label={`${p.자재명} 삭제`}
                     title="삭제"
                   >

@@ -306,7 +306,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                   <button
                     type="button"
                     onClick={() => startEditing(s)}
-                    className="text-xs text-text-dim hover:text-accent"
+                    className="text-xs text-text-dim hover:text-accent p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                     aria-label={`${s.항목명} 수정`}
                     title="수정"
                   >
@@ -315,7 +315,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                   <button
                     type="button"
                     onClick={() => handleDelete(s)}
-                    className="text-xs text-text-dim hover:text-risk-high"
+                    className="text-xs text-text-dim hover:text-risk-high p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                     aria-label={`${s.항목명} 삭제`}
                     title="삭제"
                   >

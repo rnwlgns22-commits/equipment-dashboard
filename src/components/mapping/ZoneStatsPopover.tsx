@@ -59,7 +59,7 @@ export default function ZoneStatsPopover({
         <button
           type="button"
           onClick={onClose}
-          className="text-text-dim hover:text-text text-sm leading-none shrink-0"
+          className="text-text-dim hover:text-text text-sm leading-none shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
           aria-label="닫기"
         >
           ✕
