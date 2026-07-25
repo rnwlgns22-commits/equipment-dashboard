@@ -20,6 +20,7 @@ import { dueStateOf, compareInspectionPriority } from '../lib/workOrders';
 import { useThemeColors } from '../lib/colors';
 import Card from '../components/Card';
 import KpiTile from '../components/KpiTile';
+import Reveal from '../components/Reveal';
 
 const BRAIN_BADGE: Record<string, string> = {
   연쇄고장: 'bg-risk-high/15 text-risk-high',
@@ -122,6 +123,7 @@ export default function Dashboard() {
         </p>
       </div>
 
+      <Reveal>
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         <KpiTile
           label="총 설비 수"
@@ -316,6 +318,7 @@ export default function Dashboard() {
           }
         />
       </div>
+      </Reveal>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card title="고장 추이 (최근 24개월, 월별 수리 건수)" className="xl:col-span-2">

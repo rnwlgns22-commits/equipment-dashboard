@@ -9,3 +9,15 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
   // @ts-expect-error 테스트 환경 전용 더미 폴리필 — 실제 DOMMatrix 스펙을 구현하지 않음
   globalThis.DOMMatrix = class DOMMatrix {};
 }
+
+// jsdom엔 IntersectionObserver가 없어서 framer-motion의 whileInView(Reveal 컴포넌트가
+// 스크롤 리빌에 사용)가 마운트되자마자 터짐(2026-07-25, Reveal 도입하며 발견). 실제
+// 교차 판정은 테스트에서 의미 없으므로 아무 동작 안 하는 더미로 충분.
+if (typeof globalThis.IntersectionObserver === 'undefined') {
+  // @ts-expect-error 테스트 환경 전용 더미 폴리필 — 실제로 교차를 계산하지 않음
+  globalThis.IntersectionObserver = class IntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
+import Reveal from '../components/Reveal';
 import type { Category, EquipmentStatus } from '../types';
 
 const CATEGORIES: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
@@ -130,11 +131,11 @@ export default function EquipmentList() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((e) => {
+        {filtered.map((e, i) => {
           const risk = riskOf.get(e.설비ID);
           return (
+            <Reveal key={e.설비ID} index={i}>
             <Link
-              key={e.설비ID}
               to={`/equipment/${e.설비ID}`}
               className="rounded-xl border border-border bg-card p-4 hover:border-white/20 transition-colors"
             >
@@ -167,6 +168,7 @@ export default function EquipmentList() {
                 <span className="rounded-full border border-border px-2 py-0.5">{e.상태}</span>
               </div>
             </Link>
+            </Reveal>
           );
         })}
         {filtered.length === 0 && (

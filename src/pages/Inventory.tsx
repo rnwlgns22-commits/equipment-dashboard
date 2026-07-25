@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
+import Reveal from '../components/Reveal';
 import type { Part } from '../types';
 
 const emptyForm = {
@@ -270,14 +271,14 @@ export default function Inventory() {
             {parts.length === 0 ? '등록된 자재가 없습니다.' : '검색 조건에 맞는 자재가 없습니다.'}
           </p>
         )}
-        {list.map((p) => {
+        {list.map((p, i) => {
           const low = isLowStock(p);
           const linked = p.연결설비ID.map((id) => equipmentsById.get(id)).filter((e): e is NonNullable<typeof e> => Boolean(e));
 
           if (editingId === p.id) {
             return (
+              <Reveal key={p.id} index={i}>
               <form
-                key={p.id}
                 onSubmit={saveEdit}
                 className="rounded-xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
               >
@@ -390,12 +391,13 @@ export default function Inventory() {
                   </button>
                 </div>
               </form>
+              </Reveal>
             );
           }
 
           return (
+            <Reveal key={p.id} index={i}>
             <div
-              key={p.id}
               className={`rounded-xl border px-4 py-3 ${low ? 'border-risk-high/50 bg-risk-high/5' : 'border-border bg-card'}`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -468,6 +470,7 @@ export default function Inventory() {
                 </div>
               </div>
             </div>
+            </Reveal>
           );
         })}
       </div>

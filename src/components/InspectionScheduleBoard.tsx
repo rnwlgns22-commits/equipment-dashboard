@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { addDaysUTC } from '../lib/dates';
 import { dueStateOf } from '../lib/workOrders';
+import Reveal from './Reveal';
 import type { InspectionKind, InspectionSchedule } from '../types';
 
 const emptyForm = { 설비ID: '', 항목명: '', 주기일: '', 최근점검일: '', 점검사항: '' };
@@ -192,14 +193,14 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
         {list.length === 0 && (
           <p className="text-sm text-text-dim text-center py-8">등록된 항목이 없습니다.</p>
         )}
-        {list.map((s) => {
+        {list.map((s, i) => {
           const due = dueStateOf(s.다음점검일, now);
           const eq = equipmentsById.get(s.설비ID);
 
           if (editingId === s.id) {
             return (
+              <Reveal key={s.id} index={i}>
               <form
-                key={s.id}
                 onSubmit={saveEdit}
                 className="rounded-xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end"
               >
@@ -260,11 +261,13 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                   </button>
                 </div>
               </form>
+              </Reveal>
             );
           }
 
           return (
-            <div key={s.id} className="rounded-xl border border-border bg-card px-4 py-3">
+            <Reveal key={s.id} index={i}>
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -316,6 +319,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                 </div>
               </div>
             </div>
+            </Reveal>
           );
         })}
       </div>

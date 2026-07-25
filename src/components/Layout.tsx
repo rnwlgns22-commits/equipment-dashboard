@@ -81,18 +81,7 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="px-3 pb-1 space-y-1">
-          <NavLink
-            to="/clips"
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              `block rounded-lg px-3 py-2 text-sm transition-colors ${
-                isActive ? 'bg-accent/15 text-accent' : 'text-text-dim hover:bg-white/5 hover:text-text'
-              }`
-            }
-          >
-            유튜브 클립
-          </NavLink>
+        <div className="px-3 pb-1">
           <NavLink
             to="/guide"
             onClick={() => setMobileOpen(false)}

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import AnimatedTabs from '../components/AnimatedTabs';
+import Reveal from '../components/Reveal';
 import type { HistoryRecord, HistoryType } from '../types';
 
 const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
@@ -272,10 +273,10 @@ export default function HistoryBrowser() {
       )}
 
       <div className="space-y-2">
-        {filtered.map((h) =>
+        {filtered.map((h, i) =>
           editingId === h.id ? (
+            <Reveal key={h.id} index={i}>
             <form
-              key={h.id}
               onSubmit={saveEdit}
               className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/50 bg-card px-4 py-3"
             >
@@ -327,9 +328,10 @@ export default function HistoryBrowser() {
                 취소
               </button>
             </form>
+            </Reveal>
           ) : (
+            <Reveal key={h.id} index={i}>
             <div
-              key={h.id}
               className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3"
             >
               <input
@@ -387,6 +389,7 @@ export default function HistoryBrowser() {
                 ✕
               </button>
             </div>
+            </Reveal>
           ),
         )}
         {filtered.length === 0 && (
