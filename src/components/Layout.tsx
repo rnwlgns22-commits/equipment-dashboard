@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store';
 import ThemeToggle from './ThemeToggle';
+import ToastContainer from './ToastContainer';
 
 function RouteFallback() {
   return <div className="p-8 text-text-dim text-sm">불러오는 중…</div>;
@@ -119,6 +120,7 @@ export default function Layout() {
           </AnimatePresence>
         </Suspense>
       </main>
+      <ToastContainer />
     </div>
   );
 }

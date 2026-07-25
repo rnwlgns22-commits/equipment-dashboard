@@ -4,6 +4,7 @@ import { useAppStore } from '../store';
 import { addDaysUTC } from '../lib/dates';
 import { dueStateOf } from '../lib/workOrders';
 import Reveal from './Reveal';
+import { showToast } from '../toastStore';
 import type { InspectionKind, InspectionSchedule } from '../types';
 
 const emptyForm = { 설비ID: '', 항목명: '', 주기일: '', 최근점검일: '', 점검사항: '' };
@@ -51,6 +52,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
     });
     setForm(emptyForm);
     setAdding(false);
+    showToast(`${itemLabel}을(를) 추가했습니다`);
   };
 
   const startEditing = (s: InspectionSchedule) => {
@@ -78,6 +80,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
       점검사항: editForm.점검사항.trim() || undefined,
     });
     setEditingId(null);
+    showToast(`${itemLabel}을(를) 수정했습니다`);
   };
 
   // 현장에서 점검을 실제로 마쳤을 때 한 번에 갱신 — 최근점검일을 오늘로, 다음점검일을
@@ -99,11 +102,13 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
       내용: s.점검사항,
       출처파일: s.종류 === '법정점검' ? '법정점검 기록' : '정기점검 기록',
     });
+    showToast(`"${s.항목명}" 오늘 완료 처리했습니다`);
   };
 
   const handleDelete = (s: InspectionSchedule) => {
     if (!window.confirm(`"${s.항목명}" 항목을 삭제할까요?`)) return;
     deleteInspectionSchedule(s.id);
+    showToast(`${itemLabel}을(를) 삭제했습니다`);
   };
 
   return (

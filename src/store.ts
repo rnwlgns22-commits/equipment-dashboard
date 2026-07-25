@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db } from './db';
 import { useMappingStore } from './mappingStore';
+import { showToast } from './toastStore';
 import type { Equipment, HistoryRecord, InspectionSchedule, Part } from './types';
 
 interface AppState {
@@ -31,7 +32,10 @@ interface AppState {
 // 데이터는 이미 낙관적으로 갱신돼 있으니 앱이 멈추진 않지만, 새로고침하면 그 변경분만
 // 조용히 사라질 수 있어서 최소한 콘솔에는 남겨둔다(2026-07-20 코드리뷰에서 발견).
 function persist(promise: Promise<unknown>): void {
-  promise.catch((err) => console.error('IndexedDB 저장 실패 — 새로고침하면 이 변경이 사라질 수 있습니다', err));
+  promise.catch((err) => {
+    console.error('IndexedDB 저장 실패 — 새로고침하면 이 변경이 사라질 수 있습니다', err);
+    showToast('저장 실패 — 새로고침하면 방금 변경한 내용이 사라질 수 있습니다', 'error');
+  });
 }
 
 export const useAppStore = create<AppState>((set, get) => ({

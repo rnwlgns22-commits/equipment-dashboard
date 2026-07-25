@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import Reveal from '../components/Reveal';
+import { showToast } from '../toastStore';
 import type { Part } from '../types';
 
 const emptyForm = {
@@ -73,6 +74,7 @@ export default function Inventory() {
     setForm(emptyForm);
     setLinkTargets([]);
     setAdding(false);
+    showToast('자재를 추가했습니다');
   };
 
   const startEditing = (p: Part) => {
@@ -107,6 +109,7 @@ export default function Inventory() {
       비고: editForm.비고.trim() || undefined,
     });
     setEditingId(null);
+    showToast('자재 정보를 수정했습니다');
   };
 
   const toggleEditLinkTarget = (id: string) => {
@@ -120,6 +123,7 @@ export default function Inventory() {
   const handleDelete = (p: Part) => {
     if (!window.confirm(`"${p.자재명}" 자재를 삭제할까요?`)) return;
     deletePart(p.id);
+    showToast('자재를 삭제했습니다');
   };
 
   const toggleLinkTarget = (id: string) => {

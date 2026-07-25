@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
+import { showToast } from '../toastStore';
 import Reveal from '../components/Reveal';
 import type { Category, EquipmentStatus } from '../types';
 
@@ -65,8 +66,10 @@ export default function EquipmentList() {
     if (!window.confirm(`선택한 설비 ${selected.size}개를 삭제할까요? 관련 이력은 고아 이력으로 남습니다.`)) {
       return;
     }
+    const count = selected.size;
     selected.forEach((id) => deleteEquipment(id));
     setSelected(new Set());
+    showToast(`설비 ${count}개를 삭제했습니다`);
   };
 
   return (

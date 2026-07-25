@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import AnimatedTabs from '../components/AnimatedTabs';
 import Reveal from '../components/Reveal';
+import { showToast } from '../toastStore';
 import type { HistoryRecord, HistoryType } from '../types';
 
 const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
@@ -45,6 +46,7 @@ export default function HistoryBrowser() {
       비용: editForm.비용 && 비용 > 0 ? 비용 : undefined,
     });
     setEditingId(null);
+    showToast('이력을 수정했습니다');
   };
 
   const orphanCount = useMemo(() => histories.filter((h) => !h.설비ID).length, [histories]);
@@ -92,8 +94,10 @@ export default function HistoryBrowser() {
   const bulkDelete = () => {
     if (selected.size === 0) return;
     if (!window.confirm(`선택한 이력 ${selected.size}건을 삭제할까요?`)) return;
+    const count = selected.size;
     selected.forEach((id) => deleteHistory(id));
     setSelected(new Set());
+    showToast(`이력 ${count}건을 삭제했습니다`);
   };
 
   const submitAdd = (e: React.FormEvent) => {
@@ -113,11 +117,13 @@ export default function HistoryBrowser() {
     addHistory(record);
     setAddForm(emptyAddForm);
     setAdding(false);
+    showToast('이력을 추가했습니다');
   };
 
   const handleDelete = (h: HistoryRecord) => {
     if (!window.confirm(`"${h.제목}" 이력을 삭제할까요?`)) return;
     deleteHistory(h.id);
+    showToast('이력을 삭제했습니다');
   };
 
   return (

@@ -7,6 +7,7 @@ import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../l
 import { buildRecordsFromCandidates } from '../lib/uploadCommit';
 import type { Equipment } from '../types';
 import UploadReview from '../components/UploadReview';
+import { showToast } from '../toastStore';
 import EquipmentFormFields, { emptyEquipmentForm, equipmentFieldsFromForm } from '../components/EquipmentFormFields';
 
 type Tab = 'manual' | 'file';
@@ -99,6 +100,7 @@ export default function AddEquipment() {
     appendData(newEquipments, newHistories);
     cancelFileReview();
     navigate('/equipment');
+    showToast(`설비 ${newEquipments.length}개, 이력 ${newHistories.length}건을 반영했습니다`);
   };
 
   if (tab === 'file' && fileMode === 'review') {

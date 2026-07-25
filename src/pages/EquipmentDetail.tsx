@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
+import { showToast } from '../toastStore';
 import Card from '../components/Card';
 import EquipmentFormFields, { emptyEquipmentForm, equipmentFieldsFromForm, type EquipmentFormState } from '../components/EquipmentFormFields';
 import type { HistoryRecord, HistoryType } from '../types';
@@ -61,6 +62,7 @@ export default function EquipmentDetail() {
     if (!equipment || !form.설비명.trim()) return;
     updateEquipment(equipment.설비ID, equipmentFieldsFromForm(form));
     setEditing(false);
+    showToast('설비 정보를 수정했습니다');
   };
 
   const handleDelete = () => {
@@ -68,8 +70,10 @@ export default function EquipmentDetail() {
     if (!window.confirm(`"${equipment.설비명}"(${equipment.설비ID})을(를) 삭제할까요? 점검·수리 이력은 남지만 이 설비와의 연결은 끊어집니다.`)) {
       return;
     }
+    const name = equipment.설비명;
     deleteEquipment(equipment.설비ID);
     navigate('/equipment');
+    showToast(`"${name}" 설비를 삭제했습니다`);
   };
 
   const [connectTarget, setConnectTarget] = useState('');
@@ -121,11 +125,13 @@ export default function EquipmentDetail() {
     });
     setHistoryForm({ 날짜: '', 유형: '점검', 제목: '', 비용: '' });
     setAddingHistory(false);
+    showToast('이력을 추가했습니다');
   };
 
   const handleDeleteHistory = (r: HistoryRecord) => {
     if (!window.confirm(`"${r.제목}" 이력을 삭제할까요?`)) return;
     deleteHistory(r.id);
+    showToast('이력을 삭제했습니다');
   };
 
   // 상세사양(Record<string,string>)은 지금까지 업로드 파이프라인이 채운 값을 보기만
