@@ -13,6 +13,25 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
+      // 기본 generateSW는 빌드 산출물을 통째로 프리캐시함 — 그래프뷰(three.js,
+      // 1.4MB)·업로드파이프라인(1.16MB)까지 설치 시점에 다 받아버려서, 원래
+      // App.tsx에서 lazy loading으로 "방문할 때만 받기"로 뺀 의도가 무력화됨
+      // (2026-07-26 발견). 이 두 개만 globIgnores로 프리캐시에서 빼고,
+      // runtimeCaching으로 "실제로 그 페이지에 들어갈 때 받아서 캐싱"하도록 바꿈 —
+      // 첫 방문 후엔 오프라인에서도 그대로 캐시에서 씀.
+      workbox: {
+        globIgnores: ['**/GraphView-*.js', '**/uploadPipeline-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/(GraphView|uploadPipeline)-.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'heavy-chunks',
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
+      },
       manifest: {
         name: '설비관리 대시보드',
         short_name: '설비관리',
