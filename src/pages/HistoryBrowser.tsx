@@ -5,6 +5,8 @@ import { useAppStore } from '../store';
 import AnimatedTabs from '../components/AnimatedTabs';
 import Reveal from '../components/Reveal';
 import { showToast } from '../toastStore';
+import { csvBlob } from '../lib/csv';
+import { downloadBlob } from '../lib/vaultExport';
 import type { HistoryRecord, HistoryType } from '../types';
 
 const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
@@ -66,6 +68,19 @@ export default function HistoryBrowser() {
       .sort((a, b) => b.날짜.localeCompare(a.날짜));
   }, [histories, tab, typeFilter, from, to, query, equipmentsById]);
 
+  const exportCsv = () => {
+    const rows = filtered.map((h) => ({
+      날짜: h.날짜,
+      유형: h.유형,
+      제목: h.제목,
+      설비ID: h.설비ID ?? '',
+      설비명: h.설비ID ? equipmentsById.get(h.설비ID)?.설비명 ?? '' : '',
+      비용: h.비용 ?? '',
+      내용: h.내용 ?? '',
+    }));
+    downloadBlob(csvBlob(rows), `점검수리이력_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
   // 목록이 많아지면 하나씩 지우는 게 번거로워서(2026-07-21 요청) 행마다 체크박스 +
   // 상단 일괄삭제 추가. 필터가 바뀌어도 선택은 유지(필터 view와 무관하게 지워짐).
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -96,9 +111,13 @@ export default function HistoryBrowser() {
     if (selected.size === 0) return;
     if (!window.confirm(`선택한 이력 ${selected.size}건을 삭제할까요?`)) return;
     const count = selected.size;
+    const snapshot = { histories };
     selected.forEach((id) => deleteHistory(id));
     setSelected(new Set());
-    showToast(`이력 ${count}건을 삭제했습니다`);
+    showToast(`이력 ${count}건을 삭제했습니다`, 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   const submitAdd = (e: React.FormEvent) => {
@@ -123,8 +142,12 @@ export default function HistoryBrowser() {
 
   const handleDelete = (h: HistoryRecord) => {
     if (!window.confirm(`"${h.제목}" 이력을 삭제할까요?`)) return;
+    const snapshot = { histories };
     deleteHistory(h.id);
-    showToast('이력을 삭제했습니다');
+    showToast('이력을 삭제했습니다', 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   return (
@@ -258,7 +281,15 @@ export default function HistoryBrowser() {
           onChange={(e) => setTo(e.target.value)}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
         />
-        <label className="ml-auto flex items-center gap-1.5 text-xs text-text-dim">
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={filtered.length === 0}
+          className="ml-auto rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          CSV 내보내기
+        </button>
+        <label className="flex items-center gap-1.5 text-xs text-text-dim">
           <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} />
           전체선택
         </label>

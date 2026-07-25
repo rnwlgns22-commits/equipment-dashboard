@@ -71,9 +71,13 @@ export default function EquipmentDetail() {
       return;
     }
     const name = equipment.설비명;
+    const snapshot = { equipments, histories, inspectionSchedules: useAppStore.getState().inspectionSchedules, parts: useAppStore.getState().parts };
     deleteEquipment(equipment.설비ID);
     navigate('/equipment');
-    showToast(`"${name}" 설비를 삭제했습니다`);
+    showToast(`"${name}" 설비를 삭제했습니다`, 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   const [connectTarget, setConnectTarget] = useState('');
@@ -130,8 +134,12 @@ export default function EquipmentDetail() {
 
   const handleDeleteHistory = (r: HistoryRecord) => {
     if (!window.confirm(`"${r.제목}" 이력을 삭제할까요?`)) return;
+    const snapshot = { histories };
     deleteHistory(r.id);
-    showToast('이력을 삭제했습니다');
+    showToast('이력을 삭제했습니다', 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   // 상세사양(Record<string,string>)은 지금까지 업로드 파이프라인이 채운 값을 보기만

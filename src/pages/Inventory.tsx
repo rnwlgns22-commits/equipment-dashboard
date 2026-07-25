@@ -4,6 +4,8 @@ import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import Reveal from '../components/Reveal';
 import { showToast } from '../toastStore';
+import { csvBlob } from '../lib/csv';
+import { downloadBlob } from '../lib/vaultExport';
 import type { Part } from '../types';
 
 const emptyForm = {
@@ -55,6 +57,21 @@ export default function Inventory() {
   );
 
   const lowStockCount = useMemo(() => parts.filter(isLowStock).length, [parts]);
+
+  const exportCsv = () => {
+    const rows = list.map((p) => ({
+      자재명: p.자재명,
+      규격: p.규격 ?? '',
+      단위: p.단위,
+      현재수량: p.현재수량,
+      안전재고: p.안전재고 ?? '',
+      단가: p.단가 ?? '',
+      보관위치: p.보관위치 ?? '',
+      연결설비: p.연결설비ID.map((id) => equipmentsById.get(id)?.설비명 ?? id).join('; '),
+      비고: p.비고 ?? '',
+    }));
+    downloadBlob(csvBlob(rows), `자재재고_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
 
   const submitAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,8 +140,12 @@ export default function Inventory() {
 
   const handleDelete = (p: Part) => {
     if (!window.confirm(`"${p.자재명}" 자재를 삭제할까요?`)) return;
+    const snapshot = { parts };
     deletePart(p.id);
-    showToast('자재를 삭제했습니다');
+    showToast('자재를 삭제했습니다', 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   const toggleLinkTarget = (id: string) => {
@@ -149,6 +170,14 @@ export default function Inventory() {
           placeholder="자재명·보관위치 검색"
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-56 outline-none focus:border-accent/60"
         />
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={list.length === 0}
+          className="rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+        >
+          CSV 내보내기
+        </button>
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}

@@ -24,9 +24,22 @@ export default function ToastContainer() {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={() => dismiss(t.id)}
-            className={`pointer-events-auto max-w-sm rounded-2xl border px-4 py-2.5 text-sm shadow-sm cursor-pointer ${STYLES[t.type]}`}
+            className={`pointer-events-auto max-w-sm rounded-2xl border px-4 py-2.5 text-sm shadow-sm cursor-pointer flex items-center gap-3 ${STYLES[t.type]}`}
           >
-            {t.message}
+            <span>{t.message}</span>
+            {t.action && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  t.action!.onClick();
+                  dismiss(t.id);
+                }}
+                className="shrink-0 font-medium underline hover:no-underline"
+              >
+                {t.action.label}
+              </button>
+            )}
           </motion.div>
         ))}
       </AnimatePresence>

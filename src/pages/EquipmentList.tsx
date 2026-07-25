@@ -4,8 +4,10 @@ import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
 import { showToast } from '../toastStore';
+import { csvBlob } from '../lib/csv';
+import { downloadBlob } from '../lib/vaultExport';
 import Reveal from '../components/Reveal';
-import type { Category, EquipmentStatus } from '../types';
+import type { Category, Equipment, EquipmentStatus } from '../types';
 
 const CATEGORIES: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
 const STATUSES: EquipmentStatus[] = ['정상', '수리중', '정지', '폐기'];
@@ -14,6 +16,7 @@ export default function EquipmentList() {
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const deleteEquipment = useAppStore((s) => s.deleteEquipment);
+  const updateEquipment = useAppStore((s) => s.updateEquipment);
   const { stats } = useMemo(() => computeFailureStats(histories), [histories]);
   const riskOf = useMemo(() => new Map(stats.map((s) => [s.설비ID, s.위험등급])), [stats]);
 
@@ -36,6 +39,27 @@ export default function EquipmentList() {
     if (query && !e.설비명.includes(query) && !e.설비ID.includes(query)) return false;
     return true;
   });
+
+  // 지금 화면에 보이는(필터 적용된) 목록만 CSV로 내보냄 — 전체 백업은 설정
+  // 페이지의 JSON/zip으로 이미 되지만, 외부 보고용으로 "이 필터 결과만" 뽑고
+  // 싶을 때를 위한 것(2026-07-25 요청).
+  const exportCsv = () => {
+    const rows = filtered.map((e) => ({
+      설비ID: e.설비ID,
+      설비명: e.설비명,
+      분류: e.분류,
+      사이트: e.사이트,
+      위치: e.위치 ?? '',
+      제조사: e.제조사 ?? '',
+      모델명: e.모델명 ?? '',
+      설치일: e.설치일 ?? '',
+      상태: e.상태,
+      점검주기일: e.점검주기일 ?? '',
+      최근점검일: e.최근점검일 ?? '',
+      다음점검일: e.다음점검일 ?? '',
+    }));
+    downloadBlob(csvBlob(rows), `설비목록_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
 
   // 목록이 늘어나면 하나씩 상세페이지 들어가서 지우는 게 번거로워서(2026-07-21 요청)
   // 카드마다 체크박스 + 상단 일괄삭제 추가. 필터가 바뀌어도 선택은 그대로 유지 —
@@ -70,9 +94,45 @@ export default function EquipmentList() {
       return;
     }
     const count = selected.size;
+    const snapshot = {
+      equipments: useAppStore.getState().equipments,
+      histories: useAppStore.getState().histories,
+      inspectionSchedules: useAppStore.getState().inspectionSchedules,
+      parts: useAppStore.getState().parts,
+    };
     selected.forEach((id) => deleteEquipment(id));
     setSelected(new Set());
-    showToast(`설비 ${count}개를 삭제했습니다`);
+    showToast(`설비 ${count}개를 삭제했습니다`, 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
+  };
+
+  // 여러 설비를 골라 분류·사이트·상태를 한 번에 바꿈(2026-07-25 요청) — 값을
+  // 그대로 두면(빈 문자열) 그 항목은 안 건드림. 셋 다 비워두고 적용 누르는 실수를
+  // 막기 위해 하나도 안 골랐으면 그냥 무시.
+  const [bulkEditing, setBulkEditing] = useState(false);
+  const [bulkCategory, setBulkCategory] = useState('');
+  const [bulkSite, setBulkSite] = useState('');
+  const [bulkStatus, setBulkStatus] = useState('');
+
+  const applyBulkEdit = () => {
+    if (!bulkCategory && !bulkSite.trim() && !bulkStatus) return;
+    const patch: Partial<Equipment> = {};
+    if (bulkCategory) patch.분류 = bulkCategory as Category;
+    if (bulkSite.trim()) patch.사이트 = bulkSite.trim();
+    if (bulkStatus) patch.상태 = bulkStatus as EquipmentStatus;
+    const count = selected.size;
+    const snapshot = { equipments: useAppStore.getState().equipments };
+    selected.forEach((id) => updateEquipment(id, patch));
+    setBulkEditing(false);
+    setBulkCategory('');
+    setBulkSite('');
+    setBulkStatus('');
+    showToast(`설비 ${count}개를 일괄 수정했습니다`, 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   return (
@@ -115,7 +175,15 @@ export default function EquipmentList() {
             <option key={s}>{s}</option>
           ))}
         </select>
-        <label className="ml-auto flex items-center gap-1.5 text-xs text-text-dim">
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={filtered.length === 0}
+          className="ml-auto rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          CSV 내보내기
+        </button>
+        <label className="flex items-center gap-1.5 text-xs text-text-dim">
           <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} />
           전체선택
         </label>
@@ -123,16 +191,59 @@ export default function EquipmentList() {
       </div>
 
       {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-sm">
-          <span>{selected.size}개 선택됨</span>
-          <div className="flex gap-3 shrink-0">
-            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-text-dim hover:text-text">
-              선택 해제
-            </button>
-            <button type="button" onClick={bulkDelete} className="text-xs text-risk-high hover:underline">
-              선택 삭제
-            </button>
+        <div className="rounded-lg border border-accent/30 bg-accent/10 text-sm">
+          <div className="flex items-center justify-between gap-3 px-4 py-2">
+            <span>{selected.size}개 선택됨</span>
+            <div className="flex gap-3 shrink-0">
+              <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-text-dim hover:text-text">
+                선택 해제
+              </button>
+              <button type="button" onClick={() => setBulkEditing((v) => !v)} className="text-xs text-accent hover:underline">
+                {bulkEditing ? '일괄 수정 닫기' : '일괄 수정'}
+              </button>
+              <button type="button" onClick={bulkDelete} className="text-xs text-risk-high hover:underline">
+                선택 삭제
+              </button>
+            </div>
           </div>
+          {bulkEditing && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-accent/30 px-4 py-2.5">
+              <select
+                value={bulkCategory}
+                onChange={(e) => setBulkCategory(e.target.value)}
+                className="rounded-lg border border-border bg-card px-2 py-1.5 text-xs"
+              >
+                <option value="">분류 변경 안 함</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+              <input
+                value={bulkSite}
+                onChange={(e) => setBulkSite(e.target.value)}
+                placeholder="사이트 변경 안 함"
+                className="w-36 rounded-lg border border-border bg-card px-2 py-1.5 text-xs"
+              />
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="rounded-lg border border-border bg-card px-2 py-1.5 text-xs"
+              >
+                <option value="">상태 변경 안 함</option>
+                {STATUSES.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={applyBulkEdit}
+                disabled={!bulkCategory && !bulkSite.trim() && !bulkStatus}
+                className="rounded-lg bg-accent text-bg px-3 py-1.5 text-xs font-medium hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {selected.size}개에 적용
+              </button>
+            </div>
+          )}
         </div>
       )}
 

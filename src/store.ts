@@ -26,6 +26,7 @@ interface AppState {
   updatePart: (id: string, patch: Partial<Part>) => void;
   deletePart: (id: string) => void;
   loadParts: (parts: Part[]) => void;
+  restoreSnapshot: (snapshot: Partial<Pick<AppState, 'equipments' | 'histories' | 'inspectionSchedules' | 'parts'>>) => void;
 }
 
 // IndexedDB 쓰기는 실패할 수 있음(용량 초과, 프라이빗 브라우징 제약 등). 실패해도 화면의
@@ -154,6 +155,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   loadParts: (parts) => {
     set({ parts });
     persist(db.parts.clear().then(() => db.parts.bulkPut(parts)));
+  },
+  // 삭제 액션의 "실행취소" 토스트용 — 삭제 직전 상태(전달받은 슬라이스만)를
+  // 그대로 되돌린다. 참고: deleteEquipment가 같이 건드리는 매핑 배치(mappingStore)는
+  // 스냅샷 대상이 아니라서 실행취소해도 복원되지 않음 — 범위를 4개 슬라이스로
+  // 한정한 의도적 제약(2026-07-25).
+  restoreSnapshot: (snapshot) => {
+    set(snapshot);
+    if (snapshot.equipments) persist(db.equipments.clear().then(() => db.equipments.bulkPut(snapshot.equipments!)));
+    if (snapshot.histories) persist(db.histories.clear().then(() => db.histories.bulkPut(snapshot.histories!)));
+    if (snapshot.inspectionSchedules) {
+      persist(db.inspectionSchedules.clear().then(() => db.inspectionSchedules.bulkPut(snapshot.inspectionSchedules!)));
+    }
+    if (snapshot.parts) persist(db.parts.clear().then(() => db.parts.bulkPut(snapshot.parts!)));
   },
 }));
 

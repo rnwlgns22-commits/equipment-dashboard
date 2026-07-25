@@ -108,8 +108,12 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
 
   const handleDelete = (s: InspectionSchedule) => {
     if (!window.confirm(`"${s.항목명}" 항목을 삭제할까요?`)) return;
+    const snapshot = { inspectionSchedules: schedules };
     deleteInspectionSchedule(s.id);
-    showToast(`${itemLabel}을(를) 삭제했습니다`);
+    showToast(`${itemLabel}을(를) 삭제했습니다`, 'success', {
+      label: '실행취소',
+      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+    });
   };
 
   return (
