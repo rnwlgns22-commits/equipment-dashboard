@@ -23,9 +23,9 @@ const DARK = {
 
 const LIGHT = {
   ...SHARED,
-  bg: '#f7f8fa',
+  bg: '#e7eaef',
   card: '#ffffff',
-  border: '#e2e5ea',
+  border: '#d5dbe3',
   text: '#0f172a',
   textDim: '#64748b',
 };

@@ -391,7 +391,12 @@ export default function EquipmentDetail() {
                   <Row label="예상 다음 고장" value={stat.예상다음고장일 ?? '-'} />
                 </dl>
               ) : (
-                <p className="text-sm text-text-dim">수리 이력이 없습니다.</p>
+                <div className="text-sm text-text-dim">
+                  수리 이력이 없습니다.{' '}
+                  <button type="button" onClick={() => setAddingHistory(true)} className="text-accent hover:underline">
+                    이력 추가하기 →
+                  </button>
+                </div>
               )}
             </Card>
 
@@ -519,7 +524,14 @@ export default function EquipmentDetail() {
         )}
 
         {records.length === 0 ? (
-          <p className="text-sm text-text-dim">이력이 없습니다.</p>
+          <div className="text-sm text-text-dim">
+            이력이 없습니다.{' '}
+            {!addingHistory && (
+              <button type="button" onClick={() => setAddingHistory(true)} className="text-accent hover:underline">
+                지금 추가하기 →
+              </button>
+            )}
+          </div>
         ) : (
           <ol className="relative border-l border-border ml-2 space-y-4">
             {records.map((r) => (

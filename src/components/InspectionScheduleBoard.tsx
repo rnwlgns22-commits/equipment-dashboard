@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import { addDaysUTC } from '../lib/dates';
 import { dueStateOf } from '../lib/workOrders';
@@ -198,6 +199,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
         {list.length === 0 && (
           <p className="text-sm text-text-dim text-center py-8">등록된 항목이 없습니다.</p>
         )}
+        <AnimatePresence>
         {list.map((s, i) => {
           const due = dueStateOf(s.다음점검일, now);
           const eq = equipmentsById.get(s.설비ID);
@@ -327,6 +329,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
             </Reveal>
           );
         })}
+        </AnimatePresence>
       </div>
     </div>
   );

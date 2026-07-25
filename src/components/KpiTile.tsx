@@ -61,7 +61,7 @@ export default function KpiTile({
         onClick={expandable ? onOpen : undefined}
         whileHover={expandable ? { y: -3 } : undefined}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className={`rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors ${
+        className={`rounded-2xl border border-border bg-card p-5 transition-colors ${
           expandable ? 'cursor-pointer hover:border-white/20' : ''
         }`}
       >

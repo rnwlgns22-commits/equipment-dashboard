@@ -128,8 +128,11 @@ export default function GraphView() {
       <div ref={containerRef} className="flex-1 min-h-0 relative overflow-hidden bg-bg-soft">
         {size.width > 0 &&
           (equipments.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-text-dim">
-              표시할 설비가 없습니다.
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-text-dim">
+              <span>표시할 설비가 없습니다.</span>
+              <Link to="/equipment/add" className="text-accent hover:underline">
+                설비 추가하러 가기 →
+              </Link>
             </div>
           ) : is3D ? (
             <ForceGraph3D {...commonProps} showNavInfo={false} />

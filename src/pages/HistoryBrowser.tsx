@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import AnimatedTabs from '../components/AnimatedTabs';
 import Reveal from '../components/Reveal';
@@ -279,6 +280,7 @@ export default function HistoryBrowser() {
       )}
 
       <div className="space-y-2">
+        <AnimatePresence>
         {filtered.map((h, i) =>
           editingId === h.id ? (
             <Reveal key={h.id} index={i}>
@@ -398,6 +400,7 @@ export default function HistoryBrowser() {
             </Reveal>
           ),
         )}
+        </AnimatePresence>
         {filtered.length === 0 && (
           <p className="text-sm text-text-dim text-center py-8">조건에 맞는 이력이 없습니다.</p>
         )}

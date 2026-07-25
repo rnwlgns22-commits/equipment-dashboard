@@ -11,6 +11,7 @@ export default function Reveal({ children, index = 0 }: { children: ReactNode; i
       animate={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: false, amount: 0.3 }}
+      exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15, ease: 'easeOut' } }}
       transition={{ duration: 0.45, ease: 'easeOut', delay: (index % 6) * 0.05 }}
     >
       {children}

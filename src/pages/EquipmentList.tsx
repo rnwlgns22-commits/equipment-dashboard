@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
 import { showToast } from '../toastStore';
@@ -25,6 +26,8 @@ export default function EquipmentList() {
     () => ['전체', ...new Set(equipments.map((e) => e.사이트 || '미분류'))],
     [equipments],
   );
+
+  const hasActiveFilter = query !== '' || category !== '전체' || site !== '전체' || status !== '전체';
 
   const filtered = equipments.filter((e) => {
     if (category !== '전체' && e.분류 !== category) return false;
@@ -134,6 +137,7 @@ export default function EquipmentList() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <AnimatePresence>
         {filtered.map((e, i) => {
           const risk = riskOf.get(e.설비ID);
           return (
@@ -174,8 +178,34 @@ export default function EquipmentList() {
             </Reveal>
           );
         })}
+        </AnimatePresence>
         {filtered.length === 0 && (
-          <p className="text-sm text-text-dim col-span-full py-8 text-center">조건에 맞는 설비가 없습니다.</p>
+          <div className="col-span-full py-8 text-center text-sm text-text-dim">
+            {hasActiveFilter ? (
+              <>
+                조건에 맞는 설비가 없습니다.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    setCategory('전체');
+                    setSite('전체');
+                    setStatus('전체');
+                  }}
+                  className="text-accent hover:underline"
+                >
+                  필터 초기화
+                </button>
+              </>
+            ) : (
+              <>
+                등록된 설비가 없습니다.{' '}
+                <Link to="/equipment/add" className="text-accent hover:underline">
+                  설비 추가하러 가기 →
+                </Link>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

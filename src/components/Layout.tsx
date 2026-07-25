@@ -5,8 +5,22 @@ import { useAppStore } from '../store';
 import ThemeToggle from './ThemeToggle';
 import ToastContainer from './ToastContainer';
 
+// 텍스트 한 줄("불러오는 중…")만 보이던 걸 스켈레톤으로 교체(2026-07-25) — 특히
+// three.js를 통째로 물고 오는 그래프뷰처럼 lazy 로드가 체감되는 화면에서 개선.
+// 어느 라우트든 재사용하는 범용 모양이라 페이지별 실제 레이아웃과 완전히
+// 일치하진 않지만, 빈 화면보다 로딩 중이라는 걸 훨씬 잘 전달함.
 function RouteFallback() {
-  return <div className="p-8 text-text-dim text-sm">불러오는 중…</div>;
+  return (
+    <div className="p-6 md:p-8 space-y-6 animate-pulse">
+      <div className="h-7 w-48 rounded-lg bg-card" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-24 rounded-2xl bg-card border border-border" />
+        ))}
+      </div>
+      <div className="h-64 rounded-2xl bg-card border border-border" />
+    </div>
+  );
 }
 
 const navItems = [

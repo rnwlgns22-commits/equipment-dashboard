@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import Reveal from '../components/Reveal';
 import { showToast } from '../toastStore';
@@ -275,6 +276,7 @@ export default function Inventory() {
             {parts.length === 0 ? '등록된 자재가 없습니다.' : '검색 조건에 맞는 자재가 없습니다.'}
           </p>
         )}
+        <AnimatePresence>
         {list.map((p, i) => {
           const low = isLowStock(p);
           const linked = p.연결설비ID.map((id) => equipmentsById.get(id)).filter((e): e is NonNullable<typeof e> => Boolean(e));
@@ -477,6 +479,7 @@ export default function Inventory() {
             </Reveal>
           );
         })}
+        </AnimatePresence>
       </div>
     </div>
   );
