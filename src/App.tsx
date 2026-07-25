@@ -31,6 +31,10 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // 이 코드가 실행됐다는 건 현재 번들은 정상적으로 로드됐다는 뜻 —
+    // main.tsx의 vite:preloadError 자동 새로고침 플래그를 지워서, 나중에
+    // 또 재배포로 청크가 stale해지면 그때도 다시 자동 복구가 되게 함.
+    sessionStorage.removeItem('reloaded-after-preload-error');
     hydrateFromDb().finally(() => setHydrated(true));
   }, []);
 
