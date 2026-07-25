@@ -142,7 +142,7 @@ export default function HistoryBrowser() {
       {adding && (
         <form
           onSubmit={submitAdd}
-          className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
         >
           <label className="block">
             <span className="text-xs text-text-dim">날짜 *</span>
@@ -284,19 +284,19 @@ export default function HistoryBrowser() {
             <Reveal key={h.id} index={i}>
             <form
               onSubmit={saveEdit}
-              className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/50 bg-card px-4 py-3"
+              className="flex flex-wrap items-center gap-2 rounded-2xl border border-accent/50 bg-card px-4 py-3"
             >
               <input
                 type="date"
                 required
                 value={editForm.날짜}
                 onChange={(e) => setEditForm((f) => ({ ...f, 날짜: e.target.value }))}
-                className="w-32 shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                className="w-32 shrink-0 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
               />
               <select
                 value={editForm.유형}
                 onChange={(e) => setEditForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
-                className="shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                className="shrink-0 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
               >
                 <option>점검</option>
                 <option>수리</option>
@@ -305,7 +305,7 @@ export default function HistoryBrowser() {
                 required
                 value={editForm.제목}
                 onChange={(e) => setEditForm((f) => ({ ...f, 제목: e.target.value }))}
-                className="flex-1 min-w-0 rounded border border-border bg-bg-soft px-2 py-1 text-sm"
+                className="flex-1 min-w-0 rounded-lg border border-border bg-bg-soft px-2 py-1 text-sm"
               />
               <input
                 type="number"
@@ -314,14 +314,14 @@ export default function HistoryBrowser() {
                 onChange={(e) => setEditForm((f) => ({ ...f, 비용: e.target.value }))}
                 placeholder="비용(원)"
                 aria-label="비용(원)"
-                className="w-24 shrink-0 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                className="w-24 shrink-0 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
               />
               <input
                 value={editForm.내용}
                 onChange={(e) => setEditForm((f) => ({ ...f, 내용: e.target.value }))}
                 placeholder="내용"
                 aria-label="내용"
-                className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-sm"
+                className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-sm"
               />
               <button type="submit" className="text-xs text-accent hover:underline shrink-0">
                 저장
@@ -338,7 +338,7 @@ export default function HistoryBrowser() {
           ) : (
             <Reveal key={h.id} index={i}>
             <div
-              className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3"
+              className="flex items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3"
             >
               <input
                 type="checkbox"

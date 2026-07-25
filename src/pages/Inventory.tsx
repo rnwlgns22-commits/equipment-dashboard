@@ -160,7 +160,7 @@ export default function Inventory() {
       {adding && (
         <form
           onSubmit={submitAdd}
-          className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
+          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
         >
           <label className="block">
             <span className="text-xs text-text-dim">자재명 *</span>
@@ -284,7 +284,7 @@ export default function Inventory() {
               <Reveal key={p.id} index={i}>
               <form
                 onSubmit={saveEdit}
-                className="rounded-xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
+                className="rounded-2xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
               >
                 <label className="block">
                   <span className="text-xs text-text-dim">자재명</span>
@@ -402,7 +402,7 @@ export default function Inventory() {
           return (
             <Reveal key={p.id} index={i}>
             <div
-              className={`rounded-xl border px-4 py-3 ${low ? 'border-risk-high/50 bg-risk-high/5' : 'border-border bg-card'}`}
+              className={`rounded-2xl border px-4 py-3 ${low ? 'border-risk-high/50 bg-risk-high/5' : 'border-border bg-card'}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -440,7 +440,7 @@ export default function Inventory() {
                     onClick={() => adjustQty(p, -1)}
                     aria-label={`${p.자재명} 재고 1 감소`}
                     title="재고 1 감소"
-                    className="h-6 w-6 rounded border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
+                    className="h-6 w-6 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
                   >
                     −
                   </button>
@@ -449,7 +449,7 @@ export default function Inventory() {
                     onClick={() => adjustQty(p, 1)}
                     aria-label={`${p.자재명} 재고 1 증가`}
                     title="재고 1 증가"
-                    className="h-6 w-6 rounded border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
+                    className="h-6 w-6 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
                   >
                     +
                   </button>

@@ -135,7 +135,7 @@ export default function AddEquipment() {
         <button
           type="button"
           onClick={() => setTab('manual')}
-          className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+          className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
             tab === 'manual' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
           }`}
         >
@@ -144,7 +144,7 @@ export default function AddEquipment() {
         <button
           type="button"
           onClick={() => setTab('file')}
-          className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+          className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
             tab === 'file' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
           }`}
         >
@@ -155,7 +155,7 @@ export default function AddEquipment() {
       {tab === 'manual' && (
         <form onSubmit={handleManualSubmit} className="space-y-4">
           {justAdded && (
-            <div className="rounded-xl border border-risk-low/30 bg-risk-low/10 px-4 py-3 text-sm flex items-center justify-between gap-3">
+            <div className="rounded-2xl border border-risk-low/30 bg-risk-low/10 px-4 py-3 text-sm flex items-center justify-between gap-3">
               <span>
                 <strong>{justAdded.name}</strong>이(가) <strong>{justAdded.id}</strong>로 등록되었습니다.
               </span>
@@ -169,7 +169,7 @@ export default function AddEquipment() {
 
           <button
             type="submit"
-            className="rounded-xl bg-accent text-bg font-medium px-5 py-2.5 text-sm hover:brightness-110 transition"
+            className="rounded-lg bg-accent text-bg font-medium px-5 py-2.5 text-sm hover:brightness-110 transition"
           >
             설비 등록
           </button>

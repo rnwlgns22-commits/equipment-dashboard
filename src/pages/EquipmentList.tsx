@@ -140,7 +140,7 @@ export default function EquipmentList() {
             <Reveal key={e.설비ID} index={i}>
             <Link
               to={`/equipment/${e.설비ID}`}
-              className="block rounded-xl border border-border bg-card p-4 hover:border-white/20 transition-colors"
+              className="block rounded-2xl border border-border bg-card p-4 hover:border-white/20 transition-colors"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2 min-w-0">

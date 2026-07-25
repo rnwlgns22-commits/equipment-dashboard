@@ -330,7 +330,7 @@ export default function EquipmentDetail() {
                           if (e.key === 'Enter') saveSpecEdit(k);
                           if (e.key === 'Escape') setEditingSpecKey(null);
                         }}
-                        className="flex-1 min-w-0 rounded border border-accent/50 bg-bg-soft px-2 py-1 text-sm"
+                        className="flex-1 min-w-0 rounded-lg border border-accent/50 bg-bg-soft px-2 py-1 text-sm"
                       />
                       <button
                         type="button"

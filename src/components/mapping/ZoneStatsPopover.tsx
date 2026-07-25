@@ -43,7 +43,7 @@ export default function ZoneStatsPopover({
               value={draftName}
               onChange={(e) => setDraftName(e.target.value)}
               onBlur={commitRename}
-              className="flex-1 min-w-0 rounded border border-accent/50 bg-bg-soft px-2 py-1 text-sm outline-none"
+              className="flex-1 min-w-0 rounded-lg border border-accent/50 bg-bg-soft px-2 py-1 text-sm outline-none"
             />
           </form>
         ) : (

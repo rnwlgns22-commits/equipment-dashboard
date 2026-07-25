@@ -50,31 +50,31 @@ export default function UploadReview({
       </div>
 
       {equipmentCandidates.length === 0 && historyCandidates.length === 0 && failed.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-dim">
+        <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-text-dim">
           지원하는 형식(hwp/hwpx/xls/xlsx/pdf/pptx/docx)의 파일을 찾지 못했습니다.
           다른 폴더를 다시 골라 보세요.
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className="rounded-2xl border border-border bg-card p-3">
           <div className="text-sm font-medium mb-2">설비로 인식 ({equipmentCandidates.length})</div>
           <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
             {equipmentCandidates.map((c) => (
-              <div key={c.key} className="rounded-lg border border-border p-2 space-y-1.5">
+              <div key={c.key} className="rounded-2xl border border-border p-2 space-y-1.5">
                 <div className="text-xs text-text-dim truncate" title={c.relativePath}>
                   {c.fileName}
                 </div>
                 <input
                   value={c.name}
                   onChange={(e) => onUpdateEquipment(c.key, { name: e.target.value })}
-                  className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-sm"
+                  className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-sm"
                 />
                 <div className="flex gap-1.5">
                   <select
                     value={c.category}
                     onChange={(e) => onUpdateEquipment(c.key, { category: e.target.value as Category })}
-                    className="flex-1 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                    className="flex-1 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   >
                     {CATEGORIES.map((cat) => (
                       <option key={cat}>{cat}</option>
@@ -84,7 +84,7 @@ export default function UploadReview({
                     value={c.site}
                     onChange={(e) => onUpdateEquipment(c.key, { site: e.target.value })}
                     placeholder="사이트"
-                    className="flex-1 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                    className="flex-1 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   />
                 </div>
               </div>
@@ -93,24 +93,24 @@ export default function UploadReview({
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className="rounded-2xl border border-border bg-card p-3">
           <div className="text-sm font-medium mb-2">이력으로 인식 ({historyCandidates.length})</div>
           <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
             {historyCandidates.map((h) => (
-              <div key={h.key} className="rounded-lg border border-border p-2 space-y-1.5">
+              <div key={h.key} className="rounded-2xl border border-border p-2 space-y-1.5">
                 <div className="text-xs text-text-dim truncate" title={h.relativePath}>
                   {h.fileName}
                 </div>
                 <input
                   value={h.title}
                   onChange={(e) => onUpdateHistory(h.key, { title: e.target.value })}
-                  className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-sm"
+                  className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-sm"
                 />
                 <div className="flex gap-1.5">
                   <select
                     value={h.type}
                     onChange={(e) => onUpdateHistory(h.key, { type: e.target.value as '점검' | '수리' })}
-                    className="rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                    className="rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   >
                     <option>점검</option>
                     <option>수리</option>
@@ -119,13 +119,13 @@ export default function UploadReview({
                     type="date"
                     value={h.date}
                     onChange={(e) => onUpdateHistory(h.key, { date: e.target.value })}
-                    className="flex-1 rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                    className="flex-1 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   />
                 </div>
                 <select
                   value={h.equipmentRef}
                   onChange={(e) => onUpdateHistory(h.key, { equipmentRef: e.target.value })}
-                  className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                  className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                 >
                   <option value="">설비 미지정</option>
                   {equipmentOptions.map((o) => (
@@ -141,7 +141,7 @@ export default function UploadReview({
                   onChange={(e) => onUpdateHistory(h.key, { 비용: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder="비용(원)"
                   aria-label="비용(원)"
-                  className="w-full rounded border border-border bg-bg-soft px-2 py-1 text-xs"
+                  className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                 />
               </div>
             ))}
@@ -149,11 +149,11 @@ export default function UploadReview({
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className="rounded-2xl border border-border bg-card p-3">
           <div className="text-sm font-medium mb-2">제외 · 실패 ({failed.length})</div>
           <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
             {failed.map((f) => (
-              <div key={f.key} className="rounded-lg border border-border p-2">
+              <div key={f.key} className="rounded-2xl border border-border p-2">
                 <div className="text-xs truncate" title={f.relativePath}>
                   {f.fileName}
                 </div>

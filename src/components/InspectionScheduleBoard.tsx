@@ -127,7 +127,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
       {adding && (
         <form
           onSubmit={submitAdd}
-          className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end"
+          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end"
         >
           <label className="block sm:col-span-2">
             <span className="text-xs text-text-dim">설비 *</span>
@@ -207,7 +207,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
               <Reveal key={s.id} index={i}>
               <form
                 onSubmit={saveEdit}
-                className="rounded-xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end"
+                className="rounded-2xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end"
               >
                 <div className="sm:col-span-2 text-xs text-text-dim">
                   {eq ? `${eq.설비명} (${eq.설비ID})` : s.설비ID}
@@ -272,7 +272,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
 
           return (
             <Reveal key={s.id} index={i}>
-            <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <div className="rounded-2xl border border-border bg-card px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

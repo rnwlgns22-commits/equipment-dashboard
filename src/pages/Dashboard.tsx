@@ -353,7 +353,7 @@ export default function Dashboard() {
               <Link
                 key={s.설비ID}
                 to={`/equipment/${s.설비ID}`}
-                className="block rounded-xl border border-border p-3 hover:border-white/20 transition-colors"
+                className="block rounded-2xl border border-border p-3 hover:border-white/20 transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium truncate">{equipmentName(equipments, s.설비ID)}</span>
@@ -383,7 +383,7 @@ export default function Dashboard() {
                 <Link
                   key={s.id}
                   to={`/equipment/${s.설비ID}`}
-                  className="block rounded-xl border border-border p-3 hover:border-white/20 transition-colors"
+                  className="block rounded-2xl border border-border p-3 hover:border-white/20 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium truncate">
@@ -475,7 +475,7 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {brainSignals.map((s, i) => (
-                <div key={i} className="rounded-xl border border-border p-3">
+                <div key={i} className="rounded-2xl border border-border p-3">
                   <span className={`text-xs rounded-full px-2 py-0.5 ${BRAIN_BADGE[s.종류]}`}>{s.종류}</span>
                   <p className="text-sm mt-1.5 leading-relaxed">{s.근거}</p>
                 </div>

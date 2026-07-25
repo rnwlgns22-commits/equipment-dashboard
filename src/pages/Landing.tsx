@@ -172,7 +172,7 @@ export default function Landing() {
         <button
           type="button"
           onClick={loadSample}
-          className="w-full rounded-xl bg-accent text-bg font-medium py-3 text-sm hover:brightness-110 transition"
+          className="w-full rounded-lg bg-accent text-bg font-medium py-3 text-sm hover:brightness-110 transition"
         >
           샘플 데이터로 대시보드 구경하기
         </button>
