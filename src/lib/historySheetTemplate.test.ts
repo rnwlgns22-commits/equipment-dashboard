@@ -95,8 +95,16 @@ describe('applyHistoryTemplateToSheet', () => {
       expect(result[1]).toMatchObject({ title: '배관 누수 수리', date: '2026-02-10' });
     });
 
-    it('날짜가 없는 순번은 건너뛰고 나머지만 만든다', () => {
-      const t = template({ cells: { 제목: 'A7,A8', 날짜: 'B7' } }); // 두번째 날짜 없음
+    it('날짜를 하나만 매핑했으면 모든 이력에 그 값을 통일 적용한다', () => {
+      const t = template({ cells: { 제목: 'A7,A8', 날짜: 'B7' } }); // 날짜는 하나만
+      const result = applyHistoryTemplateToSheet(twoRecordSheet, t);
+      expect(result).toHaveLength(2);
+      expect(result[0].date).toBe('2026-01-05');
+      expect(result[1].date).toBe('2026-01-05');
+    });
+
+    it('날짜를 여러 개 적었는데 특정 순번이 빈 셀이면 그 순번만 건너뛴다', () => {
+      const t = template({ cells: { 제목: 'A7,A8', 날짜: 'B7,Z99' } }); // 두번째는 빈 셀
       const result = applyHistoryTemplateToSheet(twoRecordSheet, t);
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe('필터 교체');

@@ -98,15 +98,38 @@ export interface TemplateApplyResult {
   filledCount: number;
 }
 
-// 설비명 칸의 셀 개수만큼 설비를 만든다(하나만 적었으면 기존과 동일하게 1개) — 나머지
-// 필드도 같은 순번의 셀을 짝지어 쓰고, 그 순번에 셀이 없으면 그 설비만 그 필드가 빈다.
+// 필드마다 셀 목록 길이가 다를 수 있음 — 하나만 적으면 그 값을 전체 설비에 그대로
+// 통일 적용하고, 여러 개 적었으면 같은 순번(쉼표 순서)끼리 짝짓는다(순번에 셀이 없으면
+// 그 설비만 그 필드가 빔). 예: 설비명 "A7,A8" + 분류 "C7"이면 두 설비 모두 분류는 C7
+// 값으로 통일(2026-07-26, "분류는 하나만 넣으면 통일" 요청으로 일반화 — 원래는 설비명만
+// 특별 취급했는데 모든 필드에 같은 규칙 적용).
+export function fieldRefAt(raw: string | undefined, i: number): string | undefined {
+  const list = parseCellList(raw);
+  if (list.length === 0) return undefined;
+  if (list.length === 1) return list[0]; // 하나만 있으면 모든 순번에 통일 적용
+  return list[i];
+}
+
+// 전체 설비 개수는 모든 필드(커스텀 필드 포함) 중 가장 긴 셀 목록 기준 — 설비명만 보던
+// 예전 방식은 "설비명은 하나뿐인데 사이트가 여러 개"인 경우를 처리 못 했음.
 // 설비명이 아예 안 채워진(빈 문자열) 순번은 가짜 설비를 만들지 않고 건너뛴다.
 export function applyTemplateToSheet(sheet: XLSX.WorkSheet, template: SheetTemplate): TemplateApplyResult[] {
-  const nameRefs = parseCellList(template.cells.설비명);
-  const count = Math.max(nameRefs.length, 1);
+  const allRefLists = [
+    template.cells.설비명,
+    template.cells.분류,
+    template.cells.사이트,
+    template.cells.위치,
+    template.cells.제조사,
+    template.cells.모델명,
+    template.cells.설치일,
+    template.cells.상태,
+    template.cells.최근점검일,
+    template.cells.점검주기일,
+    ...template.customFields.map((cf) => cf.cell),
+  ].map(parseCellList);
+  const count = Math.max(1, ...allRefLists.map((l) => l.length));
 
-  const at = (raw: string | undefined, i: number): string | undefined => parseCellList(raw)[i];
-  const get = (raw: string | undefined, i: number) => cellValue(sheet, at(raw, i));
+  const get = (raw: string | undefined, i: number) => cellValue(sheet, fieldRefAt(raw, i));
 
   const results: TemplateApplyResult[] = [];
 

@@ -3,7 +3,7 @@
 // 로직은 그대로 재사용(cellValue/parseCellList/normalizeDateCell).
 import type * as XLSX from 'xlsx';
 import type { HistoryType } from '../types';
-import { cellValue, normalizeDateCell, parseCellList } from './sheetTemplate';
+import { cellValue, fieldRefAt, normalizeDateCell, parseCellList } from './sheetTemplate';
 
 export interface HistoryTemplateCells {
   날짜?: string;
@@ -30,17 +30,26 @@ export interface HistoryTemplateApplyResult {
   equipmentName?: string;
 }
 
-// 제목 칸의 셀 개수만큼 이력을 만든다(설비용 applyTemplateToSheet의 설비명과 같은 역할).
-// 제목이나 날짜가 비어있는 순번은 만들지 않는다 — 둘 다 HistoryRecord 필수값.
+// 필드마다 셀 개수가 다를 수 있음 — 하나만 적으면 전체 이력에 통일 적용, 여러 개면
+// 같은 순번끼리 짝짓는다(sheetTemplate.ts의 fieldRefAt과 같은 규칙 — 설비 양식과
+// 이력 양식이 다른 결과를 내면 헷갈리므로 동일하게 맞춤, 2026-07-26).
+// 전체 이력 개수는 모든 필드 중 가장 긴 셀 목록 기준. 제목이나 날짜가 빈 순번은
+// 만들지 않는다 — 둘 다 HistoryRecord 필수값.
 export function applyHistoryTemplateToSheet(
   sheet: XLSX.WorkSheet,
   template: HistoryTemplate,
 ): HistoryTemplateApplyResult[] {
-  const titleRefs = parseCellList(template.cells.제목);
-  const count = Math.max(titleRefs.length, 1);
+  const allRefLists = [
+    template.cells.제목,
+    template.cells.날짜,
+    template.cells.유형,
+    template.cells.내용,
+    template.cells.비용,
+    template.cells.설비명,
+  ].map(parseCellList);
+  const count = Math.max(1, ...allRefLists.map((l) => l.length));
 
-  const at = (raw: string | undefined, i: number): string | undefined => parseCellList(raw)[i];
-  const get = (raw: string | undefined, i: number) => cellValue(sheet, at(raw, i));
+  const get = (raw: string | undefined, i: number) => cellValue(sheet, fieldRefAt(raw, i));
 
   const results: HistoryTemplateApplyResult[] = [];
 

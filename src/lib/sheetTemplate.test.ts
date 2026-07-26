@@ -148,5 +148,23 @@ describe('applyTemplateToSheet', () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('공조기 4호기');
     });
+
+    it('분류를 하나만 매핑했으면 설비가 여러 개여도 그 값으로 통일 적용한다', () => {
+      const t = template({ cells: { 설비명: 'A7,A8', 분류: 'C7' } }); // 분류는 하나만(C7=전기)
+      const result = applyTemplateToSheet(twoEquipSheet, t);
+      expect(result).toHaveLength(2);
+      expect(result[0].category).toBe('전기');
+      expect(result[1].category).toBe('전기'); // 둘 다 C7 값으로 통일
+    });
+
+    it('설비명은 하나뿐인데 다른 필드가 더 많으면, 그 필드 개수만큼 설비를 만들고 설비명은 통일 적용한다', () => {
+      const t = template({ cells: { 설비명: 'A7', 분류: 'C7,C8' } }); // 설비명 1개, 분류 2개
+      const result = applyTemplateToSheet(twoEquipSheet, t);
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('공조기 4호기');
+      expect(result[1].name).toBe('공조기 4호기'); // 통일 적용
+      expect(result[0].category).toBe('전기');
+      expect(result[1].category).toBe('소방');
+    });
   });
 });

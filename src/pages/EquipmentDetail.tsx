@@ -43,6 +43,7 @@ export default function EquipmentDetail() {
   const updateEquipment = useAppStore((s) => s.updateEquipment);
   const deleteEquipment = useAppStore((s) => s.deleteEquipment);
   const addHistory = useAppStore((s) => s.addHistory);
+  const updateHistory = useAppStore((s) => s.updateHistory);
   const deleteHistory = useAppStore((s) => s.deleteHistory);
 
   const equipment = equipments.find((e) => e.설비ID === id);
@@ -137,6 +138,39 @@ export default function EquipmentDetail() {
   // 보였음(양식 업로드로 채워도 마찬가지) — 클릭하면 카드로 펼쳐서 내용까지 보여줌
   // (2026-07-26 요청).
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
+  // 여기서는 지금까지 삭제만 됐음 — 오타 하나 고치려고 지우고 다시 등록해야 했음.
+  // HistoryBrowser.tsx의 인라인 수정과 같은 방식(2026-07-26 추가). 설비는 이미
+  // 이 화면에서 고정이라 설비 재지정 select는 필요 없음.
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
+  const [historyEditForm, setHistoryEditForm] = useState({
+    날짜: '',
+    유형: '점검' as HistoryType,
+    제목: '',
+    내용: '',
+    비용: '',
+  });
+
+  const startEditingHistory = (r: HistoryRecord) => {
+    setHistoryEditForm({ 날짜: r.날짜, 유형: r.유형, 제목: r.제목, 내용: r.내용 ?? '', 비용: r.비용 ? String(r.비용) : '' });
+    setEditingHistoryId(r.id);
+    setExpandedHistoryId(r.id);
+  };
+
+  const saveHistoryEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingHistoryId || !historyEditForm.날짜 || !historyEditForm.제목.trim()) return;
+    const 비용 = Number(historyEditForm.비용);
+    updateHistory(editingHistoryId, {
+      날짜: historyEditForm.날짜,
+      유형: historyEditForm.유형,
+      제목: historyEditForm.제목.trim(),
+      내용: historyEditForm.내용.trim() || undefined,
+      비용: historyEditForm.비용 && 비용 > 0 ? 비용 : undefined,
+    });
+    setEditingHistoryId(null);
+    showToast('이력을 수정했습니다');
+  };
 
   const handleDeleteHistory = (r: HistoryRecord) => {
     if (!window.confirm(`"${r.제목}" 이력을 삭제할까요?`)) return;
@@ -586,6 +620,15 @@ export default function EquipmentDetail() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => startEditingHistory(r)}
+                      className="text-xs text-text-dim hover:text-accent shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
+                      aria-label={`${r.제목} 이력 수정`}
+                      title="수정"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDeleteHistory(r)}
                       className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
                       aria-label={`${r.제목} 이력 삭제`}
@@ -603,13 +646,81 @@ export default function EquipmentDetail() {
                         transition={{ duration: 0.2, ease: 'easeOut' }}
                         className="overflow-hidden"
                       >
-                        <dl className="mt-2 rounded-xl border border-border bg-bg-soft/60 p-3 text-sm space-y-1.5">
-                          <Row label="날짜" value={r.날짜} />
-                          <Row label="유형" value={r.유형} />
-                          <Row label="비용" value={r.비용 ? `${r.비용.toLocaleString()}원` : undefined} />
-                          <Row label="내용" value={r.내용} />
-                          <Row label="출처파일" value={r.출처파일} />
-                        </dl>
+                        {editingHistoryId === r.id ? (
+                          <form
+                            onSubmit={saveHistoryEdit}
+                            className="mt-2 flex flex-wrap items-end gap-2 rounded-xl border border-accent/50 bg-bg-soft/60 p-3"
+                          >
+                            <label className="block">
+                              <span className="text-xs text-text-dim">날짜 *</span>
+                              <input
+                                required
+                                type="date"
+                                value={historyEditForm.날짜}
+                                onChange={(e) => setHistoryEditForm((f) => ({ ...f, 날짜: e.target.value }))}
+                                className="mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-xs text-text-dim">유형</span>
+                              <select
+                                value={historyEditForm.유형}
+                                onChange={(e) =>
+                                  setHistoryEditForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))
+                                }
+                                className="mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
+                              >
+                                <option>점검</option>
+                                <option>수리</option>
+                              </select>
+                            </label>
+                            <label className="block flex-1 min-w-[10rem]">
+                              <span className="text-xs text-text-dim">제목 *</span>
+                              <input
+                                required
+                                value={historyEditForm.제목}
+                                onChange={(e) => setHistoryEditForm((f) => ({ ...f, 제목: e.target.value }))}
+                                className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-xs text-text-dim">비용(원)</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={historyEditForm.비용}
+                                onChange={(e) => setHistoryEditForm((f) => ({ ...f, 비용: e.target.value }))}
+                                className="mt-1 w-28 rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+                              />
+                            </label>
+                            <label className="block w-full">
+                              <span className="text-xs text-text-dim">내용</span>
+                              <input
+                                value={historyEditForm.내용}
+                                onChange={(e) => setHistoryEditForm((f) => ({ ...f, 내용: e.target.value }))}
+                                className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
+                              />
+                            </label>
+                            <button type="submit" className="text-xs text-accent hover:underline shrink-0">
+                              저장
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingHistoryId(null)}
+                              className="text-xs text-text-dim hover:text-text shrink-0"
+                            >
+                              취소
+                            </button>
+                          </form>
+                        ) : (
+                          <dl className="mt-2 rounded-xl border border-border bg-bg-soft/60 p-3 text-sm space-y-1.5">
+                            <Row label="날짜" value={r.날짜} />
+                            <Row label="유형" value={r.유형} />
+                            <Row label="비용" value={r.비용 ? `${r.비용.toLocaleString()}원` : undefined} />
+                            <Row label="내용" value={r.내용} />
+                            <Row label="출처파일" value={r.출처파일} />
+                          </dl>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
