@@ -12,6 +12,13 @@ export interface EquipmentCandidate {
   category: Category;
   name: string;
   content: string;
+  // 양식(셀 매핑) 적용으로 만들어진 후보에만 있음 — buildRecordsFromCandidates가
+  // 그대로 설비 레코드에 병합(위치/제조사/모델명/설치일/상태/최근점검일/점검주기일).
+  extraFields?: Partial<Equipment>;
+  // 양식의 커스텀 필드(가격 등) → 설비 상세사양.
+  상세사양?: Record<string, string>;
+  // 검토 화면에 "○○ 양식 적용됨" 배지를 보여주기 위함.
+  templateName?: string;
 }
 
 export interface HistoryCandidate {

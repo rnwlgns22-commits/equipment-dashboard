@@ -24,8 +24,12 @@ export function buildRecordsFromCandidates(
       분류: c.category,
       사이트: c.site,
       상태: '정상',
+      ...c.extraFields,
       연결설비: [],
-      상세사양: { 자동인식: '업로드 파일에서 자동 추출됨 — 필요하면 상세 페이지에서 보완하세요' },
+      상세사양:
+        c.상세사양 && Object.keys(c.상세사양).length > 0
+          ? c.상세사양
+          : { 자동인식: '업로드 파일에서 자동 추출됨 — 필요하면 상세 페이지에서 보완하세요' },
       출처파일: c.relativePath,
     };
     newEquipments.push(equipment);

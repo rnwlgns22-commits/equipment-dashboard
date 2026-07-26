@@ -65,6 +65,11 @@ export default function UploadReview({
                 <div className="text-xs text-text-dim truncate" title={c.relativePath}>
                   {c.fileName}
                 </div>
+                {c.templateName && (
+                  <div className="inline-block rounded-full bg-accent/15 text-accent px-2 py-0.5 text-[10px]">
+                    🗂 {c.templateName} 양식 적용
+                  </div>
+                )}
                 <input
                   value={c.name}
                   onChange={(e) => onUpdateEquipment(c.key, { name: e.target.value })}

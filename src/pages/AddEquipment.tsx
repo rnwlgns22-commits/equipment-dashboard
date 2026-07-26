@@ -1,16 +1,18 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
+import { useTemplateStore } from '../templateStore';
 import { nextEquipmentId } from '../lib/equipmentId';
 import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
 import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
 import { buildRecordsFromCandidates } from '../lib/uploadCommit';
 import type { Equipment } from '../types';
 import UploadReview from '../components/UploadReview';
+import TemplateManager from '../components/TemplateManager';
 import { showToast } from '../toastStore';
 import EquipmentFormFields, { emptyEquipmentForm, equipmentFieldsFromForm } from '../components/EquipmentFormFields';
 
-type Tab = 'manual' | 'file';
+type Tab = 'manual' | 'file' | 'template';
 type FileMode = 'idle' | 'dragging' | 'parsing' | 'review';
 
 export default function AddEquipment() {
@@ -19,6 +21,8 @@ export default function AddEquipment() {
   const appendData = useAppStore((s) => s.appendData);
 
   const [tab, setTab] = useState<Tab>('manual');
+  const templates = useTemplateStore((s) => s.templates);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   // ---- 수기 입력 ----
   const [form, setForm] = useState(emptyEquipmentForm);
@@ -57,12 +61,76 @@ export default function AddEquipment() {
       return;
     }
     setFileMode('parsing');
-    setProgress({ done: 0, total: 0 });
-    const { runUploadPipeline } = await import('../lib/uploadPipeline');
-    const result = await runUploadPipeline(files, equipments, (done, total) => setProgress({ done, total }));
-    setEquipmentCandidates(result.equipmentCandidates);
-    setHistoryCandidates(result.historyCandidates);
-    setFailed(result.failed);
+    setProgress({ done: 0, total: files.length });
+
+    // 양식(셀 매핑)을 골랐으면 엑셀 파일만 그 양식으로 직접 처리하고, 나머지 형식은
+    // 기존 일반 파이프라인(내용 기반 자동분류)으로 — 둘을 섞어 올려도 각자 알맞게 처리됨.
+    const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+    const templateFiles = selectedTemplate ? files.filter((f) => /\.xlsx?$/i.test(f.file.name)) : [];
+    const restFiles = selectedTemplate ? files.filter((f) => !/\.xlsx?$/i.test(f.file.name)) : files;
+
+    const newEquipmentCandidates: EquipmentCandidate[] = [];
+    const newFailed: FailedCandidate[] = [];
+    let done = 0;
+
+    if (selectedTemplate && templateFiles.length > 0) {
+      const [{ readXlsxSheet }, { applyTemplateToSheet }] = await Promise.all([
+        import('../lib/convert'),
+        import('../lib/sheetTemplate'),
+      ]);
+      for (let i = 0; i < templateFiles.length; i += 1) {
+        const { file, relativePath } = templateFiles[i];
+        try {
+          const sheet = await readXlsxSheet(file);
+          const applied = applyTemplateToSheet(sheet, selectedTemplate);
+          if (!applied.name) {
+            newFailed.push({
+              key: `tpl-${i}`,
+              fileName: file.name,
+              relativePath,
+              reason: `양식 "${selectedTemplate.name}" 적용 결과 설비명 칸이 비어있음`,
+            });
+          } else {
+            newEquipmentCandidates.push({
+              key: `tpl-${i}`,
+              fileName: file.name,
+              relativePath,
+              site: applied.site,
+              category: applied.category,
+              name: applied.name,
+              content: '',
+              extraFields: applied.extraFields,
+              상세사양: applied.상세사양,
+              templateName: selectedTemplate.name,
+            });
+          }
+        } catch {
+          newFailed.push({
+            key: `tpl-${i}`,
+            fileName: file.name,
+            relativePath,
+            reason: '양식 적용 중 오류(엑셀 파일인지 확인)',
+          });
+        }
+        done += 1;
+        setProgress({ done, total: files.length });
+      }
+    }
+
+    let newHistoryCandidates: HistoryCandidate[] = [];
+    if (restFiles.length > 0) {
+      const { runUploadPipeline } = await import('../lib/uploadPipeline');
+      const result = await runUploadPipeline(restFiles, equipments, (restDone, restTotal) =>
+        setProgress({ done: done + restDone, total: Math.max(files.length, done + restTotal) }),
+      );
+      newEquipmentCandidates.push(...result.equipmentCandidates);
+      newHistoryCandidates = result.historyCandidates;
+      newFailed.push(...result.failed);
+    }
+
+    setEquipmentCandidates(newEquipmentCandidates);
+    setHistoryCandidates(newHistoryCandidates);
+    setFailed(newFailed);
     setFileMode('review');
   };
 
@@ -125,7 +193,7 @@ export default function AddEquipment() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-2xl space-y-6">
+    <div className={`p-6 md:p-8 space-y-6 ${tab === 'template' ? 'max-w-5xl' : 'max-w-2xl'}`}>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">설비 추가</h1>
         <p className="text-sm text-text-dim mt-1">직접 입력하거나, 점검·수리 기록 파일을 폴더째 올리면 자동으로 인식합니다.</p>
@@ -150,7 +218,18 @@ export default function AddEquipment() {
         >
           파일로 업로드
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('template')}
+          className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+            tab === 'template' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
+          }`}
+        >
+          양식 등록
+        </button>
       </div>
+
+      {tab === 'template' && <TemplateManager />}
 
       {tab === 'manual' && (
         <form onSubmit={handleManualSubmit} className="space-y-4">
@@ -178,6 +257,23 @@ export default function AddEquipment() {
 
       {tab === 'file' && (
         <div>
+          {templates.length > 0 && (
+            <label className="block mb-3">
+              <span className="text-xs text-text-dim">적용할 양식 (엑셀 파일에만 적용됩니다)</span>
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+              >
+                <option value="">일반 처리(자동 분류)</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div
             onDragOver={(e) => {
               e.preventDefault();

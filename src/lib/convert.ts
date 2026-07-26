@@ -36,6 +36,17 @@ export async function readXlsxRowsRaw(file: File): Promise<string[][]> {
   return rows.map((row) => row.map((c) => (c === null || c === undefined ? '' : String(c))));
 }
 
+// 양식(셀 매핑) 기능 전용 — readXlsxRowsRaw는 sheet_to_json이 내부적으로 시트를
+// 실제 데이터가 있는 범위 기준으로 재배치해서 반환하므로(예: A6부터 데이터가 시작하면
+// 배열의 0번째 행이 실제로는 6행) "A6" 같은 사용자가 적어넣은 A1 표기 셀 참조와
+// 어긋난다(2026-07-26, 빈 앞행이 있는 서식으로 검증 중 발견). 워크시트 원본을 그대로
+// 돌려주고 A1 주소로 직접 찾게 한다 — sheetTemplate.ts의 cellValue가 이걸 사용.
+export async function readXlsxSheet(file: File): Promise<XLSX.WorkSheet> {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+  return wb.Sheets[wb.SheetNames[0]];
+}
+
 async function convertXlsx(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
