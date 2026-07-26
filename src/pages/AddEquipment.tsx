@@ -83,7 +83,7 @@ export default function AddEquipment() {
         try {
           const sheet = await readXlsxSheet(file);
           const applied = applyTemplateToSheet(sheet, selectedTemplate);
-          if (!applied.name) {
+          if (applied.length === 0) {
             newFailed.push({
               key: `tpl-${i}`,
               fileName: file.name,
@@ -91,17 +91,19 @@ export default function AddEquipment() {
               reason: `양식 "${selectedTemplate.name}" 적용 결과 설비명 칸이 비어있음`,
             });
           } else {
-            newEquipmentCandidates.push({
-              key: `tpl-${i}`,
-              fileName: file.name,
-              relativePath,
-              site: applied.site,
-              category: applied.category,
-              name: applied.name,
-              content: '',
-              extraFields: applied.extraFields,
-              상세사양: applied.상세사양,
-              templateName: selectedTemplate.name,
+            applied.forEach((a, j) => {
+              newEquipmentCandidates.push({
+                key: `tpl-${i}-${j}`,
+                fileName: file.name,
+                relativePath,
+                site: a.site,
+                category: a.category,
+                name: a.name,
+                content: '',
+                extraFields: a.extraFields,
+                상세사양: a.상세사양,
+                templateName: selectedTemplate.name,
+              });
             });
           }
         } catch {

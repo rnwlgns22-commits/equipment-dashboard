@@ -56,6 +56,17 @@ export function cellValue(sheet: XLSX.WorkSheet, ref: string | undefined): strin
   return v === undefined || v === null ? '' : String(v).trim();
 }
 
+// 한 서식 안에 설비가 여러 개 있으면("A7,A8") 필드 하나에 셀을 여러 개 적을 수 있게 함 —
+// 쉼표/공백 아무거나로 구분. 순서대로 다른 설비에 매칭(2026-07-26, 여러 설비가 한 시트에
+// 있는 서식 요청으로 추가).
+export function parseCellList(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[,\s]+/)
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
 // 엑셀은 날짜 셀을 raw:true로 읽으면 표시서식이 아니라 일련번호(1900년 기준 경과일수)로
 // 온다 — readXlsxRowsRaw가 정확히 이 옵션을 쓰기 때문에(금액 파싱 때문에 원본 숫자값이
 // 필요해서, convert.ts 참고) 날짜로 매핑한 셀도 같은 값이 들어올 수 있어 여기서 변환.
@@ -87,42 +98,57 @@ export interface TemplateApplyResult {
   filledCount: number;
 }
 
-export function applyTemplateToSheet(sheet: XLSX.WorkSheet, template: SheetTemplate): TemplateApplyResult {
-  const get = (ref?: string) => cellValue(sheet, ref);
+// 설비명 칸의 셀 개수만큼 설비를 만든다(하나만 적었으면 기존과 동일하게 1개) — 나머지
+// 필드도 같은 순번의 셀을 짝지어 쓰고, 그 순번에 셀이 없으면 그 설비만 그 필드가 빈다.
+// 설비명이 아예 안 채워진(빈 문자열) 순번은 가짜 설비를 만들지 않고 건너뛴다.
+export function applyTemplateToSheet(sheet: XLSX.WorkSheet, template: SheetTemplate): TemplateApplyResult[] {
+  const nameRefs = parseCellList(template.cells.설비명);
+  const count = Math.max(nameRefs.length, 1);
 
-  const name = get(template.cells.설비명);
-  const categoryRaw = get(template.cells.분류);
-  const site = get(template.cells.사이트);
-  const 위치 = get(template.cells.위치);
-  const 제조사 = get(template.cells.제조사);
-  const 모델명 = get(template.cells.모델명);
-  const 설치일raw = get(template.cells.설치일);
-  const 상태raw = get(template.cells.상태);
-  const 최근점검일raw = get(template.cells.최근점검일);
-  const 점검주기일raw = get(template.cells.점검주기일);
+  const at = (raw: string | undefined, i: number): string | undefined => parseCellList(raw)[i];
+  const get = (raw: string | undefined, i: number) => cellValue(sheet, at(raw, i));
 
-  const category = (CATEGORIES as string[]).includes(categoryRaw) ? (categoryRaw as Category) : '기타';
+  const results: TemplateApplyResult[] = [];
 
-  const extraFields: Partial<Equipment> = {};
-  if (위치) extraFields.위치 = 위치;
-  if (제조사) extraFields.제조사 = 제조사;
-  if (모델명) extraFields.모델명 = 모델명;
-  if (설치일raw) extraFields.설치일 = normalizeDateCell(설치일raw);
-  if ((STATUSES as string[]).includes(상태raw)) extraFields.상태 = 상태raw as EquipmentStatus;
-  if (최근점검일raw) extraFields.최근점검일 = normalizeDateCell(최근점검일raw);
-  if (점검주기일raw) {
-    const n = Number(점검주기일raw);
-    if (!Number.isNaN(n)) extraFields.점검주기일 = n;
+  for (let i = 0; i < count; i += 1) {
+    const name = get(template.cells.설비명, i);
+    if (!name) continue;
+
+    const categoryRaw = get(template.cells.분류, i);
+    const site = get(template.cells.사이트, i);
+    const 위치 = get(template.cells.위치, i);
+    const 제조사 = get(template.cells.제조사, i);
+    const 모델명 = get(template.cells.모델명, i);
+    const 설치일raw = get(template.cells.설치일, i);
+    const 상태raw = get(template.cells.상태, i);
+    const 최근점검일raw = get(template.cells.최근점검일, i);
+    const 점검주기일raw = get(template.cells.점검주기일, i);
+
+    const category = (CATEGORIES as string[]).includes(categoryRaw) ? (categoryRaw as Category) : '기타';
+
+    const extraFields: Partial<Equipment> = {};
+    if (위치) extraFields.위치 = 위치;
+    if (제조사) extraFields.제조사 = 제조사;
+    if (모델명) extraFields.모델명 = 모델명;
+    if (설치일raw) extraFields.설치일 = normalizeDateCell(설치일raw);
+    if ((STATUSES as string[]).includes(상태raw)) extraFields.상태 = 상태raw as EquipmentStatus;
+    if (최근점검일raw) extraFields.최근점검일 = normalizeDateCell(최근점검일raw);
+    if (점검주기일raw) {
+      const n = Number(점검주기일raw);
+      if (!Number.isNaN(n)) extraFields.점검주기일 = n;
+    }
+
+    const 상세사양: Record<string, string> = {};
+    for (const cf of template.customFields) {
+      const v = get(cf.cell, i);
+      if (cf.label.trim() && v) 상세사양[cf.label.trim()] = v;
+    }
+
+    const mappedValues = [name, categoryRaw, site, 위치, 제조사, 모델명, 설치일raw, 상태raw, 최근점검일raw, 점검주기일raw];
+    const filledCount = mappedValues.filter(Boolean).length + Object.keys(상세사양).length;
+
+    results.push({ name, category, site, extraFields, 상세사양, filledCount });
   }
 
-  const 상세사양: Record<string, string> = {};
-  for (const cf of template.customFields) {
-    const v = get(cf.cell);
-    if (cf.label.trim() && v) 상세사양[cf.label.trim()] = v;
-  }
-
-  const mappedValues = [name, categoryRaw, site, 위치, 제조사, 모델명, 설치일raw, 상태raw, 최근점검일raw, 점검주기일raw];
-  const filledCount = mappedValues.filter(Boolean).length + Object.keys(상세사양).length;
-
-  return { name, category, site, extraFields, 상세사양, filledCount };
+  return results;
 }

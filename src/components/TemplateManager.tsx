@@ -6,7 +6,11 @@ import { showToast } from '../toastStore';
 // EquipmentFormFields.tsx의 필드셋과 맞춤 — 상세사양(가격 등 자유 항목)은 아래
 // customFields로 따로 받는다.
 const FIELD_KEYS: { key: keyof SheetTemplateCells; label: string; hint?: string }[] = [
-  { key: '설비명', label: '설비명', hint: '필수 — 비어있으면 그 파일은 실패 처리' },
+  {
+    key: '설비명',
+    label: '설비명',
+    hint: '필수 — 한 서식에 설비가 여러 개면 쉼표로 여러 셀(예: A7,A8), 순서대로 다른 설비가 됩니다',
+  },
   { key: '분류', label: '분류', hint: '공조/냉난방/급배수/전기/소방/승강기/통신/기타 중 하나여야 인식' },
   { key: '사이트', label: '사이트' },
   { key: '위치', label: '위치' },
@@ -113,17 +117,37 @@ export default function TemplateManager() {
     }
   };
 
+  // 클릭할 때마다 기존 값 뒤에 이어붙임(덮어쓰지 않음) — 한 서식에 설비가 여러 개면
+  // 같은 필드에 셀을 여러 개(A7,A8) 순서대로 클릭해서 채울 수 있어야 하기 때문
+  // (2026-07-26 추가). 이미 넣은 셀을 또 클릭하면 중복 추가하지 않는다.
+  const appendCellRef = (existing: string, addr: string): string => {
+    const list = existing
+      .split(/[,\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+    if (list.includes(addr)) return existing;
+    return [...list, addr].join(',');
+  };
+
   const fillActiveFieldFromCell = (cell: PreviewCell) => {
     if (!editing || !activeField) return;
     if (activeField.startsWith('custom:')) {
       const idx = Number(activeField.slice(7));
       setEditing((prev) =>
         prev
-          ? { ...prev, customFields: prev.customFields.map((cf, i) => (i === idx ? { ...cf, cell: cell.addr } : cf)) }
+          ? {
+              ...prev,
+              customFields: prev.customFields.map((cf, i) =>
+                i === idx ? { ...cf, cell: appendCellRef(cf.cell, cell.addr) } : cf,
+              ),
+            }
           : prev,
       );
     } else {
-      setEditing((prev) => (prev ? { ...prev, cells: { ...prev.cells, [activeField]: cell.addr } } : prev));
+      const currentValue = (editing.cells as Record<string, string | undefined>)[activeField] ?? '';
+      setEditing((prev) =>
+        prev ? { ...prev, cells: { ...prev.cells, [activeField]: appendCellRef(currentValue, cell.addr) } } : prev,
+      );
     }
   };
 
@@ -133,7 +157,8 @@ export default function TemplateManager() {
         <div className="flex items-center justify-between">
           <p className="text-xs text-text-dim">
             반복되는 엑셀 서식(예: 설비 현황판)을 한 번만 등록해두면, 다음부턴 같은 셀 위치에서 값을 그대로
-            읽어와 자동으로 채웁니다.
+            읽어와 자동으로 채웁니다. 한 서식에 설비가 여러 개면 설비명 칸에 셀을 쉼표로 여러 개(A7,A8)
+            적어서 한 번에 여러 설비로 나눌 수 있습니다.
           </p>
           <button
             type="button"
@@ -214,14 +239,14 @@ export default function TemplateManager() {
                   value={editing.cells[key] ?? ''}
                   onFocus={() => setActiveField(key)}
                   onChange={(e) => setEditing({ ...editing, cells: { ...editing.cells, [key]: e.target.value } })}
-                  placeholder="예: A6"
+                  placeholder="예: A6 또는 A7,A8"
                   className={`flex-1 rounded-lg border px-2 py-1.5 text-xs bg-card outline-none ${
                     activeField === key ? 'border-accent/60' : 'border-border'
                   }`}
                 />
                 {previewGrid && editing.cells[key] && (
-                  <span className="w-24 shrink-0 truncate text-xs text-text-dim" title="현재 값">
-                    → {previewValues[editing.cells[key]!.trim().toUpperCase()] || '(빈칸)'}
+                  <span className="w-32 shrink-0 truncate text-xs text-text-dim" title="현재 값(셀마다 순서대로)">
+                    → {previewForRaw(previewValues, editing.cells[key])}
                   </span>
                 )}
               </div>
@@ -364,14 +389,14 @@ function CustomFieldRow({
         value={cf.cell}
         onFocus={onFocus}
         onChange={(e) => onChange({ cell: e.target.value })}
-        placeholder="예: A6"
+        placeholder="예: A6 또는 A7,A8"
         className={`flex-1 rounded-lg border px-2 py-1.5 text-xs bg-card outline-none ${
           active ? 'border-accent/60' : 'border-border'
         }`}
       />
       {previewValues && cf.cell && (
-        <span className="w-24 shrink-0 truncate text-xs text-text-dim" title="현재 값">
-          → {previewValues[cf.cell.trim().toUpperCase()] || '(빈칸)'}
+        <span className="w-32 shrink-0 truncate text-xs text-text-dim" title="현재 값(셀마다 순서대로)">
+          → {previewForRaw(previewValues, cf.cell)}
         </span>
       )}
       <button type="button" onClick={onRemove} className="shrink-0 text-xs text-red-400 hover:text-red-300">
@@ -385,4 +410,15 @@ function CustomFieldRow({
 // 여기선 문자만 떼어내면 됨.
 function colLetterFromAddr(addr: string): string {
   return addr.replace(/\d+$/, '');
+}
+
+// 필드 하나에 셀이 여러 개("A7,A8")일 수 있어서, 각 셀의 값을 순서대로 이어붙여 보여줌 —
+// sheetTemplate.ts의 parseCellList와 같은 분리 규칙(쉼표/공백)을 여기서도 그대로 씀.
+function previewForRaw(previewValues: Record<string, string>, raw: string): string {
+  const refs = raw
+    .split(/[,\s]+/)
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+  if (refs.length === 0) return '(빈칸)';
+  return refs.map((ref) => previewValues[ref] || '(빈칸)').join(', ');
 }
