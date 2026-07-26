@@ -1,15 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
+import { useHistoryTemplateStore } from '../historyTemplateStore';
 import AnimatedTabs from '../components/AnimatedTabs';
 import Reveal from '../components/Reveal';
+import UploadReview from '../components/UploadReview';
+import HistoryTemplateManager from '../components/HistoryTemplateManager';
 import { showToast } from '../toastStore';
 import { csvBlob } from '../lib/csv';
 import { downloadBlob } from '../lib/vaultExport';
+import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
+import { buildRecordsFromCandidates } from '../lib/uploadCommit';
+import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
 import type { HistoryRecord, HistoryType } from '../types';
 
 const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
+
+type AddTab = 'manual' | 'file' | 'template';
+type FileMode = 'idle' | 'dragging' | 'parsing' | 'review';
 
 export default function HistoryBrowser() {
   const equipments = useAppStore((s) => s.equipments);
@@ -17,6 +26,8 @@ export default function HistoryBrowser() {
   const addHistory = useAppStore((s) => s.addHistory);
   const updateHistory = useAppStore((s) => s.updateHistory);
   const deleteHistory = useAppStore((s) => s.deleteHistory);
+  const appendData = useAppStore((s) => s.appendData);
+  const historyTemplates = useHistoryTemplateStore((s) => s.templates);
   const equipmentsById = useMemo(() => new Map(equipments.map((e) => [e.설비ID, e])), [equipments]);
 
   const [tab, setTab] = useState<'전체' | '고아'>('전체');
@@ -27,6 +38,132 @@ export default function HistoryBrowser() {
 
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState(emptyAddForm);
+
+  // 설비추가(AddEquipment.tsx)와 같은 프레임 — 수기입력/파일로 업로드/양식등록 3탭
+  // (2026-07-26 추가). 파일 업로드·양식등록은 EquipmentCandidate도 같이 만들 수 있어서
+  // (예: 폴더에 설비대장 파일이 섞여 있으면) 두 후보 목록을 모두 검토화면에 보여준다.
+  const [addTab, setAddTab] = useState<AddTab>('manual');
+  const [selectedHistoryTemplateId, setSelectedHistoryTemplateId] = useState('');
+  const [fileMode, setFileMode] = useState<FileMode>('idle');
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [fileEquipCandidates, setFileEquipCandidates] = useState<EquipmentCandidate[]>([]);
+  const [fileHistoryCandidates, setFileHistoryCandidates] = useState<HistoryCandidate[]>([]);
+  const [fileFailed, setFileFailed] = useState<FailedCandidate[]>([]);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const runFilePipeline = async (files: { file: File; relativePath: string }[]) => {
+    if (files.length === 0) {
+      setFileMode('idle');
+      return;
+    }
+    setFileMode('parsing');
+    setProgress({ done: 0, total: files.length });
+
+    const selectedTemplate = historyTemplates.find((t) => t.id === selectedHistoryTemplateId);
+    const templateFiles = selectedTemplate ? files.filter((f) => /\.xlsx?$/i.test(f.file.name)) : [];
+    const restFiles = selectedTemplate ? files.filter((f) => !/\.xlsx?$/i.test(f.file.name)) : files;
+
+    const newHistoryCandidates: HistoryCandidate[] = [];
+    const newFailed: FailedCandidate[] = [];
+    let done = 0;
+
+    if (selectedTemplate && templateFiles.length > 0) {
+      const [{ readXlsxSheet }, { applyHistoryTemplateToSheet }] = await Promise.all([
+        import('../lib/convert'),
+        import('../lib/historySheetTemplate'),
+      ]);
+      for (let i = 0; i < templateFiles.length; i += 1) {
+        const { file, relativePath } = templateFiles[i];
+        try {
+          const sheet = await readXlsxSheet(file);
+          const applied = applyHistoryTemplateToSheet(sheet, selectedTemplate);
+          if (applied.length === 0) {
+            newFailed.push({
+              key: `htpl-${i}`,
+              fileName: file.name,
+              relativePath,
+              reason: `양식 "${selectedTemplate.name}" 적용 결과 제목/날짜 칸이 비어있음`,
+            });
+          } else {
+            applied.forEach((a, j) => {
+              const matched = a.equipmentName
+                ? equipments.find((e) => e.설비명 === a.equipmentName!.trim())
+                : undefined;
+              newHistoryCandidates.push({
+                key: `htpl-${i}-${j}`,
+                fileName: file.name,
+                relativePath,
+                date: a.date,
+                type: a.type,
+                title: a.title,
+                equipmentRef: matched ? matched.설비ID : '',
+                content: a.content ?? '',
+                비용: a.cost,
+              });
+            });
+          }
+        } catch {
+          newFailed.push({
+            key: `htpl-${i}`,
+            fileName: file.name,
+            relativePath,
+            reason: '양식 적용 중 오류(엑셀 파일인지 확인)',
+          });
+        }
+        done += 1;
+        setProgress({ done, total: files.length });
+      }
+    }
+
+    let newEquipCandidates: EquipmentCandidate[] = [];
+    if (restFiles.length > 0) {
+      const { runUploadPipeline } = await import('../lib/uploadPipeline');
+      const result = await runUploadPipeline(restFiles, equipments, (restDone, restTotal) =>
+        setProgress({ done: done + restDone, total: Math.max(files.length, done + restTotal) }),
+      );
+      newEquipCandidates = result.equipmentCandidates;
+      newHistoryCandidates.push(...result.historyCandidates);
+      newFailed.push(...result.failed);
+    }
+
+    setFileEquipCandidates(newEquipCandidates);
+    setFileHistoryCandidates(newHistoryCandidates);
+    setFileFailed(newFailed);
+    setFileMode('review');
+  };
+
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    void readDataTransfer(e.dataTransfer).then(runFilePipeline);
+  };
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) void runFilePipeline(readFileList(e.target.files));
+    e.target.value = '';
+  };
+
+  const cancelFileReview = () => {
+    setFileMode('idle');
+    setFileEquipCandidates([]);
+    setFileHistoryCandidates([]);
+    setFileFailed([]);
+  };
+
+  const commitFileReview = () => {
+    const { newEquipments, newHistories } = buildRecordsFromCandidates(fileEquipCandidates, fileHistoryCandidates, equipments);
+    appendData(newEquipments, newHistories);
+    cancelFileReview();
+    setAdding(false);
+    showToast(`설비 ${newEquipments.length}개, 이력 ${newHistories.length}건을 반영했습니다`);
+  };
+
+  const fileEquipmentOptions = useMemo(
+    () => [
+      ...equipments.map((e) => ({ ref: e.설비ID, label: `${e.설비명} (${e.설비ID})` })),
+      ...fileEquipCandidates.map((c) => ({ ref: `cand:${c.key}`, label: `${c.name} (신규)` })),
+    ],
+    [equipments, fileEquipCandidates],
+  );
 
   // 지금까지 이력을 고친다는 게 "설비 재지정" 하나뿐이었음 — 날짜·유형·제목에 오타가
   // 있어도 지우고 다시 등록하는 것 말고는 방법이 없었음.
@@ -150,6 +287,27 @@ export default function HistoryBrowser() {
     });
   };
 
+  if (adding && addTab === 'file' && fileMode === 'review') {
+    return (
+      <div className="py-10">
+        <UploadReview
+          equipmentCandidates={fileEquipCandidates}
+          historyCandidates={fileHistoryCandidates}
+          failed={fileFailed}
+          onUpdateEquipment={(key, patch) =>
+            setFileEquipCandidates((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)))
+          }
+          onUpdateHistory={(key, patch) =>
+            setFileHistoryCandidates((prev) => prev.map((h) => (h.key === key ? { ...h, ...patch } : h)))
+          }
+          equipmentOptions={fileEquipmentOptions}
+          onCommit={commitFileReview}
+          onCancel={cancelFileReview}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 md:p-8 space-y-5">
       <div className="flex items-center justify-between gap-4">
@@ -164,82 +322,181 @@ export default function HistoryBrowser() {
       </div>
 
       {adding && (
-        <form
-          onSubmit={submitAdd}
-          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
-        >
-          <label className="block">
-            <span className="text-xs text-text-dim">날짜 *</span>
-            <input
-              required
-              type="date"
-              value={addForm.날짜}
-              onChange={(e) => setAddForm((f) => ({ ...f, 날짜: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs text-text-dim">유형</span>
-            <select
-              value={addForm.유형}
-              onChange={(e) => setAddForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
-              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+          <div className="inline-flex rounded-lg border border-border p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setAddTab('manual')}
+              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                addTab === 'manual' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
+              }`}
             >
-              <option>점검</option>
-              <option>수리</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs text-text-dim">설비</span>
-            <select
-              value={addForm.설비ID}
-              onChange={(e) => setAddForm((f) => ({ ...f, 설비ID: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+              수기 입력
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddTab('file')}
+              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                addTab === 'file' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
+              }`}
             >
-              <option value="">설비 미지정</option>
-              {equipments.map((e) => (
-                <option key={e.설비ID} value={e.설비ID}>
-                  {e.설비명} ({e.설비ID})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="text-xs text-text-dim">제목 *</span>
-            <input
-              required
-              value={addForm.제목}
-              onChange={(e) => setAddForm((f) => ({ ...f, 제목: e.target.value }))}
-              placeholder="예: 공조기 1호기 필터 교체"
-              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
-            />
-          </label>
-          <label className="block sm:col-span-2 lg:col-span-3">
-            <span className="text-xs text-text-dim">내용</span>
-            <input
-              value={addForm.내용}
-              onChange={(e) => setAddForm((f) => ({ ...f, 내용: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs text-text-dim">비용(원)</span>
-            <input
-              type="number"
-              min={0}
-              value={addForm.비용}
-              onChange={(e) => setAddForm((f) => ({ ...f, 비용: e.target.value }))}
-              placeholder="예: 50000"
-              className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
-          >
-            등록
-          </button>
-        </form>
+              파일로 업로드
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddTab('template')}
+              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                addTab === 'template' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
+              }`}
+            >
+              양식 등록
+            </button>
+          </div>
+
+          {addTab === 'manual' && (
+            <form
+              onSubmit={submitAdd}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+            >
+              <label className="block">
+                <span className="text-xs text-text-dim">날짜 *</span>
+                <input
+                  required
+                  type="date"
+                  value={addForm.날짜}
+                  onChange={(e) => setAddForm((f) => ({ ...f, 날짜: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs text-text-dim">유형</span>
+                <select
+                  value={addForm.유형}
+                  onChange={(e) => setAddForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
+                  className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+                >
+                  <option>점검</option>
+                  <option>수리</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs text-text-dim">설비</span>
+                <select
+                  value={addForm.설비ID}
+                  onChange={(e) => setAddForm((f) => ({ ...f, 설비ID: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+                >
+                  <option value="">설비 미지정</option>
+                  {equipments.map((e) => (
+                    <option key={e.설비ID} value={e.설비ID}>
+                      {e.설비명} ({e.설비ID})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-text-dim">제목 *</span>
+                <input
+                  required
+                  value={addForm.제목}
+                  onChange={(e) => setAddForm((f) => ({ ...f, 제목: e.target.value }))}
+                  placeholder="예: 공조기 1호기 필터 교체"
+                  className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+                />
+              </label>
+              <label className="block sm:col-span-2 lg:col-span-3">
+                <span className="text-xs text-text-dim">내용</span>
+                <input
+                  value={addForm.내용}
+                  onChange={(e) => setAddForm((f) => ({ ...f, 내용: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs text-text-dim">비용(원)</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={addForm.비용}
+                  onChange={(e) => setAddForm((f) => ({ ...f, 비용: e.target.value }))}
+                  placeholder="예: 50000"
+                  className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
+                />
+              </label>
+              <button
+                type="submit"
+                className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
+              >
+                등록
+              </button>
+            </form>
+          )}
+
+          {addTab === 'file' && (
+            <div>
+              {historyTemplates.length > 0 && (
+                <label className="block mb-3">
+                  <span className="text-xs text-text-dim">적용할 양식 (엑셀 파일에만 적용됩니다)</span>
+                  <select
+                    value={selectedHistoryTemplateId}
+                    onChange={(e) => setSelectedHistoryTemplateId(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
+                  >
+                    <option value="">일반 처리(자동 분류)</option>
+                    {historyTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setFileMode('dragging');
+                }}
+                onDragLeave={() => setFileMode('idle')}
+                onDrop={handleFileDrop}
+                className={`rounded-2xl border-2 border-dashed py-12 px-6 text-center transition-colors ${
+                  fileMode === 'dragging' ? 'border-accent bg-accent/5' : 'border-border bg-bg-soft/60 hover:border-accent/50'
+                }`}
+              >
+                {fileMode === 'parsing' ? (
+                  <p className="text-text-dim text-sm">
+                    분석 중… {progress.total > 0 ? `${progress.done}/${progress.total}` : ''}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-text-dim text-sm">여기로 점검·수리 기록 폴더를 끌어다 놓으세요</p>
+                    <button
+                      type="button"
+                      onClick={() => folderInputRef.current?.click()}
+                      className="mt-3 text-xs text-accent hover:underline"
+                    >
+                      또는 폴더 선택하기
+                    </button>
+                    <input
+                      ref={folderInputRef}
+                      type="file"
+                      // @ts-expect-error 표준 File 타입엔 없지만 크로미움 계열이 지원하는 폴더선택 속성
+                      webkitdirectory=""
+                      directory=""
+                      multiple
+                      className="hidden"
+                      onChange={handleFolderSelect}
+                    />
+                  </>
+                )}
+              </div>
+              <p className="mt-3 text-xs text-text-dim">
+                hwp/hwpx/xls/xlsx/pdf/pptx/docx 지원. 파일은 서버로 전송되지 않고 브라우저 안에서만 처리됩니다.
+              </p>
+            </div>
+          )}
+
+          {addTab === 'template' && <HistoryTemplateManager />}
+        </div>
       )}
 
       <AnimatedTabs
@@ -389,7 +646,9 @@ export default function HistoryBrowser() {
                 {h.유형}
               </span>
               <span className="text-sm flex-1 truncate">{h.제목}</span>
-              {h.비용 ? <span className="text-xs text-text-dim shrink-0">{h.비용.toLocaleString()}원</span> : null}
+              <span className="text-xs text-text-dim shrink-0 w-20 text-right" title="비용">
+                {h.비용 ? `${h.비용.toLocaleString()}원` : '-'}
+              </span>
               {h.설비ID ? (
                 <Link to={`/equipment/${h.설비ID}`} className="text-xs text-accent hover:underline shrink-0">
                   {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}

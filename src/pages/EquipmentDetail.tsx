@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
 import { showToast } from '../toastStore';
@@ -132,6 +133,11 @@ export default function EquipmentDetail() {
     showToast('이력을 추가했습니다');
   };
 
+  // 이력 목록에는 지금까지 날짜·유형·비용·제목만 보이고 내용(內容)은 어디서도 안
+  // 보였음(양식 업로드로 채워도 마찬가지) — 클릭하면 카드로 펼쳐서 내용까지 보여줌
+  // (2026-07-26 요청).
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
   const handleDeleteHistory = (r: HistoryRecord) => {
     if (!window.confirm(`"${r.제목}" 이력을 삭제할까요?`)) return;
     const snapshot = { histories };
@@ -183,6 +189,13 @@ export default function EquipmentDetail() {
   const records = histories
     .filter((h) => h.설비ID === id)
     .sort((a, b) => b.날짜.localeCompare(a.날짜));
+
+  // 수리 이력의 비용 합계 — 고장통계 카드에서 "이 설비에 지금까지 돈이 얼마나 들어갔나"를
+  // 바로 보여주기 위함(2026-07-26 요청). computeFailureStats(전체 요약 통계)와 별개로,
+  // 이 설비의 records만 직접 합산하는 게 더 단순하고 정확함.
+  const totalRepairCost = records
+    .filter((r) => r.유형 === '수리')
+    .reduce((sum, r) => sum + (r.비용 ?? 0), 0);
 
   const connected = equipment?.연결설비
     .map((cid) => equipments.find((e) => e.설비ID === cid))
@@ -397,6 +410,7 @@ export default function EquipmentDetail() {
                   <Row label="최초→최근 고장일" value={`${stat.최초고장일} → ${stat.최근고장일}`} />
                   <Row label="평균고장간격(MTBF)" value={stat.mtbf일 ? `${Math.round(stat.mtbf일)}일` : '-'} />
                   <Row label="예상 다음 고장" value={stat.예상다음고장일 ?? '-'} />
+                  <Row label="총 보수비용" value={totalRepairCost > 0 ? `${totalRepairCost.toLocaleString()}원` : '-'} />
                 </dl>
               ) : (
                 <div className="text-sm text-text-dim">
@@ -542,33 +556,66 @@ export default function EquipmentDetail() {
           </div>
         ) : (
           <ol className="relative border-l border-border ml-2 space-y-4">
-            {records.map((r) => (
-              <li key={r.id} className="ml-4">
-                <span
-                  className={`absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full ${
-                    r.유형 === '수리' ? 'bg-risk-high' : 'bg-accent'
-                  }`}
-                />
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-xs text-text-dim">
-                      {r.날짜} · {r.유형}
-                      {r.비용 ? ` · ${r.비용.toLocaleString()}원` : ''}
-                    </div>
-                    <div className="text-sm">{r.제목}</div>
+            {records.map((r) => {
+              const expanded = expandedHistoryId === r.id;
+              return (
+                <li key={r.id} className="ml-4">
+                  <span
+                    className={`absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full ${
+                      r.유형 === '수리' ? 'bg-risk-high' : 'bg-accent'
+                    }`}
+                  />
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedHistoryId(expanded ? null : r.id)}
+                      className="flex-1 min-w-0 text-left"
+                      aria-expanded={expanded}
+                    >
+                      <div className="text-xs text-text-dim flex items-center gap-1">
+                        <span
+                          className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}
+                          aria-hidden
+                        >
+                          ›
+                        </span>
+                        {r.날짜} · {r.유형}
+                        {r.비용 ? ` · ${r.비용.toLocaleString()}원` : ''}
+                      </div>
+                      <div className="text-sm">{r.제목}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteHistory(r)}
+                      className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
+                      aria-label={`${r.제목} 이력 삭제`}
+                      title="삭제"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteHistory(r)}
-                    className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                    aria-label={`${r.제목} 이력 삭제`}
-                    title="삭제"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </li>
-            ))}
+                  <AnimatePresence initial={false}>
+                    {expanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="overflow-hidden"
+                      >
+                        <dl className="mt-2 rounded-xl border border-border bg-bg-soft/60 p-3 text-sm space-y-1.5">
+                          <Row label="날짜" value={r.날짜} />
+                          <Row label="유형" value={r.유형} />
+                          <Row label="비용" value={r.비용 ? `${r.비용.toLocaleString()}원` : undefined} />
+                          <Row label="내용" value={r.내용} />
+                          <Row label="출처파일" value={r.출처파일} />
+                        </dl>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </li>
+              );
+            })}
           </ol>
         )}
       </Card>
