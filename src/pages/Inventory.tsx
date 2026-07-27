@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import Reveal from '../components/Reveal';
@@ -43,6 +43,14 @@ export default function Inventory() {
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
   const [editLinkTargets, setEditLinkTargets] = useState<string[]>([]);
   const [query, setQuery] = useState('');
+
+  // 통합검색(GlobalSearch.tsx)에서 자재를 골라 들어오면 이 화면으로 넘어와서
+  // 검색창에 그 자재명을 채워 바로 찾아준다(2026-07-27, HistoryBrowser.tsx와 동일 패턴).
+  const location = useLocation();
+  useEffect(() => {
+    const preset = (location.state as { presetQuery?: string } | null)?.presetQuery;
+    if (preset) setQuery(preset);
+  }, [location.state]);
 
   const list = useMemo(
     () =>

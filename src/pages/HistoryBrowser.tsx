@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
 import { useHistoryTemplateStore } from '../historyTemplateStore';
@@ -35,6 +35,15 @@ export default function HistoryBrowser() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [query, setQuery] = useState('');
+
+  // 통합검색(GlobalSearch.tsx)에서 이력을 골라 들어오면 이 화면으로 넘어와서
+  // 검색창에 그 제목을 채워 바로 찾아준다 — 이력은 별도 상세 페이지가 없어서
+  // 목록 화면 + 검색으로 대신함(2026-07-27).
+  const location = useLocation();
+  useEffect(() => {
+    const preset = (location.state as { presetQuery?: string } | null)?.presetQuery;
+    if (preset) setQuery(preset);
+  }, [location.state]);
 
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState(emptyAddForm);

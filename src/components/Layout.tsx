@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store';
 import ThemeToggle from './ThemeToggle';
 import ToastContainer from './ToastContainer';
+import GlobalSearch from './GlobalSearch';
 
 // 텍스트 한 줄("불러오는 중…")만 보이던 걸 스켈레톤으로 교체(2026-07-25) — 특히
 // three.js를 통째로 물고 오는 그래프뷰처럼 lazy 로드가 체감되는 화면에서 개선.
@@ -76,6 +77,7 @@ export default function Layout() {
             <div className="text-xs text-text-dim mt-1">클라이언트 전용 · 서버 없음</div>
           </div>
           <ThemeToggle />
+          <GlobalSearch />
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => (
