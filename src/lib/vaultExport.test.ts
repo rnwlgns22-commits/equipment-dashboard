@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { buildVaultZip, buildJsonExport } from './vaultExport';
 import type { Equipment, HistoryRecord, Part } from '../types';
+import type { SheetTemplate } from './sheetTemplate';
+import type { HistoryTemplate } from './historySheetTemplate';
 
 function equipment(overrides: Partial<Equipment> & { 설비ID: string; 설비명: string }): Equipment {
   return {
@@ -65,5 +67,20 @@ describe('buildJsonExport', () => {
     const text = await blob.text();
     const payload = JSON.parse(text);
     expect(payload.parts).toEqual(parts);
+  });
+
+  // "전체 백업"이라면서 설비 양식·이력 양식 셀 매핑 스토어가 빠져있었음(2026-07-27
+  // 발견) — 애써 만든 양식이 기기 이전·복원 시 조용히 사라지는 문제라 회귀 방지.
+  it('설비 양식·이력 양식도 payload에 포함한다', async () => {
+    const templates: SheetTemplate[] = [
+      { id: 't1', name: '테스트 양식', createdAt: '2026-07-27', cells: {}, customFields: [] },
+    ];
+    const historyTemplates: HistoryTemplate[] = [
+      { id: 'ht1', name: '테스트 이력양식', createdAt: '2026-07-27', cells: {} },
+    ];
+    const blob = buildJsonExport([], [], undefined, undefined, undefined, templates, historyTemplates);
+    const payload = JSON.parse(await blob.text());
+    expect(payload.templates).toEqual(templates);
+    expect(payload.historyTemplates).toEqual(historyTemplates);
   });
 });

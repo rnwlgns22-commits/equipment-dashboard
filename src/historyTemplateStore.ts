@@ -29,6 +29,7 @@ interface HistoryTemplateState {
   addTemplate: (t: HistoryTemplate) => void;
   updateTemplate: (id: string, patch: Partial<HistoryTemplate>) => void;
   removeTemplate: (id: string) => void;
+  loadTemplates: (templates: HistoryTemplate[]) => void;
 }
 
 export const useHistoryTemplateStore = create<HistoryTemplateState>()(
@@ -39,6 +40,8 @@ export const useHistoryTemplateStore = create<HistoryTemplateState>()(
       updateTemplate: (id, patch) =>
         set((s) => ({ templates: s.templates.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
       removeTemplate: (id) => set((s) => ({ templates: s.templates.filter((t) => t.id !== id) })),
+      // JSON 백업 가져오기 전용(2026-07-27) — templateStore.ts와 같은 이유.
+      loadTemplates: (templates) => set({ templates }),
     }),
     { name: 'fms-history-template-v1', storage: createJSONStorage(() => indexedDbStorage) },
   ),

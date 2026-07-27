@@ -1,6 +1,8 @@
 import JSZip from 'jszip';
 import type { Equipment, HistoryRecord, InspectionSchedule, Part } from '../types';
 import type { MappingSnapshot } from '../mappingStore';
+import type { SheetTemplate } from './sheetTemplate';
+import type { HistoryTemplate } from './historySheetTemplate';
 
 // 설비통합 볼트의 frontmatter 규격(CLAUDE.md)에 맞춰 마크다운으로 재구성.
 // 실제 볼트 파일명 관행 그대로: 설비카드 = {ID}_{설비명}.md, 이력 = {날짜}_{ID}_{유형}.md
@@ -167,7 +169,18 @@ export function buildJsonExport(
   mapping?: MappingSnapshot,
   inspectionSchedules?: InspectionSchedule[],
   parts?: Part[],
+  templates?: SheetTemplate[],
+  historyTemplates?: HistoryTemplate[],
 ): Blob {
-  const payload = { exportedAt: new Date().toISOString(), equipments, histories, mapping, inspectionSchedules, parts };
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    equipments,
+    histories,
+    mapping,
+    inspectionSchedules,
+    parts,
+    templates,
+    historyTemplates,
+  };
   return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 }

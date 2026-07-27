@@ -30,6 +30,7 @@ interface TemplateState {
   addTemplate: (t: SheetTemplate) => void;
   updateTemplate: (id: string, patch: Partial<SheetTemplate>) => void;
   removeTemplate: (id: string) => void;
+  loadTemplates: (templates: SheetTemplate[]) => void;
 }
 
 export const useTemplateStore = create<TemplateState>()(
@@ -40,6 +41,10 @@ export const useTemplateStore = create<TemplateState>()(
       updateTemplate: (id, patch) =>
         set((s) => ({ templates: s.templates.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
       removeTemplate: (id) => set((s) => ({ templates: s.templates.filter((t) => t.id !== id) })),
+      // JSON 백업 가져오기 전용(2026-07-27) — store.ts의 loadParts/loadInspectionSchedules와
+      // 같은 "전체 교체" 의미. 이 스토어는 zustand persist 미들웨어가 set() 호출마다
+      // 알아서 IndexedDB에 다시 써주므로 store.ts처럼 Dexie 호출을 직접 안 해도 됨.
+      loadTemplates: (templates) => set({ templates }),
     }),
     { name: 'fms-template-v1', storage: createJSONStorage(() => indexedDbStorage) },
   ),
