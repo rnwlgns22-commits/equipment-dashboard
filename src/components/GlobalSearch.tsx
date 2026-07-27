@@ -26,11 +26,20 @@ export default function GlobalSearch() {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const hits = useMemo(
     () => unifiedSearch(query, equipments, histories, parts),
     [query, equipments, histories, parts],
   );
+
+  // 닫힐 때(Escape·배경 클릭·결과 선택 전부) 트리거 버튼으로 포커스를 돌려줌 —
+  // 안 그러면 키보드 사용자가 모달을 닫은 뒤 포커스가 어디 있는지 잃어버림
+  // (2026-07-27 코드리뷰에서 발견된 접근성 공백).
+  const close = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -38,7 +47,7 @@ export default function GlobalSearch() {
         e.preventDefault();
         setOpen((v) => !v);
       } else if (e.key === 'Escape') {
-        setOpen(false);
+        close();
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -78,6 +87,7 @@ export default function GlobalSearch() {
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 w-full rounded-lg border border-border bg-bg px-3 py-2 text-xs text-text-dim hover:border-accent/50 hover:text-text transition-colors"
@@ -93,7 +103,7 @@ export default function GlobalSearch() {
         createPortal(
           <div
             className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 px-4 pt-24"
-            onClick={() => setOpen(false)}
+            onClick={close}
           >
             <div
               className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
