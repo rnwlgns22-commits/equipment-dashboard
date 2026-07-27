@@ -17,6 +17,7 @@ import { computeFailureStats, equipmentName } from '../lib/stats';
 import { monthlyFailureTrend, failuresByCategory, siteStatusBreakdown, repairCostTop10, totalRepairCost } from '../lib/aggregate';
 import { computeBrainSignals } from '../lib/brain';
 import { dueStateOf, compareInspectionPriority } from '../lib/workOrders';
+import { daysUntil } from '../lib/dates';
 import { useThemeColors } from '../lib/colors';
 import Card from '../components/Card';
 import KpiTile from '../components/KpiTile';
@@ -27,13 +28,6 @@ const BRAIN_BADGE: Record<string, string> = {
   설치코호트: 'bg-risk-mid/15 text-risk-mid',
   동시다발: 'bg-accent/15 text-accent',
 };
-
-function daysUntil(dateStr: string | undefined, now: Date): number | null {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return null;
-  return Math.round((d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-}
 
 export default function Dashboard() {
   const colors = useThemeColors();

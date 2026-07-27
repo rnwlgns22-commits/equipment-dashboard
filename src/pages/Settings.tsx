@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useAppStore } from '../store';
 import { useMappingStore } from '../mappingStore';
+import { useNotifyStore } from '../notifyStore';
 import { buildJsonExport, buildVaultZip, downloadBlob } from '../lib/vaultExport';
 import Card from '../components/Card';
 
@@ -20,6 +21,38 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 알림(2026-07-27, _웹서비스설계/할일.md) — 서버가 없어서 브라우저 알림
+  // (Notification API, 탭이 열려 있어야 동작)까지가 현실적 범위. 권한은 브라우저가
+  // 들고 있고 여기선 앱 차원의 켬/끔만 관리(notifyStore.ts). 처음 켤 때만 권한을
+  // 요청 — 사용자 동작 없이 자동으로 묻지 않음(브라우저 알림 권한 요청은 항상
+  // 명시적 사용자 제스처에서 해야 거부율이 낮고 UX 관례에도 맞음).
+  const notifyEnabled = useNotifyStore((s) => s.enabled);
+  const setNotifyEnabled = useNotifyStore((s) => s.setEnabled);
+  const notifySupported = typeof window !== 'undefined' && 'Notification' in window;
+  const notifyPermission = notifySupported ? Notification.permission : 'unsupported';
+
+  const toggleNotify = async () => {
+    if (notifyEnabled) {
+      setNotifyEnabled(false);
+      return;
+    }
+    if (!notifySupported) return;
+    if (Notification.permission === 'granted') {
+      setNotifyEnabled(true);
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setMessage('브라우저가 알림 권한을 차단했습니다. 주소창의 사이트 설정에서 알림을 허용한 뒤 다시 시도하세요.');
+      return;
+    }
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      setNotifyEnabled(true);
+    } else {
+      setMessage('알림 권한이 거부되어 켤 수 없습니다.');
+    }
+  };
 
   const todayStamp = () => new Date().toISOString().slice(0, 10);
 
@@ -96,6 +129,42 @@ export default function Settings() {
           {message}
         </div>
       )}
+
+      <Card title="알림">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-medium">브라우저 알림</div>
+            <div className="text-xs text-text-dim mt-0.5">
+              점검 임박·법정/정기점검 도래·재고부족을 이 탭이 열려 있는 동안 브라우저 알림으로 받습니다.
+              서버가 없는 앱이라 탭을 닫으면 알림도 멈춥니다(이메일·푸시 알림은 지원하지 않음).
+            </div>
+            {!notifySupported && (
+              <div className="text-xs text-risk-high mt-1">이 브라우저는 알림 기능을 지원하지 않습니다.</div>
+            )}
+            {notifySupported && notifyPermission === 'denied' && (
+              <div className="text-xs text-risk-high mt-1">
+                브라우저에서 알림 권한이 차단돼 있습니다. 사이트 설정에서 알림을 허용해야 켤 수 있습니다.
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={notifyEnabled}
+            onClick={toggleNotify}
+            disabled={!notifySupported}
+            className={`shrink-0 h-7 w-12 rounded-full border transition-colors relative disabled:opacity-40 disabled:cursor-not-allowed ${
+              notifyEnabled ? 'bg-accent/80 border-accent' : 'bg-bg-soft border-border'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                notifyEnabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+      </Card>
 
       <Card title="내보내기">
         <div className="space-y-3">
