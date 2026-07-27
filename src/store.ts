@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { db } from './db';
 import { useMappingStore } from './mappingStore';
+import { useTemplateStore } from './templateStore';
+import { useHistoryTemplateStore } from './historyTemplateStore';
 import { showToast } from './toastStore';
 import type { Equipment, HistoryRecord, InspectionSchedule, Part } from './types';
 
@@ -63,6 +65,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   // 레이아웃 매핑(도면 이미지·배치·구역)은 별도 store라 여기서 안 지워지고 계속
   // 남아있었음 — 다음에 다른 데이터를 올려도 예전 도면이 그대로 보이는 문제
   // (2026-07-20 발견). 매핑도 같이 비움.
+  // 양식(설비/이력 셀 매핑)도 같은 이유로 별도 store라 여기 없이는 안 지워짐
+  // (매핑 때와 같은 종류의 버그, 2026-07-27 뒤늦게 발견 — 양식 기능 자체가 매핑
+  // 수정보다 나중에 추가되면서 이 함수에 반영이 안 됐던 것).
   clearData: () => {
     set({ equipments: [], histories: [], inspectionSchedules: [], parts: [], loaded: false });
     persist(db.equipments.clear());
@@ -70,6 +75,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     persist(db.inspectionSchedules.clear());
     persist(db.parts.clear());
     useMappingStore.getState().loadSnapshot({ floorplans: [], placements: [], zones: [], workOrders: [] });
+    useTemplateStore.getState().loadTemplates([]);
+    useHistoryTemplateStore.getState().loadTemplates([]);
   },
   updateEquipment: (설비ID, patch) => {
     set((s) => ({
