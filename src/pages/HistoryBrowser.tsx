@@ -636,9 +636,13 @@ export default function HistoryBrowser() {
             </Reveal>
           ) : (
             <Reveal key={h.id} index={i}>
-            <div
-              className="flex items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3"
-            >
+            {/* 한 줄에 shrink-0 요소가 8개라 390px 화면에서 폭이 557px까지 밀려나,
+                제목이 안 보이고 수정·삭제 버튼이 화면 밖으로 잘려 아예 못 눌렀음
+                (2026-08-07 모바일 점검에서 발견. main이 overflow-x-hidden이라
+                가로 스크롤도 안 생겨서 접근 자체가 불가능했음).
+                모바일에서만 두 줄로 쪼갬 — 아래 래퍼가 sm 이상에서 display:contents가
+                되면서 사라지므로 데스크톱 레이아웃은 종전과 완전히 동일하다. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-border bg-card px-4 py-3 sm:flex-nowrap sm:gap-4">
               <input
                 type="checkbox"
                 checked={selected.has(h.id)}
@@ -646,7 +650,7 @@ export default function HistoryBrowser() {
                 aria-label={`${h.제목} 선택`}
                 className="shrink-0"
               />
-              <span className="text-xs text-text-dim w-24 shrink-0">{h.날짜}</span>
+              <span className="text-xs text-text-dim shrink-0 sm:w-24">{h.날짜}</span>
               <span
                 className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${
                   h.유형 === '수리' ? 'bg-risk-high/15 text-risk-high' : 'bg-accent/15 text-accent'
@@ -654,33 +658,42 @@ export default function HistoryBrowser() {
               >
                 {h.유형}
               </span>
-              <span className="text-sm flex-1 truncate">{h.제목}</span>
-              <span className="text-xs text-text-dim shrink-0 w-20 text-right" title="비용">
-                {h.비용 ? `${h.비용.toLocaleString()}원` : '-'}
-              </span>
-              {h.설비ID ? (
-                <Link to={`/equipment/${h.설비ID}`} className="text-xs text-accent hover:underline shrink-0">
-                  {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}
-                </Link>
-              ) : (
-                <select
-                  value=""
-                  onChange={(e) => e.target.value && updateHistory(h.id, { 설비ID: e.target.value })}
-                  className="text-xs rounded-lg border border-border bg-bg-soft px-2 py-1 shrink-0 max-w-[10rem]"
-                  title="설비를 지정하면 고아 이력에서 빠집니다"
-                >
-                  <option value="">설비 지정…</option>
-                  {equipments.map((e) => (
-                    <option key={e.설비ID} value={e.설비ID}>
-                      {e.설비명} ({e.설비ID})
-                    </option>
-                  ))}
-                </select>
-              )}
+
+              {/* 모바일: 제목·비용·설비명을 묶어 둘째 줄로. sm 이상: contents로 풀려 원래대로 */}
+              <div className="order-last flex w-full min-w-0 items-center gap-3 sm:order-none sm:contents">
+                <span className="text-sm flex-1 min-w-0 truncate">{h.제목}</span>
+                <span className="text-xs text-text-dim shrink-0 text-right sm:w-20" title="비용">
+                  {h.비용 ? `${h.비용.toLocaleString()}원` : '-'}
+                </span>
+                {h.설비ID ? (
+                  <Link
+                    to={`/equipment/${h.설비ID}`}
+                    className="text-xs text-accent hover:underline shrink-0 max-w-[8rem] truncate sm:max-w-none"
+                  >
+                    {equipmentsById.get(h.설비ID)?.설비명 ?? h.설비ID}
+                  </Link>
+                ) : (
+                  <select
+                    value=""
+                    onChange={(e) => e.target.value && updateHistory(h.id, { 설비ID: e.target.value })}
+                    className="text-xs rounded-lg border border-border bg-bg-soft px-2 py-1 shrink-0 max-w-[8rem] sm:max-w-[10rem]"
+                    title="설비를 지정하면 고아 이력에서 빠집니다"
+                  >
+                    <option value="">설비 지정…</option>
+                    {equipments.map((e) => (
+                      <option key={e.설비ID} value={e.설비ID}>
+                        {e.설비명} ({e.설비ID})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* 모바일에선 첫 줄 오른쪽 끝으로 밀어붙임(ml-auto), 데스크톱은 종전 위치 */}
               <button
                 type="button"
                 onClick={() => startEditing(h)}
-                className="text-xs text-text-dim hover:text-accent shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
+                className="text-xs text-text-dim hover:text-accent shrink-0 ml-auto p-1.5 -m-1.5 rounded-lg hover:bg-white/5 sm:ml-0"
                 aria-label="이력 수정"
                 title="수정"
               >
