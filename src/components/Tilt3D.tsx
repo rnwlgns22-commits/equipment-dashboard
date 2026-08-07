@@ -23,6 +23,13 @@ const canTilt = () =>
   window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
   !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** 커서가 구석에 갔을 때 카드 모서리가 움직여도 되는 최대 거리(px).
+ *  이 값 하나가 실제 체감 기울기를 결정한다 — 각도(max)는 작은 요소용 상한일 뿐. */
+const MAX_CORNER_LIFT = 10;
+
+/** max를 안 주면 쓰는 기본 상한(도). 작은 타일에서만 실제로 도달함 */
+const DEFAULT_MAX_TILT = 7;
+
 export default function Tilt3D({
   children,
   className = '',
@@ -35,7 +42,7 @@ export default function Tilt3D({
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
-  /** 최대 기울기(도). 표가 들어간 넓은 카드는 3~4도로 낮추는 걸 권장 */
+  /** 기울기 상한(도). 실제 각도는 카드 크기에 맞춰 이보다 더 줄어들 수 있음 */
   max?: number;
   /** 호버 시 앞으로 떠오르는 효과. 목록 안에서 촘촘히 쓸 땐 끄기 */
   lift?: boolean;
@@ -43,6 +50,7 @@ export default function Tilt3D({
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'style' | 'onClick'>) {
   const ref = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
+  const maxDeg = max ?? DEFAULT_MAX_TILT;
 
   const handleMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -52,18 +60,37 @@ export default function Tilt3D({
       cancelAnimationFrame(frame.current);
       frame.current = requestAnimationFrame(() => {
         const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return;
         // 카드 중심 기준 -0.5 ~ 0.5 정규화 좌표
         const px = (clientX - r.left) / r.width;
         const py = (clientY - r.top) / r.height;
-        const limit = max ?? (parseFloat(getComputedStyle(el).getPropertyValue('--tilt-max')) || 7);
+
+        // 각도가 아니라 "모서리가 실제로 움직이는 거리"를 기준으로 제한한다
+        // (2026-08-07, 큰 카드 구석에서 너무 기운다는 지적).
+        // 눈에 보이는 건 각도가 아니라 변위 — 모서리 이동량 ≈ (변의 절반)×sin(각도)
+        // 이라서, 같은 4도라도 200px 타일은 7px 움직이고 1200px 카드는 40px 넘게
+        // 움직인다. 그래서 변위를 MAX_CORNER_LIFT로 묶고 거기서 각도를 역산 —
+        // 작은 타일은 원래대로 경쾌하게 기울고, 큰 카드는 자동으로 1~2도만 기운다.
+        const cap = (halfSide: number) =>
+          Math.min(maxDeg, (Math.asin(Math.min(MAX_CORNER_LIFT / halfSide, 1)) * 180) / Math.PI);
+        const limitX = cap(r.height / 2); // 위아래로 눕는 각(rotateX)은 높이가 결정
+        const limitY = cap(r.width / 2);  // 좌우로 도는 각(rotateY)은 너비가 결정
+
         // 위쪽을 가리키면 카드 위쪽이 뒤로 눕도록 부호를 뒤집음(실물 감각)
-        el.style.setProperty('--rx', `${-(py - 0.5) * 2 * limit}deg`);
-        el.style.setProperty('--ry', `${(px - 0.5) * 2 * limit}deg`);
+        el.style.setProperty('--rx', `${-(py - 0.5) * 2 * limitX}deg`);
+        el.style.setProperty('--ry', `${(px - 0.5) * 2 * limitY}deg`);
         el.style.setProperty('--mx', `${px * 100}%`);
         el.style.setProperty('--my', `${py * 100}%`);
+
+        // 원근도 크기에 맞춰 멀리 — 고정 1000px로 두면 큰 카드일수록 사다리꼴
+        // 왜곡이 심해져서 글자가 일그러진다(Reveal에서 겪은 것과 같은 문제).
+        // 카메라를 카드 크기에 비례해 물리면 왜곡 강도가 크기와 무관하게 일정해짐.
+        // 전역 --persp를 덮어쓰면 카드 안쪽에서 .persp를 쓰는 자식까지 영향을
+        // 받으므로 이 컴포넌트 전용 변수를 따로 둠
+        el.style.setProperty('--tilt-persp', `${Math.max(1000, Math.max(r.width, r.height) * 2.4)}px`);
       });
     },
-    [max],
+    [maxDeg],
   );
 
   const handleEnter = useCallback(() => {
@@ -99,7 +126,7 @@ export default function Tilt3D({
       style={{
         transformStyle: 'preserve-3d',
         transform:
-          'perspective(var(--persp)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--tz, 0px))',
+          'perspective(var(--tilt-persp, var(--persp))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--tz, 0px))',
         transition:
           'transform var(--tilt-dur, 0.5s) cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease-out, border-color 0.3s ease-out',
         ...style,
