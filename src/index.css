@@ -14,14 +14,15 @@
    투명도를 최대로 밀면 가독성이 위험해지는 건 애플도 인정하는 트레이드오프라,
    본문 글자색은 오히려 대비를 올려 잡았음(--color-text / --color-text-dim). */
 @theme {
-  --color-bg: #070910;
-  /* card / bg-soft는 이제 '색'이 아니라 '유리판' — 흰빛을 아주 얇게 얹기만 하고
-     실제 색감은 뒤의 메시 그라디언트가 비쳐서 만든다. */
-  --color-bg-soft: rgb(255 255 255 / 0.035);
-  --color-card: rgb(255 255 255 / 0.055);
-  --color-border: rgb(255 255 255 / 0.14);
-  --color-text: #f2f5fa;
-  --color-text-dim: #a3adc2;
+  --color-bg: #161a23;
+  /* card / bg-soft는 이제 '색'이 아니라 '유리판'. 다만 '거의 안 보이는 유리'가
+     아니라 '뿌연 성에 낀 유리(frosted)' — 참고 보드의 핀들이 전부 우유빛으로
+     차 있고, 투명도는 블러 세기로 표현되고 있었음(2026-08-07 보드 확인). */
+  --color-bg-soft: rgb(255 255 255 / 0.06);
+  --color-card: rgb(255 255 255 / 0.09);
+  --color-border: rgb(255 255 255 / 0.12);
+  --color-text: #eef1f7;
+  --color-text-dim: #9aa4b8;
   --color-accent: #22d3ee;
   --color-risk-high: #f87171;
   --color-risk-mid: #fbbf24;
@@ -76,11 +77,11 @@
     inset 0 -1px 0 0 rgb(255 255 255 / 0.1),
     inset 0 0 40px 0 rgb(255 255 255 / 0.06);
 
-  /* 투명도 거의 최대 — 표면은 흰빛 6%만. 읽히게 만드는 건 blur/saturate 쪽 */
-  --glass-bg: rgb(255 255 255 / 0.06);
-  --glass-border: rgb(255 255 255 / 0.16);
-  --glass-blur: 30px;
-  --glass-sat: 190%;
+  /* 성에유리 — 표면 흰빛 10%에 블러를 세게. 투명감은 블러가 만든다 */
+  --glass-bg: rgb(255 255 255 / 0.1);
+  --glass-border: rgb(255 255 255 / 0.14);
+  --glass-blur: 26px;
+  --glass-sat: 150%;
   --sheen: rgb(255 255 255 / 0.16);  /* 커서 추종 스페큘러 하이라이트 색 */
 
   /* WebGL 씬(NetworkHero) 전용 색 — 반드시 hex로 둘 것. three.js의 Color 파서는
@@ -92,48 +93,46 @@
 
 html.light {
   color-scheme: light;
-  /* 라이트도 같은 유리 원리지만 물리가 반대 — 밝은 배경 위에서는 흰 헤어라인이
-     안 보이므로 테두리를 어두운 실선으로 잡고, 표면은 흰빛을 더 얹어(35%) 글자
-     대비를 확보한다. 다크만큼 투명하게 밀면 라이트에서는 글자가 바로 깨짐. */
-  --color-bg: #dfe4ec;
-  --color-bg-soft: rgb(255 255 255 / 0.3);
-  --color-card: rgb(255 255 255 / 0.35);
-  --color-border: rgb(15 23 42 / 0.10);
-  --color-text: #0b1220;
-  --color-text-dim: #4a5568;
+  /* 참고 보드(2026-08-07 확인)의 실제 컨셉이 여기 — 핀 대부분이 '밝은 성에유리'다.
+     거의 흰 벽 위에 우유빛 판이 떠 있고, 경계는 선이 아니라 부드러운 그림자와
+     아주 옅은 림라이트로만 잡힌다. 그래서 테두리를 거의 흰색으로 지우고
+     흰빛을 55%까지 채운 뒤, 투명감은 블러 세기로 표현한다. */
+  --color-bg: #eef1f7;
+  --color-bg-soft: rgb(255 255 255 / 0.42);
+  --color-card: rgb(255 255 255 / 0.55);
+  --color-border: rgb(255 255 255 / 0.75);
+  --color-text: #1f2937;
+  --color-text-dim: #6b7688;
 
-  /* 라이트 테마의 깊이 — 다크에서 쓰던 진한 검정 그림자를 그대로 쓰면 흰 배경에서
-     때가 낀 것처럼 탁해짐. 불투명도를 낮게 유지하고, 스페큘러는 순백 헤어라인으로. */
+  /* 보드의 그림자는 진한 검정이 아니라 '크고 부드러운 회색 번짐'이었음 — 판이
+     벽에서 살짝 떠 있는 정도. 대신 안쪽 흰 림라이트를 진하게 줘서 판의 두께를
+     만든다(경계선을 안 쓰는 대신 이게 윤곽 역할을 함). */
   --depth-1:
-    0 1px 2px -1px rgb(15 23 42 / 0.10),
-    0 2px 8px -2px rgb(15 23 42 / 0.07),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.85),
-    inset 0 -1px 0 0 rgb(255 255 255 / 0.3);
+    0 1px 2px -1px rgb(100 116 139 / 0.10),
+    0 3px 10px -3px rgb(100 116 139 / 0.12),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.9);
   --depth-2:
-    0 2px 6px -2px rgb(15 23 42 / 0.12),
-    0 10px 30px -8px rgb(15 23 42 / 0.12),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.95),
-    inset 0 -1px 0 0 rgb(255 255 255 / 0.35),
-    inset 0 0 24px 0 rgb(255 255 255 / 0.25);
+    0 2px 6px -3px rgb(100 116 139 / 0.12),
+    0 12px 32px -8px rgb(100 116 139 / 0.18),
+    inset 0 1px 0 0 rgb(255 255 255 / 1),
+    inset 0 0 24px 0 rgb(255 255 255 / 0.4);
   --depth-3:
-    0 4px 10px -4px rgb(15 23 42 / 0.14),
-    0 20px 56px -12px rgb(15 23 42 / 0.16),
+    0 4px 12px -4px rgb(100 116 139 / 0.14),
+    0 22px 60px -14px rgb(100 116 139 / 0.24),
     inset 0 1px 0 0 rgb(255 255 255 / 1),
-    inset 0 -1px 0 0 rgb(255 255 255 / 0.4),
-    inset 0 0 30px 0 rgb(255 255 255 / 0.3);
+    inset 0 0 32px 0 rgb(255 255 255 / 0.5);
   --depth-4:
-    0 8px 18px -8px rgb(15 23 42 / 0.16),
-    0 36px 90px -20px rgb(15 23 42 / 0.2),
+    0 8px 20px -8px rgb(100 116 139 / 0.16),
+    0 40px 100px -24px rgb(100 116 139 / 0.3),
     inset 0 1px 0 0 rgb(255 255 255 / 1),
-    inset 0 -1px 0 0 rgb(255 255 255 / 0.45),
-    inset 0 0 40px 0 rgb(255 255 255 / 0.35);
+    inset 0 0 44px 0 rgb(255 255 255 / 0.6);
 
-  --glass-bg: rgb(255 255 255 / 0.38);
-  --glass-border: rgb(15 23 42 / 0.10);
-  --glass-blur: 28px;
-  --glass-sat: 180%;
-  --sheen: rgb(255 255 255 / 0.6);
-  --scene-grid: #94a3b8;
+  --glass-bg: rgb(255 255 255 / 0.55);
+  --glass-border: rgb(255 255 255 / 0.8);
+  --glass-blur: 24px;
+  --glass-sat: 140%;
+  --sheen: rgb(255 255 255 / 0.7);
+  --scene-grid: #b0bccd;
 }
 
 /* 유리 뒤에 비칠 '배경화면'. 아이폰 홈화면의 월페이퍼에 해당하는 층으로, 이게
@@ -144,10 +143,10 @@ body {
   margin: 0;
   background-color: var(--color-bg);
   background-image:
-    radial-gradient(48rem 38rem at 8% 4%, color-mix(in oklab, var(--color-accent) 30%, transparent), transparent 62%),
-    radial-gradient(42rem 34rem at 92% 10%, color-mix(in oklab, #8b5cf6 26%, transparent), transparent 62%),
-    radial-gradient(46rem 40rem at 78% 88%, color-mix(in oklab, #ec4899 20%, transparent), transparent 62%),
-    radial-gradient(40rem 34rem at 18% 92%, color-mix(in oklab, #3b82f6 24%, transparent), transparent 62%);
+    radial-gradient(48rem 38rem at 8% 4%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 65%),
+    radial-gradient(42rem 34rem at 92% 10%, color-mix(in oklab, #8b5cf6 12%, transparent), transparent 65%),
+    radial-gradient(46rem 40rem at 78% 88%, color-mix(in oklab, #ec4899 9%, transparent), transparent 65%),
+    radial-gradient(40rem 34rem at 18% 92%, color-mix(in oklab, #3b82f6 12%, transparent), transparent 65%);
   background-attachment: fixed;
   background-repeat: no-repeat;
   color: var(--color-text);
@@ -156,12 +155,13 @@ body {
 }
 
 html.light body {
-  /* 라이트에서는 같은 색을 그대로 쓰면 채도가 너무 튀어서 글자를 방해함 */
+  /* 보드의 라이트 핀들은 배경이 '거의 흰 벽'이고 색은 아주 옅게만 스며 있었음.
+     여기서 채도를 올리면 성에유리가 아니라 색유리가 돼서 컨셉이 어긋난다. */
   background-image:
-    radial-gradient(48rem 38rem at 8% 4%, color-mix(in oklab, var(--color-accent) 22%, transparent), transparent 62%),
-    radial-gradient(42rem 34rem at 92% 10%, color-mix(in oklab, #8b5cf6 16%, transparent), transparent 62%),
-    radial-gradient(46rem 40rem at 78% 88%, color-mix(in oklab, #ec4899 12%, transparent), transparent 62%),
-    radial-gradient(40rem 34rem at 18% 92%, color-mix(in oklab, #3b82f6 16%, transparent), transparent 62%);
+    radial-gradient(52rem 40rem at 6% 2%, color-mix(in oklab, #7dd3fc 26%, transparent), transparent 66%),
+    radial-gradient(44rem 36rem at 95% 8%, color-mix(in oklab, #c4b5fd 24%, transparent), transparent 66%),
+    radial-gradient(48rem 40rem at 82% 92%, color-mix(in oklab, #fbcfe8 20%, transparent), transparent 66%),
+    radial-gradient(42rem 36rem at 14% 96%, color-mix(in oklab, #a5b4fc 20%, transparent), transparent 66%);
 }
 
 * {
