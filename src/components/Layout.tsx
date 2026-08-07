@@ -44,10 +44,10 @@ export default function Layout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-bg text-text">
+    <div className="min-h-screen flex flex-col md:flex-row bg-bg text-text ambient-depth">
       {/* 모바일 전용 상단바 — 사이드바가 폭을 다 차지해버려서(390px에서 컨텐츠가
           166px로 눌리던 문제, 2026-07-19 발견) md 미만에서는 사이드바를 드로어로 뺌 */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-bg-soft shrink-0">
+      <div className="md:hidden flex items-center justify-between px-4 py-3 glass depth-2 shrink-0 sticky top-0 z-30">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -62,13 +62,16 @@ export default function Layout() {
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
+      {/* 사이드바를 유리판으로 — 뒤의 공간감 배경(ambient-depth)이 비쳐 보이면서
+          본문보다 한 층 앞에 떠 있는 판처럼 읽힘. 데스크톱에선 static이라 배경이
+          거의 안 비치므로 오른쪽 depth 그림자로 층을 만든다. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-bg-soft flex flex-col transition-transform duration-200 md:static md:z-auto md:w-56 md:shrink-0 md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 glass depth-3 flex flex-col transition-transform duration-200 md:static md:z-10 md:w-56 md:shrink-0 md:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -88,10 +91,12 @@ export default function Layout() {
               end={item.end}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
-                `block rounded-lg px-3 py-2 text-sm transition-colors ${
+                // 활성 항목은 색만 바꾸는 대신 앞으로 튀어나온 판처럼 — 그림자 +
+                // 살짝 오른쪽 이동으로 "선택된 것이 위에 있다"를 깊이로 표현
+                `block rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
                   isActive
-                    ? 'bg-accent/15 text-accent'
-                    : 'text-text-dim hover:bg-white/5 hover:text-text'
+                    ? 'bg-accent/15 text-accent depth-2 translate-x-1'
+                    : 'text-text-dim hover:bg-white/5 hover:text-text hover:translate-x-1'
                 }`
               }
             >
@@ -104,8 +109,10 @@ export default function Layout() {
             to="/guide"
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `block rounded-lg px-3 py-2 text-sm transition-colors ${
-                isActive ? 'bg-accent/15 text-accent' : 'text-text-dim hover:bg-white/5 hover:text-text'
+              `block rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
+                isActive
+                  ? 'bg-accent/15 text-accent depth-2 translate-x-1'
+                  : 'text-text-dim hover:bg-white/5 hover:text-text hover:translate-x-1'
               }`
             }
           >
@@ -122,15 +129,21 @@ export default function Layout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 overflow-x-hidden">
+      {/* persp를 main에 걸어야 아래 페이지 전환의 z축 이동이 원근으로 보임.
+          relative z-10은 ambient-depth의 고정 배경(z-0) 위에 본문을 올리기 위함. */}
+      <main className="relative z-10 flex-1 min-w-0 overflow-x-hidden persp">
         <Suspense fallback={<RouteFallback />}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
+              // 평면 페이드 대신 뒤에서 앞으로 들어옴 — 화면이 겹겹이 쌓인
+              // 공간이라는 인상을 라우팅에서도 유지(2026-08-07 입체화).
+              // 거리는 짧게: 페이지 이동은 매번 일어나므로 크면 금방 피로해짐.
+              initial={{ opacity: 0, z: -60, scale: 0.985 }}
+              animate={{ opacity: 1, z: 0, scale: 1 }}
+              exit={{ opacity: 0, z: 40, scale: 1.01 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              style={{ transformStyle: 'preserve-3d' }}
             >
               <Outlet />
             </motion.div>

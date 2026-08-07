@@ -21,3 +21,20 @@ if (typeof globalThis.IntersectionObserver === 'undefined') {
     disconnect() {}
   };
 }
+
+// jsdom엔 window.matchMedia도 없음 — Tilt3D가 호버 가능 여부/모션 감소 설정을
+// 이걸로 확인하는데, 카드를 클릭·호버하는 테스트마다 uncaught로 터졌음
+// (2026-08-07 입체화 작업 중 발견). matches:false로 답하게 해두면 테스트
+// 환경에서는 틸트가 꺼진 상태로 렌더돼서 기존 동작 검증에 영향이 없다.
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener() {},
+    removeListener() {},
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent: () => false,
+  });
+}

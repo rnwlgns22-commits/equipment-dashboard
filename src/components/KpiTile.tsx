@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence, animate, useMotionValue, useTransform } from 'framer-motion';
+import Tilt3D from './Tilt3D';
 
 function AnimatedNumber({ value }: { value: number }) {
   const motionValue = useMotionValue(0);
@@ -54,25 +55,37 @@ export default function KpiTile({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // 라벨/숫자를 카드 표면보다 앞으로 띄워서(translateZ) 기울일 때 실제로 층이
+  // 분리돼 보이게 함 — 평면 카드를 그냥 회전시키는 것과 여기서 갈림(2026-08-07).
+  const face = (
+    <>
+      <div className="text-xs text-text-dim pop-1">{label}</div>
+      <div className={`mt-2 text-3xl font-semibold tabular-nums pop-2 ${accentClass}`}>{valueNode}</div>
+    </>
+  );
+
   return (
     <>
       <motion.div
         layoutId={expandable ? layoutId : undefined}
-        onClick={expandable ? onOpen : undefined}
-        whileHover={expandable ? { y: -3 } : undefined}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className={`rounded-2xl border border-border bg-card p-5 transition-colors ${
-          expandable ? 'cursor-pointer hover:border-white/20' : ''
-        }`}
+        className="persp"
       >
-        <div className="text-xs text-text-dim">{label}</div>
-        <div className={`mt-2 text-3xl font-semibold tabular-nums ${accentClass}`}>{valueNode}</div>
+        <Tilt3D
+          onClick={expandable ? onOpen : undefined}
+          lift={Boolean(expandable)}
+          className={`rounded-2xl border border-border bg-card depth-2 p-5 ${
+            expandable ? 'cursor-pointer depth-hover hover:border-white/20' : ''
+          }`}
+        >
+          {face}
+        </Tilt3D>
       </motion.div>
 
       {expandable && (
         <AnimatePresence>
           {isOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 persp">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -82,7 +95,7 @@ export default function KpiTile({
               />
               <motion.div
                 layoutId={layoutId}
-                className="relative w-full max-w-lg max-h-[80vh] bg-card rounded-2xl overflow-hidden border border-border z-10 flex flex-col shadow-xl"
+                className="relative w-full max-w-lg max-h-[80vh] bg-card rounded-2xl overflow-hidden border border-border z-10 flex flex-col depth-4"
               >
                 <button
                   type="button"

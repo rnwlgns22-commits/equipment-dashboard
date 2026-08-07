@@ -15,6 +15,42 @@
 
 :root {
   color-scheme: dark;
+
+  /* ── 입체(3D) 디자인 토큰 ──────────────────────────────────────────────
+     레퍼런스 조사(2026-08-07): Awwwards 상위 3D 사이트(Hubtown/Unseen,
+     Steven.com/OFF+BRAND)와 2026 "Spatial UI / Glassmorphism 2.0" 트렌드에서
+     공통으로 뽑아낸 규칙 세 가지를 토큰화함.
+       1. 깊이는 그림자 한 겹이 아니라 "접촉 그림자 + 확산 그림자 + 상단
+          하이라이트" 3중 레이어로 만든다(플랫 디자인의 box-shadow 한 줄과
+          가장 크게 갈리는 지점).
+       2. 어두운 UI에서는 반투명 + 블러가 색을 늘리지 않고 층을 분리한다.
+       3. 3D는 콘텐츠를 압도하지 않고 액자 역할만 한다(Minh Pham 원칙) —
+          그래서 각도·이동량은 전부 한 자릿수로 묶어둠. */
+  --persp: 1000px;
+  --tilt-max: 7deg;      /* 카드 틸트 최대 각 — 이 이상은 표 글자가 읽기 힘들어짐 */
+  --lift: 10px;          /* 호버 시 부양 높이 */
+
+  --depth-1:
+    0 1px 2px -1px rgb(0 0 0 / 0.5),
+    0 2px 8px -2px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+  --depth-2:
+    0 2px 4px -2px rgb(0 0 0 / 0.55),
+    0 8px 24px -6px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.07);
+  --depth-3:
+    0 4px 8px -4px rgb(0 0 0 / 0.6),
+    0 18px 48px -12px rgb(0 0 0 / 0.55),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.09);
+  --depth-4:
+    0 8px 16px -8px rgb(0 0 0 / 0.65),
+    0 32px 80px -20px rgb(0 0 0 / 0.6),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.11);
+
+  --glass-bg: rgb(22 26 36 / 0.62);
+  --glass-border: rgb(255 255 255 / 0.09);
+  --glass-blur: 16px;
+  --sheen: rgb(255 255 255 / 0.10);  /* 커서 추종 스페큘러 하이라이트 색 */
 }
 
 html.light {
@@ -29,6 +65,30 @@ html.light {
   --color-border: #d5dbe3;
   --color-text: #0f172a;
   --color-text-dim: #64748b;
+
+  /* 라이트 테마의 깊이 — 다크에서 쓰던 진한 검정 그림자를 그대로 쓰면 흰 배경에서
+     때가 낀 것처럼 탁해짐. 불투명도를 1/4 수준으로 낮추고, 안쪽 하이라이트는
+     흰색 대신 위에서 빛이 드는 느낌의 밝은 흰선으로 유지. */
+  --depth-1:
+    0 1px 2px -1px rgb(15 23 42 / 0.10),
+    0 2px 8px -2px rgb(15 23 42 / 0.07),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+  --depth-2:
+    0 2px 4px -2px rgb(15 23 42 / 0.12),
+    0 8px 24px -6px rgb(15 23 42 / 0.10),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+  --depth-3:
+    0 4px 8px -4px rgb(15 23 42 / 0.14),
+    0 18px 48px -12px rgb(15 23 42 / 0.13),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.95);
+  --depth-4:
+    0 8px 16px -8px rgb(15 23 42 / 0.16),
+    0 32px 80px -20px rgb(15 23 42 / 0.16),
+    inset 0 1px 0 0 rgb(255 255 255 / 1);
+
+  --glass-bg: rgb(255 255 255 / 0.7);
+  --glass-border: rgb(15 23 42 / 0.08);
+  --sheen: rgb(255 255 255 / 0.55);
 }
 
 body {
@@ -63,4 +123,90 @@ textarea:focus-visible,
 }
 .animate-mascot-float {
   animation: mascot-float 3.5s ease-in-out infinite;
+}
+
+/* ══ 입체 표현 유틸리티 ═══════════════════════════════════════════════════
+   Tailwind 클래스로는 3중 그림자·backdrop-filter·CSS 변수 기반 틸트를 깔끔히
+   못 써서 여기에 모아둠. 전부 위의 depth/glass 토큰만 참조하므로 라이트/다크가
+   자동으로 따라감. */
+
+/* 원근 컨테이너 — 자식의 rotateX/rotateY가 실제 원근으로 보이려면 부모에 필요 */
+.persp {
+  perspective: var(--persp);
+  perspective-origin: center;
+}
+
+.depth-1 { box-shadow: var(--depth-1); }
+.depth-2 { box-shadow: var(--depth-2); }
+.depth-3 { box-shadow: var(--depth-3); }
+.depth-4 { box-shadow: var(--depth-4); }
+
+/* 호버 시 한 단계 더 떠오름. depth-N보다 선택자 특이도가 높아서 그대로 덮어씀
+   (hover:depth-3 같은 Tailwind 변형은 depth-*가 유틸리티가 아니라서 안 만들어짐). */
+.depth-hover:hover { box-shadow: var(--depth-3); }
+.depth-hover-strong:hover { box-shadow: var(--depth-4); }
+
+/* 유리 표면 — backdrop-filter 미지원 브라우저에서는 그냥 반투명 배경으로 떨어짐 */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+/* 커서 추종 스페큘러 하이라이트 — Tilt3D가 --mx/--my(0~100%)를 갱신하면
+   빛이 카드 표면을 훑고 지나가는 것처럼 보임. 포인터가 없을 땐 --sheen-o가 0이라
+   완전히 투명. pointer-events:none이라 아래 요소 클릭을 안 막음. */
+.sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--sheen-o, 0);
+  transition: opacity 0.25s ease-out;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    var(--sheen),
+    transparent 60%
+  );
+}
+
+/* 카드 안에서 한 단계 더 앞으로 띄우고 싶은 요소(숫자, 배지 등)에.
+   부모가 transform-style: preserve-3d일 때만 실제로 떠 보임. */
+.pop-1 { transform: translateZ(24px); }
+.pop-2 { transform: translateZ(48px); }
+
+/* 화면 전체에 깔리는 은은한 공간감 배경 — 색을 새로 추가하지 않고 accent를
+   아주 낮은 불투명도로 두 군데 퍼뜨려서 "빈 배경"이 아니라 "깊은 공간"처럼 보이게 함.
+   fixed라 스크롤해도 그대로 있어 콘텐츠가 그 앞을 지나가는 인상을 준다. */
+.ambient-depth::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, color-mix(in oklab, var(--color-accent) 12%, transparent), transparent 70%),
+    radial-gradient(50rem 36rem at 105% 8%, color-mix(in oklab, var(--color-accent) 7%, transparent), transparent 70%);
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -10px, 0); }
+}
+.animate-float-slow { animation: float-slow 7s ease-in-out infinite; }
+
+/* 접근성 — 전정기관 민감 사용자를 위해 움직임을 끈다. 3D 표현 중 "깊이"(그림자·
+   유리·레이어)는 정지 상태에서도 유효하므로 남기고, "움직임"(틸트·부유·전환)만 제거.
+   Tilt3D는 JS 쪽에서도 같은 미디어쿼리를 따로 확인함. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-mascot-float,
+  .animate-float-slow {
+    animation: none;
+  }
+  .tilt-3d {
+    transform: none !important;
+    transition: none !important;
+  }
 }
