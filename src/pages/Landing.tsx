@@ -9,6 +9,8 @@ import UploadReview from '../components/UploadReview';
 import ThemeToggle from '../components/ThemeToggle';
 import Tilt3D from '../components/Tilt3D';
 import GlassBackdrop from '../components/GlassBackdrop';
+
+const LiquidGlassBackdrop = lazy(() => import('../components/three/LiquidGlassBackdrop'));
 import mascotGreeting from '../assets/mascot/greeting.png';
 
 // 랜딩은 초기 진입 라우트라 lazy 라우팅이 안 먹지만, 배경 씬만 따로 떼면
@@ -117,7 +119,9 @@ export default function Landing() {
     <div className="min-h-screen flex flex-col items-center justify-center text-text px-6 relative overflow-hidden">
       {/* 배경 3D 씬 — 콘텐츠보다 뒤(z-0), 클릭 통과. 로드 전/실패 시엔 아무것도
           안 그리고 아래 그라디언트만 보이므로 랜딩이 깨지지 않음. */}
-      <GlassBackdrop />
+      <Suspense fallback={<GlassBackdrop />}>
+        <LiquidGlassBackdrop />
+      </Suspense>
       <Suspense fallback={null}>
         <NetworkHero className="absolute inset-0 z-0 pointer-events-none" />
       </Suspense>
