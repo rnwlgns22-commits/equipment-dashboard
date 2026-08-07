@@ -90,13 +90,17 @@ export default function LiquidGlassBackdrop() {
     // ── 유리가 굴절시킬 컬러 블롭 (유리보다 뒤) ─────────────────────────
     // 색은 '유리가 빨아들일 재료'일 뿐이라 옅고 작게 — 진하면 배경이 주인공이
     // 돼서 표·숫자를 잡아먹는다(첫 시도에서 실제로 그랬음).
+    // 굴절은 '뒤에 대비가 있어야' 보인다 — 라이트 테마는 배경이 거의 흰색이라
+    // 블롭을 더 진하게 깔아줘야 유리가 휘게 할 재료가 생긴다(다크는 배경이
+    // 어두워서 같은 값이면 너무 튐).
+    const blobAlpha = (light: boolean) => (light ? 0.72 : 0.45);
     const blobColors = [0x5b8def, 0xa66bff, 0xff8fb1, 0x4fd6c0];
     const blobs: THREE.Mesh[] = [];
     const blobGeo = new THREE.SphereGeometry(1, 32, 32);
     blobColors.forEach((col, i) => {
       const m = new THREE.Mesh(
         blobGeo,
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.4 }),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: blobAlpha(isLight()) }),
       );
       const a = (i / blobColors.length) * Math.PI * 2;
       m.position.set(Math.cos(a) * 12, Math.sin(a) * 7, -12 - i);
@@ -111,12 +115,14 @@ export default function LiquidGlassBackdrop() {
       metalness: 0,
       roughness: 0.05,
       transmission: 1,      // 뒤를 통과시킴
-      thickness: 3.2,       // 두꺼울수록 굴절·색분산이 강해짐
-      ior: 1.55,
-      dispersion: 5,        // 색수차 — 가장자리 무지개
+      // 굴절 강화(2026-08-07 요청). 세 값이 같이 움직여야 효과가 남 —
+      // ior만 올리면 상만 심하게 휘고, thickness만 올리면 뿌옇게 뭉개진다.
+      thickness: 6.0,       // 두꺼울수록 광선이 유리 안에서 더 오래 꺾임
+      ior: 1.85,            // 굴절률. 유리 1.5 / 사파이어 1.77 / 다이아 2.42 수준
+      dispersion: 11,       // 색수차 — 가장자리 무지개가 확 벌어짐
       iridescence: 1,
-      iridescenceIOR: 1.35,
-      iridescenceThicknessRange: [100, 640],
+      iridescenceIOR: 1.45,
+      iridescenceThicknessRange: [120, 780],
       clearcoat: 1,
       clearcoatRoughness: 0.08,
       envMapIntensity: 1.4,
@@ -200,8 +206,12 @@ export default function LiquidGlassBackdrop() {
     // 테마 전환 시 배경 그라디언트만 갈아끼움
     const themeObs = new MutationObserver(() => {
       bgTex.dispose();
-      bgTex = makeBackdropTexture(isLight());
+      const light = isLight();
+      bgTex = makeBackdropTexture(light);
       scene.background = bgTex;
+      // 블롭 진하기도 테마따라 — 안 바꾸면 라이트에서 굴절이 안 보이거나
+      // 다크에서 배경이 너무 튄다
+      for (const b of blobs) (b.material as THREE.MeshBasicMaterial).opacity = blobAlpha(light);
       if (reduced) draw();
     });
     themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
