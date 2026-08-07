@@ -18,12 +18,12 @@ afterEach(() => {
 });
 
 describe('themeStore — 초기 테마 결정', () => {
-  // 2026-07-22 요청 — OS가 라이트를 선호해도 사용자가 직접 토글하기 전엔 항상
-  // 다크로 시작해야 함(이전엔 OS 선호를 따랐는데, 그 동작을 없앰).
-  it('저장된 테마가 없으면 OS 선호와 무관하게 항상 dark로 시작한다', async () => {
+  // OS 선호를 따르지 않고 고정 기본값을 쓴다는 원칙은 2026-07-22부터 유지.
+  // 기본값 자체는 2026-08-07에 다크 → 라이트로 뒤집음(글라스스킨 컨셉).
+  it('저장된 테마가 없으면 OS 선호와 무관하게 항상 light로 시작한다', async () => {
     const { useThemeStore } = await import('./themeStore');
-    expect(useThemeStore.getState().theme).toBe('dark');
-    expect(document.documentElement.classList.contains('light')).toBe(false);
+    expect(useThemeStore.getState().theme).toBe('light');
+    expect(document.documentElement.classList.contains('light')).toBe(true);
   });
 
   it('localStorage에 저장된 테마(light)가 있으면 그 값으로 시작한다', async () => {
@@ -44,16 +44,16 @@ describe('themeStore — 초기 테마 결정', () => {
 describe('themeStore — toggleTheme', () => {
   it('테마를 전환하고 html 클래스·localStorage를 함께 갱신한다', async () => {
     const { useThemeStore } = await import('./themeStore');
-    expect(useThemeStore.getState().theme).toBe('dark');
-
-    useThemeStore.getState().toggleTheme();
     expect(useThemeStore.getState().theme).toBe('light');
-    expect(document.documentElement.classList.contains('light')).toBe(true);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe('light');
 
     useThemeStore.getState().toggleTheme();
     expect(useThemeStore.getState().theme).toBe('dark');
     expect(document.documentElement.classList.contains('light')).toBe(false);
     expect(localStorage.getItem(STORAGE_KEY)).toBe('dark');
+
+    useThemeStore.getState().toggleTheme();
+    expect(useThemeStore.getState().theme).toBe('light');
+    expect(document.documentElement.classList.contains('light')).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('light');
   });
 });

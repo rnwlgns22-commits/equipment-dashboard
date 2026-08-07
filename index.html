@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>설비관리 대시보드</title>
+    <script>
+      // 테마 클래스를 CSS가 그려지기 전에 동기적으로 적용 — 기본을 라이트로 바꾸면서
+      // (2026-08-07) 필요해짐. CSS는 :root가 다크고 html.light가 그걸 덮는 구조라,
+      // 이 스크립트가 없으면 모듈이 로드될 때까지 어두운 화면이 한 번 번쩍인다.
+      // themeStore.ts와 같은 키·같은 기본값을 쓰며, 저장값이 우선인 것도 동일.
+      try {
+        var t = localStorage.getItem('fms-theme');
+        if (t !== 'light' && t !== 'dark') t = 'light';
+        if (t === 'light') document.documentElement.classList.add('light');
+      } catch (e) {
+        // 사생활 보호 모드 등에서 localStorage 접근이 막히면 기본값(라이트)으로 둔다
+        document.documentElement.classList.add('light');
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
