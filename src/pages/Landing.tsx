@@ -93,7 +93,7 @@ export default function Landing() {
 
   if (mode === 'review') {
     return (
-      <div className="min-h-screen bg-bg text-text py-10">
+      <div className="min-h-screen text-text py-10">
         <UploadReview
           equipmentCandidates={equipmentCandidates}
           historyCandidates={historyCandidates}
@@ -113,7 +113,7 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text px-6 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center text-text px-6 relative overflow-hidden">
       {/* 배경 3D 씬 — 콘텐츠보다 뒤(z-0), 클릭 통과. 로드 전/실패 시엔 아무것도
           안 그리고 아래 그라디언트만 보이므로 랜딩이 깨지지 않음. */}
       <Suspense fallback={null}>

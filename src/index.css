@@ -1,16 +1,35 @@
 @import "tailwindcss";
 
+/* ══ 아이폰 글라스스킨(Liquid Glass) 컨셉 ═══════════════════════════════════
+   2026-08-07 요청: "아이폰 글라스스킨 컨셉, 투명도는 거의 최대로".
+   iOS 26 Liquid Glass 언어를 웹으로 옮김 — 핵심은 네 가지이고, 이 중 하나라도
+   빠지면 그냥 '흐린 반투명 박스'가 되지 유리로 안 보인다.
+     1. 표면 자체는 거의 투명(불투명도 5% 수준). 색은 뒤에서 비쳐 오게 둔다.
+     2. 대신 backdrop blur + 채도 부스트로 뒤를 뭉갠다. 글자가 읽히는 건
+        표면 불투명도가 아니라 이 블러 덕분 — 배경의 고주파 디테일이 사라지므로.
+     3. 스페큘러 엣지: 윗변에 밝은 헤어라인, 아랫변은 약하게. 유리 두께의 착시.
+     4. 뒤에 볼 게 있어야 한다. 단색 배경 위에 투명 카드를 얹으면 그냥 흐려
+        보일 뿐이라, body에 고정 메시 그라디언트를 깔아 '배경화면' 역할을 시킴.
+
+   투명도를 최대로 밀면 가독성이 위험해지는 건 애플도 인정하는 트레이드오프라,
+   본문 글자색은 오히려 대비를 올려 잡았음(--color-text / --color-text-dim). */
 @theme {
-  --color-bg: #0b0e14;
-  --color-bg-soft: #12151d;
-  --color-card: #161a24;
-  --color-border: #262b38;
-  --color-text: #e5e7eb;
-  --color-text-dim: #8b93a7;
+  --color-bg: #070910;
+  /* card / bg-soft는 이제 '색'이 아니라 '유리판' — 흰빛을 아주 얇게 얹기만 하고
+     실제 색감은 뒤의 메시 그라디언트가 비쳐서 만든다. */
+  --color-bg-soft: rgb(255 255 255 / 0.035);
+  --color-card: rgb(255 255 255 / 0.055);
+  --color-border: rgb(255 255 255 / 0.14);
+  --color-text: #f2f5fa;
+  --color-text-dim: #a3adc2;
   --color-accent: #22d3ee;
   --color-risk-high: #f87171;
   --color-risk-mid: #fbbf24;
   --color-risk-low: #4ade80;
+
+  /* iOS는 모서리를 크고 부드럽게 씀 — 기존 rounded-2xl 자리를 그대로 키움 */
+  --radius-2xl: 1.375rem;
+  --radius-xl: 1rem;
 }
 
 :root {
@@ -31,73 +50,118 @@
   /* 틸트 각도는 CSS에 없음 — 카드 크기에 따라 Tilt3D가 계산한다(모서리 이동
      거리를 일정하게 묶는 방식). 조절은 Tilt3D.tsx의 MAX_CORNER_LIFT에서. */
 
+  /* depth-N = 바깥 그림자(떠 있음) + 스페큘러 엣지(유리 두께).
+     윗변 하이라이트를 아랫변보다 훨씬 밝게 둬야 위에서 빛이 드는 유리로 읽힌다. */
   --depth-1:
-    0 1px 2px -1px rgb(0 0 0 / 0.5),
-    0 2px 8px -2px rgb(0 0 0 / 0.35),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+    0 1px 2px -1px rgb(0 0 0 / 0.45),
+    0 2px 8px -2px rgb(0 0 0 / 0.3),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.05);
   --depth-2:
-    0 2px 4px -2px rgb(0 0 0 / 0.55),
-    0 8px 24px -6px rgb(0 0 0 / 0.45),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.07);
+    0 2px 6px -2px rgb(0 0 0 / 0.5),
+    0 10px 30px -8px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.3),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.06),
+    inset 0 0 24px 0 rgb(255 255 255 / 0.04);
   --depth-3:
-    0 4px 8px -4px rgb(0 0 0 / 0.6),
-    0 18px 48px -12px rgb(0 0 0 / 0.55),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.09);
+    0 4px 10px -4px rgb(0 0 0 / 0.55),
+    0 20px 56px -12px rgb(0 0 0 / 0.55),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.38),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.08),
+    inset 0 0 30px 0 rgb(255 255 255 / 0.05);
   --depth-4:
-    0 8px 16px -8px rgb(0 0 0 / 0.65),
-    0 32px 80px -20px rgb(0 0 0 / 0.6),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.11);
+    0 8px 18px -8px rgb(0 0 0 / 0.6),
+    0 36px 90px -20px rgb(0 0 0 / 0.62),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.45),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.1),
+    inset 0 0 40px 0 rgb(255 255 255 / 0.06);
 
-  --glass-bg: rgb(22 26 36 / 0.62);
-  --glass-border: rgb(255 255 255 / 0.09);
-  --glass-blur: 16px;
-  --sheen: rgb(255 255 255 / 0.10);  /* 커서 추종 스페큘러 하이라이트 색 */
+  /* 투명도 거의 최대 — 표면은 흰빛 6%만. 읽히게 만드는 건 blur/saturate 쪽 */
+  --glass-bg: rgb(255 255 255 / 0.06);
+  --glass-border: rgb(255 255 255 / 0.16);
+  --glass-blur: 30px;
+  --glass-sat: 190%;
+  --sheen: rgb(255 255 255 / 0.16);  /* 커서 추종 스페큘러 하이라이트 색 */
+
+  /* WebGL 씬(NetworkHero) 전용 색 — 반드시 hex로 둘 것. three.js의 Color 파서는
+     'rgb(255 255 255 / 0.14)' 같은 공백·슬래시 표기를 못 읽어서, UI용 토큰을
+     그대로 넘기면 조용히 흰색으로 떨어진다(유리 전환하면서 --color-border를
+     반투명으로 바꾼 순간 실제로 걸렸음). */
+  --scene-grid: #2b3346;
 }
 
 html.light {
   color-scheme: light;
-  /* 다크 테마와 같은 3단 명암 구조(bg < bg-soft < card, 카드가 가장 밝음)를
-     그대로 유지 — 처음엔 셋 다 흰색에 가까워서(#f7f8fa/#ffffff/#ffffff) 박스
-     경계가 거의 안 보였음(2026-07-22 지적). bg를 눈에 띄게 회색으로 낮추고
-     bg-soft를 그 중간톤으로, border도 또렷하게 올림. */
-  --color-bg: #e7eaef;
-  --color-bg-soft: #f3f5f8;
-  --color-card: #ffffff;
-  --color-border: #d5dbe3;
-  --color-text: #0f172a;
-  --color-text-dim: #64748b;
+  /* 라이트도 같은 유리 원리지만 물리가 반대 — 밝은 배경 위에서는 흰 헤어라인이
+     안 보이므로 테두리를 어두운 실선으로 잡고, 표면은 흰빛을 더 얹어(35%) 글자
+     대비를 확보한다. 다크만큼 투명하게 밀면 라이트에서는 글자가 바로 깨짐. */
+  --color-bg: #dfe4ec;
+  --color-bg-soft: rgb(255 255 255 / 0.3);
+  --color-card: rgb(255 255 255 / 0.35);
+  --color-border: rgb(15 23 42 / 0.10);
+  --color-text: #0b1220;
+  --color-text-dim: #4a5568;
 
   /* 라이트 테마의 깊이 — 다크에서 쓰던 진한 검정 그림자를 그대로 쓰면 흰 배경에서
-     때가 낀 것처럼 탁해짐. 불투명도를 1/4 수준으로 낮추고, 안쪽 하이라이트는
-     흰색 대신 위에서 빛이 드는 느낌의 밝은 흰선으로 유지. */
+     때가 낀 것처럼 탁해짐. 불투명도를 낮게 유지하고, 스페큘러는 순백 헤어라인으로. */
   --depth-1:
     0 1px 2px -1px rgb(15 23 42 / 0.10),
     0 2px 8px -2px rgb(15 23 42 / 0.07),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+    inset 0 1px 0 0 rgb(255 255 255 / 0.85),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.3);
   --depth-2:
-    0 2px 4px -2px rgb(15 23 42 / 0.12),
-    0 8px 24px -6px rgb(15 23 42 / 0.10),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+    0 2px 6px -2px rgb(15 23 42 / 0.12),
+    0 10px 30px -8px rgb(15 23 42 / 0.12),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.95),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.35),
+    inset 0 0 24px 0 rgb(255 255 255 / 0.25);
   --depth-3:
-    0 4px 8px -4px rgb(15 23 42 / 0.14),
-    0 18px 48px -12px rgb(15 23 42 / 0.13),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.95);
+    0 4px 10px -4px rgb(15 23 42 / 0.14),
+    0 20px 56px -12px rgb(15 23 42 / 0.16),
+    inset 0 1px 0 0 rgb(255 255 255 / 1),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.4),
+    inset 0 0 30px 0 rgb(255 255 255 / 0.3);
   --depth-4:
-    0 8px 16px -8px rgb(15 23 42 / 0.16),
-    0 32px 80px -20px rgb(15 23 42 / 0.16),
-    inset 0 1px 0 0 rgb(255 255 255 / 1);
+    0 8px 18px -8px rgb(15 23 42 / 0.16),
+    0 36px 90px -20px rgb(15 23 42 / 0.2),
+    inset 0 1px 0 0 rgb(255 255 255 / 1),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.45),
+    inset 0 0 40px 0 rgb(255 255 255 / 0.35);
 
-  --glass-bg: rgb(255 255 255 / 0.7);
-  --glass-border: rgb(15 23 42 / 0.08);
-  --sheen: rgb(255 255 255 / 0.55);
+  --glass-bg: rgb(255 255 255 / 0.38);
+  --glass-border: rgb(15 23 42 / 0.10);
+  --glass-blur: 28px;
+  --glass-sat: 180%;
+  --sheen: rgb(255 255 255 / 0.6);
+  --scene-grid: #94a3b8;
 }
 
+/* 유리 뒤에 비칠 '배경화면'. 아이폰 홈화면의 월페이퍼에 해당하는 층으로, 이게
+   없으면 투명도를 아무리 올려도 그냥 흐린 회색 박스만 보인다. background-attachment:
+   fixed라 스크롤해도 배경은 고정 — 카드가 그 위를 지나가면서 유리 너머 색이
+   바뀌는 게 보이고, 그때 비로소 '유리'로 읽힘. */
 body {
   margin: 0;
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(48rem 38rem at 8% 4%, color-mix(in oklab, var(--color-accent) 30%, transparent), transparent 62%),
+    radial-gradient(42rem 34rem at 92% 10%, color-mix(in oklab, #8b5cf6 26%, transparent), transparent 62%),
+    radial-gradient(46rem 40rem at 78% 88%, color-mix(in oklab, #ec4899 20%, transparent), transparent 62%),
+    radial-gradient(40rem 34rem at 18% 92%, color-mix(in oklab, #3b82f6 24%, transparent), transparent 62%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--color-text);
   font-family: system-ui, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+html.light body {
+  /* 라이트에서는 같은 색을 그대로 쓰면 채도가 너무 튀어서 글자를 방해함 */
+  background-image:
+    radial-gradient(48rem 38rem at 8% 4%, color-mix(in oklab, var(--color-accent) 22%, transparent), transparent 62%),
+    radial-gradient(42rem 34rem at 92% 10%, color-mix(in oklab, #8b5cf6 16%, transparent), transparent 62%),
+    radial-gradient(46rem 40rem at 78% 88%, color-mix(in oklab, #ec4899 12%, transparent), transparent 62%),
+    radial-gradient(40rem 34rem at 18% 92%, color-mix(in oklab, #3b82f6 16%, transparent), transparent 62%);
 }
 
 * {
@@ -151,8 +215,30 @@ textarea:focus-visible,
 .glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+/* ── 앱 전체를 유리로 ────────────────────────────────────────────────────
+   bg-card / bg-bg-soft는 코드베이스 20개 파일에 140군데 넘게 흩어져 있어서
+   일일이 고치는 대신 Tailwind가 만들어내는 유틸리티 클래스 자체를 여기서
+   보강함 — 토큰(--color-card 등)을 반투명으로 바꾼 것과 짝을 이뤄, 기존 마크업을
+   한 줄도 안 건드리고 전 화면이 같은 유리 재질로 바뀐다.
+   배경색은 Tailwind가 이미 넣으므로 여기선 blur만 얹으면 됨. */
+.bg-card {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+/* 입력창·칩처럼 카드 위에 다시 올라가는 작은 면. 카드와 같은 세기로 흐리면
+   유리 위에 유리라 탁해지므로 절반만. */
+.bg-bg-soft {
+  backdrop-filter: blur(calc(var(--glass-blur) / 2)) saturate(130%);
+}
+
+/* backdrop-filter가 없는 브라우저에서는 투명도만 남아 글자가 배경과 겹쳐 안 읽힘.
+   이때는 유리를 포기하고 불투명한 판으로 되돌린다(기능 > 멋). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bg-card, .glass { background: color-mix(in oklab, var(--color-bg) 82%, white); }
+  .bg-bg-soft { background: color-mix(in oklab, var(--color-bg) 90%, white); }
 }
 
 /* 커서 추종 스페큘러 하이라이트 — Tilt3D가 --mx/--my(0~100%)를 갱신하면
@@ -178,19 +264,9 @@ textarea:focus-visible,
 .pop-1 { transform: translateZ(24px); }
 .pop-2 { transform: translateZ(48px); }
 
-/* 화면 전체에 깔리는 은은한 공간감 배경 — 색을 새로 추가하지 않고 accent를
-   아주 낮은 불투명도로 두 군데 퍼뜨려서 "빈 배경"이 아니라 "깊은 공간"처럼 보이게 함.
-   fixed라 스크롤해도 그대로 있어 콘텐츠가 그 앞을 지나가는 인상을 준다. */
-.ambient-depth::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 40rem at 12% -10%, color-mix(in oklab, var(--color-accent) 12%, transparent), transparent 70%),
-    radial-gradient(50rem 36rem at 105% 8%, color-mix(in oklab, var(--color-accent) 7%, transparent), transparent 70%);
-}
+/* (구 .ambient-depth는 삭제 — 배경 그라디언트를 body로 옮기면서 역할이 겹쳤음.
+   유리는 '뒤에 있는 것'을 비추는 재질이라 배경층이 두 겹이면 어느 쪽을 비추는지
+   흐려진다. 배경화면은 body 한 곳에만 둔다.) */
 
 @keyframes float-slow {
   0%, 100% { transform: translate3d(0, 0, 0); }

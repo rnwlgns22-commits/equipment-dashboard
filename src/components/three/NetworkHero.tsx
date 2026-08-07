@@ -27,7 +27,9 @@ function readThemeColors() {
   return {
     bg: pick('--color-bg', '#0b0e14'),
     accent: pick('--color-accent', '#22d3ee'),
-    line: pick('--color-border', '#262b38'),
+    // UI용 --color-border가 아니라 씬 전용 hex 토큰을 씀 — 위 pick()은 three의
+    // Color 파서를 타므로 rgb(… / …) 표기가 들어오면 조용히 흰색이 된다.
+    line: pick('--scene-grid', '#2b3346'),
     isLight: document.documentElement.classList.contains('light'),
   };
 }
