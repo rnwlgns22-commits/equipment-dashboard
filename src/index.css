@@ -83,6 +83,9 @@
   --glass-blur: 26px;
   --glass-sat: 150%;
   --sheen: rgb(255 255 255 / 0.16);  /* 커서 추종 스페큘러 하이라이트 색 */
+  /* 배경 오브제(GlassBackdrop) 세기. 다크에서는 구체가 그대로 밝아서 눈에 띄므로
+     라이트보다 낮게 — 이 값 하나로 배경이 얼마나 보일지 조절한다. */
+  --orb-opacity: 0.32;
 
   /* WebGL 씬(NetworkHero) 전용 색 — 반드시 hex로 둘 것. three.js의 Color 파서는
      'rgb(255 255 255 / 0.14)' 같은 공백·슬래시 표기를 못 읽어서, UI용 토큰을
@@ -133,35 +136,19 @@ html.light {
   --glass-sat: 140%;
   --sheen: rgb(255 255 255 / 0.7);
   --scene-grid: #b0bccd;
+  --orb-opacity: 0.5;
 }
 
-/* 유리 뒤에 비칠 '배경화면'. 아이폰 홈화면의 월페이퍼에 해당하는 층으로, 이게
-   없으면 투명도를 아무리 올려도 그냥 흐린 회색 박스만 보인다. background-attachment:
-   fixed라 스크롤해도 배경은 고정 — 카드가 그 위를 지나가면서 유리 너머 색이
-   바뀌는 게 보이고, 그때 비로소 '유리'로 읽힘. */
+/* 배경은 단색. 유리 뒤에 비칠 '볼 것'은 그라디언트 워시가 아니라 실제 오브제로
+   만든다(GlassBackdrop 컴포넌트) — 그라디언트로 배경을 물들이면 성에유리가 아니라
+   색유리처럼 보이고 화면만 지저분해짐(2026-08-07 지적). 참고 보드의 구성도
+   '선명한 3D 물체 위에 유리판을 얹어서 유리가 그걸 뭉개는' 방식이었음. */
 body {
   margin: 0;
   background-color: var(--color-bg);
-  background-image:
-    radial-gradient(48rem 38rem at 8% 4%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 65%),
-    radial-gradient(42rem 34rem at 92% 10%, color-mix(in oklab, #8b5cf6 12%, transparent), transparent 65%),
-    radial-gradient(46rem 40rem at 78% 88%, color-mix(in oklab, #ec4899 9%, transparent), transparent 65%),
-    radial-gradient(40rem 34rem at 18% 92%, color-mix(in oklab, #3b82f6 12%, transparent), transparent 65%);
-  background-attachment: fixed;
-  background-repeat: no-repeat;
   color: var(--color-text);
   font-family: system-ui, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
   -webkit-font-smoothing: antialiased;
-}
-
-html.light body {
-  /* 보드의 라이트 핀들은 배경이 '거의 흰 벽'이고 색은 아주 옅게만 스며 있었음.
-     여기서 채도를 올리면 성에유리가 아니라 색유리가 돼서 컨셉이 어긋난다. */
-  background-image:
-    radial-gradient(52rem 40rem at 6% 2%, color-mix(in oklab, #7dd3fc 26%, transparent), transparent 66%),
-    radial-gradient(44rem 36rem at 95% 8%, color-mix(in oklab, #c4b5fd 24%, transparent), transparent 66%),
-    radial-gradient(48rem 40rem at 82% 92%, color-mix(in oklab, #fbcfe8 20%, transparent), transparent 66%),
-    radial-gradient(42rem 36rem at 14% 96%, color-mix(in oklab, #a5b4fc 20%, transparent), transparent 66%);
 }
 
 * {
@@ -210,6 +197,25 @@ textarea:focus-visible,
    (hover:depth-3 같은 Tailwind 변형은 depth-*가 유틸리티가 아니라서 안 만들어짐). */
 .depth-hover:hover { box-shadow: var(--depth-3); }
 .depth-hover-strong:hover { box-shadow: var(--depth-4); }
+
+/* ── 강조용 색유리 ───────────────────────────────────────────────────────
+   배경을 통째로 물들이는 대신, 강조할 박스에만 색을 넣는 방식(2026-08-07 지적).
+   --tint에 색을 주면 그 판만 색유리가 된다. 나머지는 전부 무채색 성에유리로
+   두기 때문에 색이 곧 '여기를 보라'는 신호가 됨 — 배경까지 색이면 이게 안 통함.
+   색은 아주 옅게만(8~14%) 얹고, 테두리와 위쪽 림라이트에 좀 더 진하게 남긴다. */
+.tint {
+  background-image:
+    linear-gradient(to bottom, color-mix(in oklab, var(--tint) 14%, transparent), color-mix(in oklab, var(--tint) 6%, transparent));
+  border-color: color-mix(in oklab, var(--tint) 38%, transparent);
+}
+.tint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 0 color-mix(in oklab, var(--tint) 55%, white);
+}
 
 /* 유리 표면 — backdrop-filter 미지원 브라우저에서는 그냥 반투명 배경으로 떨어짐 */
 .glass {

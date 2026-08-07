@@ -180,6 +180,8 @@ export default function Dashboard() {
           label="점검 임박 (7일 이내)"
           value={dueSoonCount}
           accentClass="text-risk-mid"
+          // 0건이면 색을 안 넣음 — 전부 색칠하면 색이 신호 역할을 못 함
+          tint={dueSoonCount > 0 ? 'var(--color-risk-mid)' : undefined}
           isOpen={expandedKpi === '점검 임박'}
           onOpen={() => setExpandedKpi('점검 임박')}
           onClose={() => setExpandedKpi(null)}
@@ -206,6 +208,7 @@ export default function Dashboard() {
           label="위험 등급 상"
           value={highOnlyStats.length}
           accentClass="text-risk-high"
+          tint={highOnlyStats.length > 0 ? 'var(--color-risk-high)' : undefined}
           isOpen={expandedKpi === '위험 등급 상'}
           onOpen={() => setExpandedKpi('위험 등급 상')}
           onClose={() => setExpandedKpi(null)}
@@ -232,6 +235,13 @@ export default function Dashboard() {
           label="법정·정기점검 도래"
           value={dueInspections.length}
           accentClass={dueInspections.some((s) => s.due === 'overdue') ? 'text-risk-high' : 'text-risk-mid'}
+          tint={
+            dueInspections.length === 0
+              ? undefined
+              : dueInspections.some((s) => s.due === 'overdue')
+                ? 'var(--color-risk-high)'
+                : 'var(--color-risk-mid)'
+          }
           isOpen={expandedKpi === '법정정기점검 도래'}
           onOpen={() => setExpandedKpi('법정정기점검 도래')}
           onClose={() => setExpandedKpi(null)}
@@ -288,6 +298,7 @@ export default function Dashboard() {
           label="재고부족 자재"
           value={lowStockCount}
           accentClass={lowStockCount > 0 ? 'text-risk-high' : undefined}
+          tint={lowStockCount > 0 ? 'var(--color-risk-high)' : undefined}
           isOpen={expandedKpi === '재고부족 자재'}
           onOpen={() => setExpandedKpi('재고부족 자재')}
           onClose={() => setExpandedKpi(null)}

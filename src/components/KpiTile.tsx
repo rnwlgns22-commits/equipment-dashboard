@@ -27,6 +27,7 @@ export default function KpiTile({
   label,
   value,
   accentClass = 'text-text',
+  tint,
   detail,
   isOpen = false,
   onOpen,
@@ -35,6 +36,8 @@ export default function KpiTile({
   label: string;
   value: string | number;
   accentClass?: string;
+  /** 강조할 타일만 색유리로. 나머지는 무채색이라 색 자체가 신호가 됨 */
+  tint?: string;
   detail?: ReactNode; // 있으면 클릭해서 확장 카드로 펼칠 수 있음(없으면 예전처럼 정적 타일)
   isOpen?: boolean;
   onOpen?: () => void;
@@ -74,7 +77,8 @@ export default function KpiTile({
         <Tilt3D
           onClick={expandable ? onOpen : undefined}
           lift={Boolean(expandable)}
-          className={`rounded-2xl border border-border bg-card depth-2 p-5 ${
+          style={tint ? ({ '--tint': tint } as React.CSSProperties) : undefined}
+          className={`rounded-2xl border border-border bg-card depth-2 p-5 ${tint ? 'tint' : ''} ${
             expandable ? 'cursor-pointer depth-hover hover:border-white/20' : ''
           }`}
         >

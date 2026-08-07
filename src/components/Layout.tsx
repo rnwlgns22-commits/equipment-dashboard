@@ -6,6 +6,7 @@ import ThemeToggle from './ThemeToggle';
 import ToastContainer from './ToastContainer';
 import GlobalSearch from './GlobalSearch';
 import NotificationManager from './NotificationManager';
+import GlassBackdrop from './GlassBackdrop';
 
 // 텍스트 한 줄("불러오는 중…")만 보이던 걸 스켈레톤으로 교체(2026-07-25) — 특히
 // three.js를 통째로 물고 오는 그래프뷰처럼 lazy 로드가 체감되는 화면에서 개선.
@@ -44,8 +45,10 @@ export default function Layout() {
   const location = useLocation();
 
   return (
-    // 배경화면은 body가 그리므로 여기서 bg를 칠하면 유리 뒤가 가려짐 — 투명하게 둠
+    // 배경은 body(단색) + GlassBackdrop(오브제)가 담당 — 여기서 bg를 칠하면
+    // 유리 뒤가 가려지므로 투명하게 둔다
     <div className="min-h-screen flex flex-col md:flex-row text-text">
+      <GlassBackdrop />
       {/* 모바일 전용 상단바 — 사이드바가 폭을 다 차지해버려서(390px에서 컨텐츠가
           166px로 눌리던 문제, 2026-07-19 발견) md 미만에서는 사이드바를 드로어로 뺌 */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 glass depth-2 shrink-0 sticky top-0 z-30">
