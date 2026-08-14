@@ -25,6 +25,14 @@ function AnimatedNumber({ value }: { value: number }) {
 // watermelon-ui의 expandable-profile-card 패턴(layoutId 공유 레이아웃 전환)을 이
 // 프로젝트의 기존 framer-motion 의존성 + 테마 토큰으로 그대로 재현 — 새 패키지
 // 설치 없이 재사용(2026-07-22 요청).
+
+// 펼칠 때(타일→모달)는 이 transition이 없어 framer 기본 스프링(바운스 포함,
+// ~0.3~0.4초)을 썼고, 접을 때(모달→타일)는 타일 쪽에만 걸린 0.15s easeOut을
+// 썼다 — 방향마다 속도·감쇠가 달라 최소화가 유독 뚝 끊기듯 어색해 보였음
+// (2026-08-14 지적). 양쪽 motion.div에 같은 transition을 걸어 펼침/접힘을
+// 대칭으로 맞춤. bounce:0으로 오버슈트 없는 매끄러운 스프링.
+const CARD_TRANSITION = { type: 'spring', bounce: 0, duration: 0.35 } as const;
+
 export default function KpiTile({
   label,
   value,
@@ -82,7 +90,7 @@ export default function KpiTile({
     <>
       <motion.div
         layoutId={expandable ? layoutId : undefined}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
+        transition={CARD_TRANSITION}
         className="persp"
       >
         <Tilt3D
@@ -117,6 +125,7 @@ export default function KpiTile({
                 />
                 <motion.div
                   layoutId={layoutId}
+                  transition={CARD_TRANSITION}
                   className="relative w-full max-w-lg max-h-[80vh] bg-card rounded-2xl overflow-hidden border border-border z-10 flex flex-col depth-4"
                 >
                   <button

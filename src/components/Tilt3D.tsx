@@ -3,8 +3,8 @@ import { useCallback, useRef, type CSSProperties, type ReactNode } from 'react';
 // 포인터를 따라 카드가 기울어지는 3D 틸트 래퍼(2026-08-07).
 //
 // 레퍼런스 조사에서 상위 3D 사이트들이 공통으로 쓰던 "표면이 실제 물체처럼
-// 빛을 받는다"는 인상을 만드는 최소 장치 — 기울기(rotateX/Y) + 커서 위치를
-// 따라 움직이는 스페큘러 하이라이트(--mx/--my) 두 가지 조합.
+// 빛을 받는다"는 인상을 만드는 기울기(rotateX/Y) 장치. 커서를 따라 움직이는
+// 스페큘러 하이라이트(--mx/--my, .sheen)는 2026-08-14에 제거 — 총괄자 지적.
 //
 // 구현상 주의점 세 가지:
 //  1. 마우스가 움직일 때마다 setState를 하면 대시보드처럼 카드가 십수 개인
@@ -79,8 +79,6 @@ export default function Tilt3D({
         // 위쪽을 가리키면 카드 위쪽이 뒤로 눕도록 부호를 뒤집음(실물 감각)
         el.style.setProperty('--rx', `${-(py - 0.5) * 2 * limitX}deg`);
         el.style.setProperty('--ry', `${(px - 0.5) * 2 * limitY}deg`);
-        el.style.setProperty('--mx', `${px * 100}%`);
-        el.style.setProperty('--my', `${py * 100}%`);
 
         // 원근도 크기에 맞춰 멀리 — 고정 1000px로 두면 큰 카드일수록 사다리꼴
         // 왜곡이 심해져서 글자가 일그러진다(Reveal에서 겪은 것과 같은 문제).
@@ -99,7 +97,6 @@ export default function Tilt3D({
     // 커서를 따라가는 동안엔 전환을 거의 없애야 손에 붙는 느낌이 남. 떠날 때
     // (handleLeave)는 다시 길게 돌려놔서 천천히 제자리로 돌아오게 함.
     el.style.setProperty('--tilt-dur', '0.08s');
-    el.style.setProperty('--sheen-o', '1');
     if (lift) el.style.setProperty('--tz', `var(--lift)`);
   }, [lift]);
 
@@ -112,7 +109,6 @@ export default function Tilt3D({
     el.style.setProperty('--rx', '0deg');
     el.style.setProperty('--ry', '0deg');
     el.style.setProperty('--tz', '0px');
-    el.style.setProperty('--sheen-o', '0');
   }, []);
 
   return (
@@ -122,7 +118,7 @@ export default function Tilt3D({
       onPointerEnter={handleEnter}
       onPointerLeave={handleLeave}
       onClick={onClick}
-      className={`tilt-3d sheen relative ${className}`}
+      className={`tilt-3d relative ${className}`}
       style={{
         transformStyle: 'preserve-3d',
         transform:

@@ -82,7 +82,6 @@
   --glass-border: rgb(255 255 255 / 0.14);
   --glass-blur: 26px;
   --glass-sat: 150%;
-  --sheen: rgb(255 255 255 / 0.16);  /* 커서 추종 스페큘러 하이라이트 색 */
 
   /* WebGL 씬(NetworkHero) 전용 색 — 반드시 hex로 둘 것. three.js의 Color 파서는
      'rgb(255 255 255 / 0.14)' 같은 공백·슬래시 표기를 못 읽어서, UI용 토큰을
@@ -196,23 +195,7 @@ textarea:focus-visible,
   .bg-bg-soft { background: color-mix(in oklab, var(--color-bg) 90%, white); }
 }
 
-/* 커서 추종 스페큘러 하이라이트 — Tilt3D가 --mx/--my(0~100%)를 갱신하면
-   빛이 카드 표면을 훑고 지나가는 것처럼 보임. 포인터가 없을 땐 --sheen-o가 0이라
-   완전히 투명. pointer-events:none이라 아래 요소 클릭을 안 막음. */
-.sheen::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: var(--sheen-o, 0);
-  transition: opacity 0.25s ease-out;
-  background: radial-gradient(
-    340px circle at var(--mx, 50%) var(--my, 50%),
-    var(--sheen),
-    transparent 60%
-  );
-}
+/* 커서 추종 스페큘러 하이라이트(.sheen)는 2026-08-14 제거 — 총괄자 지적. */
 
 /* 카드 안에서 한 단계 더 앞으로 띄우고 싶은 요소(숫자, 배지 등)에.
    부모가 transform-style: preserve-3d일 때만 실제로 떠 보임. */
