@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, animate, useMotionValue, useTransform } from 'framer-motion';
 import Tilt3D from './Tilt3D';
 import { useT } from '../i18n';
@@ -96,39 +97,47 @@ export default function KpiTile({
         </Tilt3D>
       </motion.div>
 
-      {expandable && (
-        <AnimatePresence>
-          {isOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 persp">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="absolute inset-0 bg-bg/80 backdrop-blur-md"
-              />
-              <motion.div
-                layoutId={layoutId}
-                className="relative w-full max-w-lg max-h-[80vh] bg-card rounded-2xl overflow-hidden border border-border z-10 flex flex-col depth-4"
-              >
-                <button
-                  type="button"
+      {expandable &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              // Layout.tsx의 페이지 전환 motion.div가 z/scale에 transform을 걸어두는데,
+              // 그 transform이 있는 조상 안에서는 position:fixed가 뷰포트가 아니라 그
+              // 조상 박스 기준으로 계산돼(CSS 스펙) inset-0 배경이 화면 전체를 못 덮고
+              // 페이지 하단부가 블러 없이 글자와 겹쳐 보였음(2026-08-14, 한/영 무관하게
+              // 재현). document.body로 포털해 조상의 transform 영향권을 벗어나는 걸로
+              // 해결 — GlobalSearch.tsx가 이미 같은 이유로 쓰던 패턴.
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 persp">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   onClick={onClose}
-                  aria-label={t('닫기')}
-                  className="absolute top-4 right-4 z-20 flex h-8 w-8 items-center justify-center bg-bg/50 hover:bg-white/10 rounded-full border border-border text-text transition-colors backdrop-blur-sm"
+                  className="absolute inset-0 bg-bg/80 backdrop-blur-md"
+                />
+                <motion.div
+                  layoutId={layoutId}
+                  className="relative w-full max-w-lg max-h-[80vh] bg-card rounded-2xl overflow-hidden border border-border z-10 flex flex-col depth-4"
                 >
-                  ✕
-                </button>
-                <div className="p-6 overflow-y-auto">
-                  <div className="text-xs text-text-dim">{label}</div>
-                  <div className={`mt-1 text-4xl font-semibold tabular-nums ${accentClass}`}>{valueNode}</div>
-                  <div className="mt-5 pt-5 border-t border-border text-sm">{detail}</div>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      )}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={t('닫기')}
+                    className="absolute top-4 right-4 z-20 flex h-8 w-8 items-center justify-center bg-bg/50 hover:bg-white/10 rounded-full border border-border text-text transition-colors backdrop-blur-sm"
+                  >
+                    ✕
+                  </button>
+                  <div className="p-6 overflow-y-auto">
+                    <div className="text-xs text-text-dim">{label}</div>
+                    <div className={`mt-1 text-4xl font-semibold tabular-nums ${accentClass}`}>{valueNode}</div>
+                    <div className="mt-5 pt-5 border-t border-border text-sm">{detail}</div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </>
   );
 }
