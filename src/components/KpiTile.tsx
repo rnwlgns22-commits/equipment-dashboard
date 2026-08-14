@@ -69,9 +69,6 @@ export default function KpiTile({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // 라벨/숫자를 카드 표면보다 앞으로 띄워서(translateZ) 기울일 때 실제로 층이
-  // 분리돼 보이게 함 — 평면 카드를 그냥 회전시키는 것과 여기서 갈림(2026-08-07).
-  //
   // 라벨은 한 줄로 고정(truncate) — 영어 번역이 한국어 원문보다 2~4배 길어서(예:
   // "상태별" 19자 vs "By Status (Normal · Repairing · Stopped)" 40자) 줄바꿈을
   // 허용하면 좁은 그리드 칸에서 카드 높이가 언어마다 달라지고, 그 높이가 곧
@@ -81,8 +78,8 @@ export default function KpiTile({
   // 맞춤 — 잘린 전체 텍스트는 title로 확인 가능.
   const face = (
     <>
-      <div className="text-xs text-text-dim pop-1 truncate" title={label}>{label}</div>
-      <div className={`mt-2 text-3xl font-semibold tabular-nums pop-2 ${accentClass}`}>{valueNode}</div>
+      <div className="text-xs text-text-dim truncate" title={label}>{label}</div>
+      <div className={`mt-2 text-3xl font-semibold tabular-nums ${accentClass}`}>{valueNode}</div>
     </>
   );
 

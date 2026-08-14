@@ -172,11 +172,11 @@ export default function Landing() {
               </p>
             ) : (
               <>
-                <p className="text-text-dim text-sm pop-1">{t('여기로 업무폴더를 끌어다 놓으세요')}</p>
+                <p className="text-text-dim text-sm">{t('여기로 업무폴더를 끌어다 놓으세요')}</p>
                 <button
                   type="button"
                   onClick={() => folderInputRef.current?.click()}
-                  className="mt-3 text-xs text-accent hover:underline pop-1"
+                  className="mt-3 text-xs text-accent hover:underline"
                 >
                   {t('또는 폴더 선택하기')}
                 </button>

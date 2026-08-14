@@ -197,10 +197,10 @@ textarea:focus-visible,
 
 /* 커서 추종 스페큘러 하이라이트(.sheen)는 2026-08-14 제거 — 총괄자 지적. */
 
-/* 카드 안에서 한 단계 더 앞으로 띄우고 싶은 요소(숫자, 배지 등)에.
-   부모가 transform-style: preserve-3d일 때만 실제로 떠 보임. */
-.pop-1 { transform: translateZ(24px); }
-.pop-2 { transform: translateZ(48px); }
+/* .pop-1/.pop-2(카드 표면 위로 translateZ 띄우기)는 2026-08-14 제거 — 카드를
+   기울이던 rotateX/Y가 없어지면서 층을 분리해 보일 이유 자체가 사라졌고,
+   backdrop-filter 블러 카드 위 translateZ가 호버 시 흐려 보이는 원인 중
+   하나였음(Tilt3D.tsx 참고). */
 
 /* (구 .ambient-depth는 삭제 — 배경 그라디언트를 body로 옮기면서 역할이 겹쳤음.
    유리는 '뒤에 있는 것'을 비추는 재질이라 배경층이 두 겹이면 어느 쪽을 비추는지
