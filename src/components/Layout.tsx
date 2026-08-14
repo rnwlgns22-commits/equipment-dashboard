@@ -135,23 +135,34 @@ export default function Layout() {
       {/* persp를 main에 걸어야 아래 페이지 전환의 z축 이동이 원근으로 보임.
           relative z-10은 ambient-depth의 고정 배경(z-0) 위에 본문을 올리기 위함. */}
       <main className="relative z-10 flex-1 min-w-0 overflow-x-hidden persp">
-        <Suspense fallback={<RouteFallback />}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              // 평면 페이드 대신 뒤에서 앞으로 들어옴 — 화면이 겹겹이 쌓인
-              // 공간이라는 인상을 라우팅에서도 유지(2026-08-07 입체화).
-              // 거리는 짧게: 페이지 이동은 매번 일어나므로 크면 금방 피로해짐.
-              initial={{ opacity: 0, z: -60, scale: 0.985 }}
-              animate={{ opacity: 1, z: 0, scale: 1 }}
-              exit={{ opacity: 0, z: 40, scale: 1.01 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              style={{ transformStyle: 'preserve-3d' }}
-            >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            // 평면 페이드 대신 뒤에서 앞으로 들어옴 — 화면이 겹겹이 쌓인
+            // 공간이라는 인상을 라우팅에서도 유지(2026-08-07 입체화).
+            // 거리는 짧게: 페이지 이동은 매번 일어나므로 크면 금방 피로해짐.
+            initial={{ opacity: 0, z: -60, scale: 0.985 }}
+            animate={{ opacity: 1, z: 0, scale: 1 }}
+            exit={{ opacity: 0, z: 40, scale: 1.01 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            style={{ transformStyle: 'preserve-3d' }}
+          >
+            {/* Suspense를 AnimatePresence 밖(위)에 두면, 페이지 전환 중 lazy 라우트
+                청크가 로딩돼 Outlet이 suspend할 때 React가 AnimatePresence 서브트리
+                전체를 fallback으로 통째로 갈아치운다 — 그 순간 진행 중이던 exit
+                애니메이션의 완료 콜백이 안 불려서 framer-motion의 presence 추적이
+                깨지고, 이전 페이지의 motion.div가 opacity:0인 채로 DOM에 영원히
+                남아 다음 페이지를 절대 못 띄우게 막는다(2026-08-14, 총괄자 리포트
+                "화면전환 몇 번 하면 화면이 안 뜨는데 클릭은 됨" — 실제로 재현해서
+                main의 유일한 자식이 exit 값(opacity:0, translateZ(40px))에 얼어붙어
+                있는 걸 확인). Suspense를 motion.div **안**으로 옮겨서 로딩 중엔
+                같은 motion.div 안에서 폴백만 보여주고, AnimatePresence가 추적하는
+                요소(motion.div) 자체는 라우트가 바뀔 때만 마운트/언마운트되게 함. */}
+            <Suspense fallback={<RouteFallback />}>
               <Outlet />
-            </motion.div>
-          </AnimatePresence>
-        </Suspense>
+            </Suspense>
+          </motion.div>
+        </AnimatePresence>
       </main>
       <ToastContainer />
       <NotificationManager />
