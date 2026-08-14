@@ -1,27 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { getThemeColors } from './colors';
+import { COLORS, useThemeColors } from './colors';
 
-describe('getThemeColors', () => {
-  it('다크/라이트 배경·카드·텍스트 색이 서로 다르다', () => {
-    const dark = getThemeColors('dark');
-    const light = getThemeColors('light');
-    expect(dark.bg).not.toBe(light.bg);
-    expect(dark.card).not.toBe(light.card);
-    expect(dark.text).not.toBe(light.text);
-    expect(dark.textDim).not.toBe(light.textDim);
-    expect(dark.border).not.toBe(light.border);
+describe('COLORS', () => {
+  it('필요한 색 키를 전부 가진다(다크 고정, 2026-08-14 라이트 테마 제거)', () => {
+    expect(COLORS.bg).toBeTruthy();
+    expect(COLORS.card).toBeTruthy();
+    expect(COLORS.text).toBeTruthy();
+    expect(COLORS.textDim).toBeTruthy();
+    expect(COLORS.border).toBeTruthy();
+    expect(COLORS.accent).toBeTruthy();
+    expect(COLORS.riskHigh).toBeTruthy();
+    expect(COLORS.riskMid).toBeTruthy();
+    expect(COLORS.riskLow).toBeTruthy();
+    expect(COLORS.categorical.length).toBeGreaterThan(0);
   });
 
-  // index.css의 html.light가 --color-accent/--color-risk-*를 덮어쓰지 않으므로
-  // (브랜드/상태 색은 테마 무관), 여기서도 두 팔레트가 같은 값을 가져야 Tailwind
-  // 클래스로 그려지는 부분과 recharts/canvas로 그려지는 부분이 어긋나지 않는다.
-  it('accent·위험등급 색은 테마와 무관하게 동일하다(index.css와 일치해야 함)', () => {
-    const dark = getThemeColors('dark');
-    const light = getThemeColors('light');
-    expect(dark.accent).toBe(light.accent);
-    expect(dark.riskHigh).toBe(light.riskHigh);
-    expect(dark.riskMid).toBe(light.riskMid);
-    expect(dark.riskLow).toBe(light.riskLow);
-    expect(dark.categorical).toEqual(light.categorical);
+  it('useThemeColors()는 항상 COLORS와 같은 값을 반환한다', () => {
+    expect(useThemeColors()).toBe(COLORS);
   });
 });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import mascotThumbsUp from '../assets/mascot/thumbsup.png';
+import { useT } from '../i18n';
 
 const FAQ = [
   {
@@ -29,6 +30,7 @@ const FAQ = [
 ];
 
 export default function MascotHelp() {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   return (
@@ -36,12 +38,12 @@ export default function MascotHelp() {
       {open && (
         <div className="mb-3 w-80 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="font-medium text-sm">궁금한 점이 있으신가요?</div>
+            <div className="font-medium text-sm">{t('궁금한 점이 있으신가요?')}</div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="text-text-dim hover:text-text text-sm leading-none p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-              aria-label="닫기"
+              aria-label={t('닫기')}
             >
               ✕
             </button>
@@ -49,8 +51,8 @@ export default function MascotHelp() {
           <div className="space-y-3">
             {FAQ.map((item) => (
               <div key={item.q}>
-                <div className="text-sm font-medium">Q. {item.q}</div>
-                <div className="text-xs text-text-dim mt-0.5">A. {item.a}</div>
+                <div className="text-sm font-medium">Q. {t(item.q)}</div>
+                <div className="text-xs text-text-dim mt-0.5">A. {t(item.a)}</div>
               </div>
             ))}
           </div>
@@ -59,10 +61,10 @@ export default function MascotHelp() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title="도움말"
+        title={t('도움말')}
         className="h-14 w-14 rounded-full bg-card border border-border shadow-lg flex items-center justify-center hover:border-accent/60 hover:scale-105 transition-transform overflow-hidden"
       >
-        <img src={mascotThumbsUp} alt="도움말 마스코트" className="h-11 w-auto select-none" draggable={false} />
+        <img src={mascotThumbsUp} alt={t('도움말 마스코트')} className="h-11 w-auto select-none" draggable={false} />
       </button>
     </div>
   );

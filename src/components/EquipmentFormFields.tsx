@@ -1,5 +1,6 @@
 import type { Category, EquipmentStatus } from '../types';
 import { addDaysUTC } from '../lib/dates';
+import { useT } from '../i18n';
 
 const CATEGORIES: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
 const STATUSES: EquipmentStatus[] = ['정상', '수리중', '정지', '폐기'];
@@ -60,66 +61,67 @@ export default function EquipmentFormFields({
   form: EquipmentFormState;
   onChange: (patch: Partial<EquipmentFormState>) => void;
 }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <label className="block sm:col-span-2">
-        <span className="text-xs text-text-dim">설비명 *</span>
+        <span className="text-xs text-text-dim">{t('설비명 *')}</span>
         <input
           required
           value={form.설비명}
           onChange={(e) => onChange({ 설비명: e.target.value })}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent/60"
-          placeholder="예: 공조기 4호기"
+          placeholder={t('예: 공조기 4호기')}
         />
       </label>
 
       <label className="block">
-        <span className="text-xs text-text-dim">분류 *</span>
+        <span className="text-xs text-text-dim">{t('분류 *')}</span>
         <select
           value={form.분류}
           onChange={(e) => onChange({ 분류: e.target.value as Category })}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
         >
           {CATEGORIES.map((c) => (
-            <option key={c}>{c}</option>
+            <option key={c} value={c}>{t(c)}</option>
           ))}
         </select>
       </label>
 
       <label className="block">
-        <span className="text-xs text-text-dim">상태</span>
+        <span className="text-xs text-text-dim">{t('상태')}</span>
         <select
           value={form.상태}
           onChange={(e) => onChange({ 상태: e.target.value as EquipmentStatus })}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
         >
           {STATUSES.map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s}>{t(s)}</option>
           ))}
         </select>
       </label>
 
       <label className="block">
-        <span className="text-xs text-text-dim">사이트</span>
+        <span className="text-xs text-text-dim">{t('사이트')}</span>
         <input
           value={form.사이트}
           onChange={(e) => onChange({ 사이트: e.target.value })}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent/60"
-          placeholder="예: A동 (비우면 미분류)"
+          placeholder={t('예: A동 (비우면 미분류)')}
         />
       </label>
       <label className="block">
-        <span className="text-xs text-text-dim">위치</span>
+        <span className="text-xs text-text-dim">{t('위치')}</span>
         <input
           value={form.위치}
           onChange={(e) => onChange({ 위치: e.target.value })}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent/60"
-          placeholder="예: 지하2층 기계실"
+          placeholder={t('예: 지하2층 기계실')}
         />
       </label>
 
       <label className="block">
-        <span className="text-xs text-text-dim">제조사</span>
+        <span className="text-xs text-text-dim">{t('제조사')}</span>
         <input
           value={form.제조사}
           onChange={(e) => onChange({ 제조사: e.target.value })}
@@ -127,7 +129,7 @@ export default function EquipmentFormFields({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-text-dim">모델명</span>
+        <span className="text-xs text-text-dim">{t('모델명')}</span>
         <input
           value={form.모델명}
           onChange={(e) => onChange({ 모델명: e.target.value })}
@@ -136,7 +138,7 @@ export default function EquipmentFormFields({
       </label>
 
       <label className="block">
-        <span className="text-xs text-text-dim">설치일</span>
+        <span className="text-xs text-text-dim">{t('설치일')}</span>
         <input
           type="date"
           value={form.설치일}
@@ -145,7 +147,7 @@ export default function EquipmentFormFields({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-text-dim">최근점검일</span>
+        <span className="text-xs text-text-dim">{t('최근점검일')}</span>
         <input
           type="date"
           value={form.최근점검일}
@@ -154,14 +156,14 @@ export default function EquipmentFormFields({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-text-dim">점검주기(일)</span>
+        <span className="text-xs text-text-dim">{t('점검주기(일)')}</span>
         <input
           type="number"
           min={1}
           value={form.점검주기일}
           onChange={(e) => onChange({ 점검주기일: e.target.value })}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent/60"
-          placeholder="예: 30"
+          placeholder={t('예: 30')}
         />
       </label>
     </div>

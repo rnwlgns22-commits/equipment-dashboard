@@ -7,6 +7,7 @@ import { dueStateOf } from '../lib/workOrders';
 import Reveal from './Reveal';
 import { showToast } from '../toastStore';
 import type { InspectionKind, InspectionSchedule } from '../types';
+import { useT, useLang, fmtCount } from '../i18n';
 
 const emptyForm = { 설비ID: '', 항목명: '', 주기일: '', 최근점검일: '', 점검사항: '' };
 type FormState = typeof emptyForm;
@@ -14,6 +15,8 @@ type FormState = typeof emptyForm;
 // 법정점검(/legal-inspection)과 정기점검(/regular-inspection) 화면이 구조는 완전히
 // 같고 "종류"만 다르므로 하나의 보드로 공유 — 각 페이지는 kind만 다르게 넘김.
 export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: InspectionKind; itemLabel: string }) {
+  const t = useT();
+  const lang = useLang();
   const equipments = useAppStore((s) => s.equipments);
   const schedules = useAppStore((s) => s.inspectionSchedules);
   const addInspectionSchedule = useAppStore((s) => s.addInspectionSchedule);
@@ -53,7 +56,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
     });
     setForm(emptyForm);
     setAdding(false);
-    showToast(`${itemLabel}을(를) 추가했습니다`);
+    showToast(lang === 'ko' ? `${itemLabel}을(를) 추가했습니다` : `Added ${itemLabel}`);
   };
 
   const startEditing = (s: InspectionSchedule) => {
@@ -81,7 +84,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
       점검사항: editForm.점검사항.trim() || undefined,
     });
     setEditingId(null);
-    showToast(`${itemLabel}을(를) 수정했습니다`);
+    showToast(lang === 'ko' ? `${itemLabel}을(를) 수정했습니다` : `Updated ${itemLabel}`);
   };
 
   // 현장에서 점검을 실제로 마쳤을 때 한 번에 갱신 — 최근점검일을 오늘로, 다음점검일을
@@ -103,29 +106,36 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
       내용: s.점검사항,
       출처파일: s.종류 === '법정점검' ? '법정점검 기록' : '정기점검 기록',
     });
-    showToast(`"${s.항목명}" 오늘 완료 처리했습니다`);
+    showToast(
+      lang === 'ko' ? `"${s.항목명}" 오늘 완료 처리했습니다` : `Marked "${s.항목명}" complete for today`,
+    );
   };
 
   const handleDelete = (s: InspectionSchedule) => {
-    if (!window.confirm(`"${s.항목명}" 항목을 삭제할까요?`)) return;
+    const confirmMsg = lang === 'ko' ? `"${s.항목명}" 항목을 삭제할까요?` : `Delete "${s.항목명}"?`;
+    if (!window.confirm(confirmMsg)) return;
     const snapshot = { inspectionSchedules: schedules };
     deleteInspectionSchedule(s.id);
-    showToast(`${itemLabel}을(를) 삭제했습니다`, 'success', {
-      label: '실행취소',
-      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
-    });
+    showToast(
+      lang === 'ko' ? `${itemLabel}을(를) 삭제했습니다` : `Deleted ${itemLabel}`,
+      'success',
+      {
+        label: t('실행취소'),
+        onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+      },
+    );
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-text-dim">{list.length}건 등록됨</p>
+        <p className="text-sm text-text-dim">{fmtCount(list.length, lang, '건')} {t('등록됨')}</p>
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
           className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition shrink-0"
         >
-          {adding ? '닫기' : '+ 항목 추가'}
+          {adding ? t('닫기') : t('+ 항목 추가')}
         </button>
       </div>
 
@@ -135,14 +145,14 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
           className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end"
         >
           <label className="block sm:col-span-2">
-            <span className="text-xs text-text-dim">설비 *</span>
+            <span className="text-xs text-text-dim">{t('설비 *')}</span>
             <select
               required
               value={form.설비ID}
               onChange={(e) => setForm((f) => ({ ...f, 설비ID: e.target.value }))}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
             >
-              <option value="">설비 선택…</option>
+              <option value="">{t('설비 선택…')}</option>
               {equipments.map((e) => (
                 <option key={e.설비ID} value={e.설비ID}>
                   {e.설비명} ({e.설비ID})
@@ -156,24 +166,24 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
               required
               value={form.항목명}
               onChange={(e) => setForm((f) => ({ ...f, 항목명: e.target.value }))}
-              placeholder={`예: ${itemLabel}`}
+              placeholder={lang === 'ko' ? `예: ${itemLabel}` : `e.g. ${itemLabel}`}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">주기(일) *</span>
+            <span className="text-xs text-text-dim">{t('주기(일) *')}</span>
             <input
               required
               type="number"
               min={1}
               value={form.주기일}
               onChange={(e) => setForm((f) => ({ ...f, 주기일: e.target.value }))}
-              placeholder="예: 180"
+              placeholder={t('예: 180')}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">최근 점검일</span>
+            <span className="text-xs text-text-dim">{t('최근 점검일')}</span>
             <input
               type="date"
               value={form.최근점검일}
@@ -182,7 +192,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-xs text-text-dim">점검사항</span>
+            <span className="text-xs text-text-dim">{t('점검사항')}</span>
             <textarea
               value={form.점검사항}
               onChange={(e) => setForm((f) => ({ ...f, 점검사항: e.target.value }))}
@@ -194,14 +204,14 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
             type="submit"
             className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition sm:col-span-2"
           >
-            등록
+            {t('등록')}
           </button>
         </form>
       )}
 
       <div className="space-y-2">
         {list.length === 0 && (
-          <p className="text-sm text-text-dim text-center py-8">등록된 항목이 없습니다.</p>
+          <p className="text-sm text-text-dim text-center py-8">{t('등록된 항목이 없습니다.')}</p>
         )}
         <AnimatePresence>
         {list.map((s, i) => {
@@ -228,7 +238,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">주기(일)</span>
+                  <span className="text-xs text-text-dim">{t('주기(일)')}</span>
                   <input
                     required
                     type="number"
@@ -239,7 +249,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">최근 점검일</span>
+                  <span className="text-xs text-text-dim">{t('최근 점검일')}</span>
                   <input
                     type="date"
                     value={editForm.최근점검일}
@@ -248,7 +258,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                   />
                 </label>
                 <label className="block sm:col-span-2">
-                  <span className="text-xs text-text-dim">점검사항</span>
+                  <span className="text-xs text-text-dim">{t('점검사항')}</span>
                   <textarea
                     value={editForm.점검사항}
                     onChange={(e) => setEditForm((f) => ({ ...f, 점검사항: e.target.value }))}
@@ -261,14 +271,14 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                     type="submit"
                     className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
                   >
-                    저장
+                    {t('저장')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
                     className="rounded-lg border border-border text-sm px-4 py-2 text-text-dim hover:text-text"
                   >
-                    취소
+                    {t('취소')}
                   </button>
                 </div>
               </form>
@@ -287,7 +297,7 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                         {eq.설비명}
                       </Link>
                     ) : (
-                      <span className="text-sm font-medium text-text-dim">(설비 없음)</span>
+                      <span className="text-sm font-medium text-text-dim">{t('(설비 없음)')}</span>
                     )}
                     <span className="text-xs text-text-dim">· {s.항목명}</span>
                     {due && (
@@ -296,25 +306,27 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                           due === 'overdue' ? 'bg-risk-high/15 text-risk-high' : 'bg-risk-mid/15 text-risk-mid'
                         }`}
                       >
-                        {due === 'overdue' ? '기한 지남' : '임박'}
+                        {due === 'overdue' ? t('기한 지남') : t('임박')}
                       </span>
                     )}
                   </div>
                   <div className="mt-1 text-xs text-text-dim">
-                    주기 {s.주기일}일 · 최근 {s.최근점검일 ?? '미실시'} · 다음 {s.다음점검일 ?? '-'}
+                    {lang === 'ko'
+                      ? <>주기 {s.주기일}일 · 최근 {s.최근점검일 ?? '미실시'} · 다음 {s.다음점검일 ?? '-'}</>
+                      : <>Every {s.주기일}d · Last {s.최근점검일 ?? t('미실시')} · Next {s.다음점검일 ?? '-'}</>}
                   </div>
                   {s.점검사항 && <p className="mt-1 text-sm whitespace-pre-wrap">{s.점검사항}</p>}
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button type="button" onClick={() => markDoneToday(s)} className="text-xs text-accent hover:underline">
-                    오늘 완료
+                    {t('오늘 완료')}
                   </button>
                   <button
                     type="button"
                     onClick={() => startEditing(s)}
                     className="text-xs text-text-dim hover:text-accent p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                    aria-label={`${s.항목명} 수정`}
-                    title="수정"
+                    aria-label={lang === 'ko' ? `${s.항목명} ${t('수정')}` : `${t('수정')} ${s.항목명}`}
+                    title={t('수정')}
                   >
                     ✎
                   </button>
@@ -322,8 +334,8 @@ export default function InspectionScheduleBoard({ kind, itemLabel }: { kind: Ins
                     type="button"
                     onClick={() => handleDelete(s)}
                     className="text-xs text-text-dim hover:text-risk-high p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                    aria-label={`${s.항목명} 삭제`}
-                    title="삭제"
+                    aria-label={lang === 'ko' ? `${s.항목명} ${t('삭제')}` : `${t('삭제')} ${s.항목명}`}
+                    title={t('삭제')}
                   >
                     ✕
                   </button>

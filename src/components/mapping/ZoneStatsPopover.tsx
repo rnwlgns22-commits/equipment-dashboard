@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Zone } from '../../types';
 import type { ZoneStats } from '../../lib/geo';
+import { useT } from '../../i18n';
 
 export default function ZoneStatsPopover({
   zone,
@@ -15,6 +16,7 @@ export default function ZoneStatsPopover({
   onDelete: () => void;
   onRename: (name: string) => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(zone.name);
 
@@ -51,7 +53,7 @@ export default function ZoneStatsPopover({
             type="button"
             onClick={startEditing}
             className="font-medium text-left hover:text-accent transition-colors"
-            title="클릭해서 이름 바꾸기"
+            title={t('클릭해서 이름 바꾸기')}
           >
             📍 {zone.name}
           </button>
@@ -60,7 +62,7 @@ export default function ZoneStatsPopover({
           type="button"
           onClick={onClose}
           className="text-text-dim hover:text-text text-sm leading-none shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-          aria-label="닫기"
+          aria-label={t('닫기')}
         >
           ✕
         </button>
@@ -68,19 +70,19 @@ export default function ZoneStatsPopover({
 
       <dl className="mt-3 text-sm space-y-1.5">
         <div className="flex justify-between">
-          <dt className="text-text-dim">구역 내 설비</dt>
-          <dd>{stats.설비수}개</dd>
+          <dt className="text-text-dim">{t('구역 내 설비')}</dt>
+          <dd>{stats.설비수}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-text-dim">평균 가동률</dt>
+          <dt className="text-text-dim">{t('평균 가동률')}</dt>
           <dd>{stats.가동률}%</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-text-dim">위험 설비</dt>
-          <dd>{stats.위험설비수}개</dd>
+          <dt className="text-text-dim">{t('위험 설비')}</dt>
+          <dd>{stats.위험설비수}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-text-dim">에러율</dt>
+          <dt className="text-text-dim">{t('에러율')}</dt>
           <dd className={stats.에러율 >= 50 ? 'text-risk-high' : stats.에러율 > 0 ? 'text-risk-mid' : ''}>
             {stats.에러율}%
           </dd>
@@ -92,7 +94,7 @@ export default function ZoneStatsPopover({
         onClick={onDelete}
         className="mt-3 w-full rounded-lg border border-border px-2 py-1.5 text-xs text-text-dim hover:text-risk-high hover:border-risk-high/50 transition-colors"
       >
-        구역 삭제
+        {t('구역 삭제')}
       </button>
     </div>
   );

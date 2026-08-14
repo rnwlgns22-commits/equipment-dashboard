@@ -17,8 +17,8 @@ import * as THREE from 'three';
 const NODE_COUNT = 90;
 const GRID_HALF = 34; // 격자 반경(월드 단위)
 
-/** 현재 테마의 CSS 변수를 three가 쓰는 색으로 변환 */
-function readThemeColors() {
+/** 현재 CSS 변수를 three가 쓰는 색으로 변환(다크 고정, 2026-08-14 라이트 테마 제거) */
+function readSceneColors() {
   const s = getComputedStyle(document.documentElement);
   const pick = (name: string, fallback: string) => {
     const v = s.getPropertyValue(name).trim();
@@ -30,7 +30,6 @@ function readThemeColors() {
     // UI용 --color-border가 아니라 씬 전용 hex 토큰을 씀 — 위 pick()은 three의
     // Color 파서를 타므로 rgb(… / …) 표기가 들어오면 조용히 흰색이 된다.
     line: pick('--scene-grid', '#2b3346'),
-    isLight: document.documentElement.classList.contains('light'),
   };
 }
 
@@ -83,7 +82,7 @@ export default function NetworkHero({ className = '' }: { className?: string }) 
     camera.position.set(0, 11, 30);
     camera.lookAt(0, 3, 0);
 
-    let theme = readThemeColors();
+    const theme = readSceneColors();
     // 안개 색 = 배경색이어야 격자가 "잘리지" 않고 배경으로 녹아든다
     scene.fog = new THREE.Fog(theme.bg.getHex(), 26, 74);
 
@@ -102,7 +101,7 @@ export default function NetworkHero({ className = '' }: { className?: string }) 
     const gridMat = new THREE.LineBasicMaterial({
       color: theme.line,
       transparent: true,
-      opacity: theme.isLight ? 0.55 : 0.42,
+      opacity: 0.42,
       fog: true,
     });
     const grid = new THREE.LineSegments(gridGeo, gridMat);
@@ -135,11 +134,10 @@ export default function NetworkHero({ className = '' }: { className?: string }) 
       size: 1.5,
       map: glowTex,
       transparent: true,
-      opacity: theme.isLight ? 0.75 : 0.9,
+      opacity: 0.9,
       depthWrite: false,
       // 어두운 배경에서 겹칠수록 밝아지는 additive가 "빛나는 노드" 느낌을 만듦.
-      // 밝은 배경에선 additive가 흰색으로 날아가버려서 일반 합성으로 바꿈.
-      blending: theme.isLight ? THREE.NormalBlending : THREE.AdditiveBlending,
+      blending: THREE.AdditiveBlending,
       sizeAttenuation: true,
       fog: true,
     });
@@ -165,7 +163,7 @@ export default function NetworkHero({ className = '' }: { className?: string }) 
     const linkMat = new THREE.LineBasicMaterial({
       color: theme.accent,
       transparent: true,
-      opacity: theme.isLight ? 0.28 : 0.22,
+      opacity: 0.22,
       fog: true,
     });
     group.add(new THREE.LineSegments(linkGeo, linkMat));
@@ -232,29 +230,10 @@ export default function NetworkHero({ className = '' }: { className?: string }) 
     });
     io.observe(host);
 
-    // ── 테마 전환 대응 ───────────────────────────────────────────────────
-    // 라이트/다크 토글은 <html>의 class를 바꾸므로 그걸 지켜보다가 색만 갈아끼움
-    // (씬을 통째로 다시 만들면 회전 각도가 튄다).
-    const themeObserver = new MutationObserver(() => {
-      theme = readThemeColors();
-      (scene.fog as THREE.Fog).color.copy(theme.bg);
-      gridMat.color.copy(theme.line);
-      gridMat.opacity = theme.isLight ? 0.55 : 0.42;
-      nodeMat.color.copy(theme.accent);
-      nodeMat.opacity = theme.isLight ? 0.75 : 0.9;
-      nodeMat.blending = theme.isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
-      nodeMat.needsUpdate = true;
-      linkMat.color.copy(theme.accent);
-      linkMat.opacity = theme.isLight ? 0.28 : 0.22;
-      if (reduceMotion) renderer.render(scene, camera);
-    });
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
-      themeObserver.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
       // three는 GC가 GPU 메모리를 안 거둬가므로 직접 dispose 해야 함. 랜딩은
       // 데이터를 비우고 나올 때마다 다시 마운트되는 화면이라 누수가 실제로 쌓인다.

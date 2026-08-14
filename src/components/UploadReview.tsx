@@ -1,5 +1,6 @@
 import type { Category } from '../types';
 import type { EquipmentCandidate, FailedCandidate, HistoryCandidate } from '../lib/uploadPipeline';
+import { useT, useLang, fmtCount } from '../i18n';
 
 const CATEGORIES: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
 
@@ -22,13 +23,15 @@ export default function UploadReview({
   onCommit: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   return (
     <div className="w-full max-w-6xl mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">업로드 검토</h2>
+          <h2 className="text-lg font-semibold">{t('업로드 검토')}</h2>
           <p className="text-xs text-text-dim mt-1">
-            자동으로 분류한 결과입니다. 필요하면 고치고 아래에서 반영하세요.
+            {t('자동으로 분류한 결과입니다. 필요하면 고치고 아래에서 반영하세요.')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -37,28 +40,27 @@ export default function UploadReview({
             onClick={onCancel}
             className="rounded-lg border border-border px-4 py-2 text-sm text-text-dim hover:text-text"
           >
-            취소
+            {t('취소')}
           </button>
           <button
             type="button"
             onClick={onCommit}
             className="rounded-lg bg-accent text-bg px-4 py-2 text-sm font-medium hover:brightness-110"
           >
-            전체 반영 ({equipmentCandidates.length + historyCandidates.length}건)
+            {t('전체 반영')} ({fmtCount(equipmentCandidates.length + historyCandidates.length, lang, '건')})
           </button>
         </div>
       </div>
 
       {equipmentCandidates.length === 0 && historyCandidates.length === 0 && failed.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-text-dim">
-          지원하는 형식(hwp/hwpx/xls/xlsx/pdf/pptx/docx)의 파일을 찾지 못했습니다.
-          다른 폴더를 다시 골라 보세요.
+          {t('지원하는 형식(hwp/hwpx/xls/xlsx/pdf/pptx/docx)의 파일을 찾지 못했습니다. 다른 폴더를 다시 골라 보세요.')}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl border border-border bg-card p-3">
-          <div className="text-sm font-medium mb-2">설비로 인식 ({equipmentCandidates.length})</div>
+          <div className="text-sm font-medium mb-2">{t('설비로 인식')} ({equipmentCandidates.length})</div>
           <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
             {equipmentCandidates.map((c) => (
               <div key={c.key} className="rounded-2xl border border-border p-2 space-y-1.5">
@@ -67,7 +69,7 @@ export default function UploadReview({
                 </div>
                 {c.templateName && (
                   <div className="inline-block rounded-full bg-accent/15 text-accent px-2 py-0.5 text-[10px]">
-                    🗂 {c.templateName} 양식 적용
+                    🗂 {c.templateName} {t('양식 적용')}
                   </div>
                 )}
                 <input
@@ -82,24 +84,24 @@ export default function UploadReview({
                     className="flex-1 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   >
                     {CATEGORIES.map((cat) => (
-                      <option key={cat}>{cat}</option>
+                      <option key={cat} value={cat}>{t(cat)}</option>
                     ))}
                   </select>
                   <input
                     value={c.site}
                     onChange={(e) => onUpdateEquipment(c.key, { site: e.target.value })}
-                    placeholder="사이트"
+                    placeholder={t('사이트')}
                     className="flex-1 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   />
                 </div>
               </div>
             ))}
-            {equipmentCandidates.length === 0 && <p className="text-xs text-text-dim py-4 text-center">없음</p>}
+            {equipmentCandidates.length === 0 && <p className="text-xs text-text-dim py-4 text-center">{t('없음')}</p>}
           </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-3">
-          <div className="text-sm font-medium mb-2">이력으로 인식 ({historyCandidates.length})</div>
+          <div className="text-sm font-medium mb-2">{t('이력으로 인식')} ({historyCandidates.length})</div>
           <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
             {historyCandidates.map((h) => (
               <div key={h.key} className="rounded-2xl border border-border p-2 space-y-1.5">
@@ -117,8 +119,8 @@ export default function UploadReview({
                     onChange={(e) => onUpdateHistory(h.key, { type: e.target.value as '점검' | '수리' })}
                     className="rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                   >
-                    <option>점검</option>
-                    <option>수리</option>
+                    <option value="점검">{t('점검')}</option>
+                    <option value="수리">{t('수리')}</option>
                   </select>
                   <input
                     type="date"
@@ -132,7 +134,7 @@ export default function UploadReview({
                   onChange={(e) => onUpdateHistory(h.key, { equipmentRef: e.target.value })}
                   className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                 >
-                  <option value="">설비 미지정</option>
+                  <option value="">{t('설비 미지정')}</option>
                   {equipmentOptions.map((o) => (
                     <option key={o.ref} value={o.ref}>
                       {o.label}
@@ -144,18 +146,18 @@ export default function UploadReview({
                   min={0}
                   value={h.비용 ?? ''}
                   onChange={(e) => onUpdateHistory(h.key, { 비용: e.target.value ? Number(e.target.value) : undefined })}
-                  placeholder="비용(원)"
-                  aria-label="비용(원)"
+                  placeholder={t('비용(원)')}
+                  aria-label={t('비용(원)')}
                   className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
                 />
               </div>
             ))}
-            {historyCandidates.length === 0 && <p className="text-xs text-text-dim py-4 text-center">없음</p>}
+            {historyCandidates.length === 0 && <p className="text-xs text-text-dim py-4 text-center">{t('없음')}</p>}
           </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-3">
-          <div className="text-sm font-medium mb-2">제외 · 실패 ({failed.length})</div>
+          <div className="text-sm font-medium mb-2">{t('제외 · 실패')} ({failed.length})</div>
           <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
             {failed.map((f) => (
               <div key={f.key} className="rounded-2xl border border-border p-2">
@@ -165,7 +167,7 @@ export default function UploadReview({
                 <div className="text-xs text-text-dim mt-0.5">{f.reason}</div>
               </div>
             ))}
-            {failed.length === 0 && <p className="text-xs text-text-dim py-4 text-center">없음</p>}
+            {failed.length === 0 && <p className="text-xs text-text-dim py-4 text-center">{t('없음')}</p>}
           </div>
         </div>
       </div>

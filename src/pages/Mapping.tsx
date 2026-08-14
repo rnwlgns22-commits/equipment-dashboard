@@ -12,6 +12,7 @@ import AssetToolbar from '../components/mapping/AssetToolbar';
 import EquipmentPopover from '../components/mapping/EquipmentPopover';
 import ZoneStatsPopover from '../components/mapping/ZoneStatsPopover';
 import ConnectionPopover from '../components/mapping/ConnectionPopover';
+import { useT, useLang } from '../i18n';
 
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -23,6 +24,8 @@ function readAsDataUrl(file: File): Promise<string> {
 }
 
 export default function Mapping() {
+  const t = useT();
+  const lang = useLang();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const updateEquipment = useAppStore((s) => s.updateEquipment);
@@ -103,7 +106,11 @@ export default function Mapping() {
   const handleRemoveFloorplan = (id: string) => {
     const target = floorplans.find((f) => f.id === id);
     if (!target) return;
-    if (!window.confirm(`"${target.name}" 도면을 삭제할까요? 이 도면 위 설비 배치와 구역도 함께 지워집니다.`)) {
+    const confirmMsg =
+      lang === 'ko'
+        ? `"${target.name}" 도면을 삭제할까요? 이 도면 위 설비 배치와 구역도 함께 지워집니다.`
+        : `Delete floorplan "${target.name}"? Equipment placements and zones on it will also be removed.`;
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     removeFloorplan(id);
@@ -174,7 +181,7 @@ export default function Mapping() {
   };
   const finishDrawingZone = () => {
     if (draftPoints.length < 3 || !activeFloorplanId) return;
-    const name = window.prompt('구역 이름을 입력하세요 (예: 제1 가공 위험 구역)');
+    const name = window.prompt(t('구역 이름을 입력하세요 (예: 제1 가공 위험 구역)'));
     if (name === null) return; // 취소하면 그리기 모드 유지, 점은 살아있음
     if (!name.trim()) return;
     addZone({ id: `zone-${Date.now()}`, name: name.trim(), 도면ID: activeFloorplanId, points: draftPoints });
@@ -211,9 +218,9 @@ export default function Mapping() {
   return (
     <div className="h-screen flex flex-col">
       <div className="px-6 py-4 border-b border-border shrink-0">
-        <h1 className="text-xl font-semibold tracking-tight">설비 레이아웃 매핑</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t('설비 레이아웃 매핑')}</h1>
         <p className="text-xs text-text-dim mt-1">
-          도면 위 좌표는 % 상대좌표로 저장됩니다 — 창 크기가 바뀌어도 위치가 유지됩니다.
+          {t('도면 위 좌표는 % 상대좌표로 저장됩니다 — 창 크기가 바뀌어도 위치가 유지됩니다.')}
         </p>
       </div>
       <div className="flex-1 flex min-h-0">

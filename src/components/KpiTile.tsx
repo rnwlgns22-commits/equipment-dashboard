@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence, animate, useMotionValue, useTransform } from 'framer-motion';
 import Tilt3D from './Tilt3D';
+import { useT } from '../i18n';
 
 function AnimatedNumber({ value }: { value: number }) {
   const motionValue = useMotionValue(0);
@@ -43,6 +44,7 @@ export default function KpiTile({
   onOpen?: () => void;
   onClose?: () => void;
 }) {
+  const t = useT();
   const expandable = Boolean(detail);
   const layoutId = `kpi-card-${label}`;
   const valueNode = typeof value === 'number' ? <AnimatedNumber value={value} /> : value;
@@ -104,7 +106,7 @@ export default function KpiTile({
                 <button
                   type="button"
                   onClick={onClose}
-                  aria-label="닫기"
+                  aria-label={t('닫기')}
                   className="absolute top-4 right-4 z-20 flex h-8 w-8 items-center justify-center bg-bg/50 hover:bg-white/10 rounded-full border border-border text-text transition-colors backdrop-blur-sm"
                 >
                   ✕

@@ -21,6 +21,7 @@ import { computeConnections } from '../../lib/topology';
 import { dueStateOf, workOrderColor as computeWorkOrderColor } from '../../lib/workOrders';
 import { hadRecentRepair, historyDateRange } from '../../lib/timeline';
 import mascotSurprised from '../../assets/mascot/surprised.png';
+import { useT } from '../../i18n';
 
 const MIN_SCALE = 0.15;
 const MAX_SCALE = 8;
@@ -82,6 +83,7 @@ export default function FloorplanCanvas({
   asOfDate: Date;
   onChangeAsOfDate: (d: Date) => void;
 }) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -208,8 +210,8 @@ export default function FloorplanCanvas({
     >
       {!floorplan && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-text-dim text-sm">
-          <img src={mascotSurprised} alt="도면이 없어 놀란 마스코트" className="h-24 w-auto select-none" draggable={false} />
-          좌측 패널에서 도면 이미지를 먼저 업로드하세요.
+          <img src={mascotSurprised} alt={t('도면이 없어 놀란 마스코트')} className="h-24 w-auto select-none" draggable={false} />
+          {t('좌측 패널에서 도면 이미지를 먼저 업로드하세요.')}
         </div>
       )}
       {floorplan && (
@@ -348,10 +350,10 @@ export default function FloorplanCanvas({
           ) : (
             <div className="absolute bottom-3 left-3 text-xs text-text-dim bg-bg-soft/80 rounded-lg px-2 py-1 border border-border">
               {drawingZone
-                ? '캔버스를 클릭해서 구역 꼭짓점을 찍으세요 (3개 이상 필요)'
+                ? t('캔버스를 클릭해서 구역 꼭짓점을 찍으세요 (3개 이상 필요)')
                 : viewMode === '유지보수'
-                  ? '점검 임박/경과 설비의 🔧 배지를 클릭하면 대기→진행중→완료로 상태가 바뀝니다'
-                  : '휠: 확대/축소 · 드래그: 이동 · 우측 목록에서 설비를 끌어다 놓으세요'}
+                  ? t('점검 임박/경과 설비의 🔧 배지를 클릭하면 대기→진행중→완료로 상태가 바뀝니다')
+                  : t('휠: 확대/축소 · 드래그: 이동 · 우측 목록에서 설비를 끌어다 놓으세요')}
             </div>
           )}
         </>

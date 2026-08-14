@@ -14,6 +14,7 @@ import { buildRecordsFromCandidates } from '../lib/uploadCommit';
 import type { HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
 import type { HistoryRecord, HistoryType } from '../types';
 import mascotSurprised from '../assets/mascot/surprised.png';
+import { useT, useLang, fmtWon, fmtCount } from '../i18n';
 
 type AddTab = 'manual' | 'file' | 'template';
 type FileMode = 'idle' | 'dragging' | 'parsing' | 'review';
@@ -45,6 +46,8 @@ function formFromEquipment(e: {
 }
 
 export default function EquipmentDetail() {
+  const t = useT();
+  const lang = useLang();
   const { id } = useParams();
   const navigate = useNavigate();
   const equipments = useAppStore((s) => s.equipments);
@@ -75,22 +78,30 @@ export default function EquipmentDetail() {
     if (!equipment || !form.설비명.trim()) return;
     updateEquipment(equipment.설비ID, equipmentFieldsFromForm(form));
     setEditing(false);
-    showToast('설비 정보를 수정했습니다');
+    showToast(t('설비 정보를 수정했습니다'));
   };
 
   const handleDelete = () => {
     if (!equipment) return;
-    if (!window.confirm(`"${equipment.설비명}"(${equipment.설비ID})을(를) 삭제할까요? 점검·수리 이력은 남지만 이 설비와의 연결은 끊어집니다.`)) {
+    const confirmMsg =
+      lang === 'ko'
+        ? `"${equipment.설비명}"(${equipment.설비ID})을(를) 삭제할까요? 점검·수리 이력은 남지만 이 설비와의 연결은 끊어집니다.`
+        : `Delete "${equipment.설비명}" (${equipment.설비ID})? Inspection/repair history will remain, but its connections will be removed.`;
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     const name = equipment.설비명;
     const snapshot = { equipments, histories, inspectionSchedules: useAppStore.getState().inspectionSchedules, parts: useAppStore.getState().parts };
     deleteEquipment(equipment.설비ID);
     navigate('/equipment');
-    showToast(`"${name}" 설비를 삭제했습니다`, 'success', {
-      label: '실행취소',
-      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
-    });
+    showToast(
+      lang === 'ko' ? `"${name}" 설비를 삭제했습니다` : `Deleted equipment "${name}"`,
+      'success',
+      {
+        label: t('실행취소'),
+        onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+      },
+    );
   };
 
   const [connectTarget, setConnectTarget] = useState('');
@@ -142,7 +153,7 @@ export default function EquipmentDetail() {
     });
     setHistoryForm({ 날짜: '', 유형: '점검', 제목: '', 비용: '' });
     setAddingHistory(false);
-    showToast('이력을 추가했습니다');
+    showToast(t('이력을 추가했습니다'));
   };
 
   // HistoryBrowser.tsx와 같은 수기입력/파일로 업로드/양식등록 3탭 프레임을 여기도
@@ -190,7 +201,10 @@ export default function EquipmentDetail() {
               key: `htpl-${i}`,
               fileName: file.name,
               relativePath,
-              reason: `양식 "${selectedTemplate.name}" 적용 결과 제목/날짜 칸이 비어있음`,
+              reason:
+                lang === 'ko'
+                  ? `양식 "${selectedTemplate.name}" 적용 결과 제목/날짜 칸이 비어있음`
+                  : `Template "${selectedTemplate.name}" produced empty title/date fields`,
             });
           } else {
             applied.forEach((a, j) => {
@@ -212,7 +226,7 @@ export default function EquipmentDetail() {
             key: `htpl-${i}`,
             fileName: file.name,
             relativePath,
-            reason: '양식 적용 중 오류(엑셀 파일인지 확인)',
+            reason: t('양식 적용 중 오류(엑셀 파일인지 확인)'),
           });
         }
         done += 1;
@@ -230,7 +244,7 @@ export default function EquipmentDetail() {
           key: c.key,
           fileName: c.fileName,
           relativePath: c.relativePath,
-          reason: '새 설비로 인식됨 — 이 화면은 이 설비의 이력만 등록하므로 무시됨(새 설비는 "설비 추가" 화면 이용)',
+          reason: t('새 설비로 인식됨 — 이 화면은 이 설비의 이력만 등록하므로 무시됨(새 설비는 "설비 추가" 화면 이용)'),
         });
       });
       result.historyCandidates.forEach((h) => newHistoryCandidates.push({ ...h, equipmentRef: equipment.설비ID }));
@@ -263,7 +277,9 @@ export default function EquipmentDetail() {
     appendData([], newHistories);
     cancelFileReview();
     setAddingHistory(false);
-    showToast(`이력 ${newHistories.length}건을 반영했습니다`);
+    showToast(
+      lang === 'ko' ? `이력 ${newHistories.length}건을 반영했습니다` : `Added ${newHistories.length} history records`,
+    );
   };
 
   const fileEquipmentOptions = useMemo(
@@ -306,15 +322,16 @@ export default function EquipmentDetail() {
       비용: historyEditForm.비용 && 비용 > 0 ? 비용 : undefined,
     });
     setEditingHistoryId(null);
-    showToast('이력을 수정했습니다');
+    showToast(t('이력을 수정했습니다'));
   };
 
   const handleDeleteHistory = (r: HistoryRecord) => {
-    if (!window.confirm(`"${r.제목}" 이력을 삭제할까요?`)) return;
+    const confirmMsg = lang === 'ko' ? `"${r.제목}" 이력을 삭제할까요?` : `Delete history "${r.제목}"?`;
+    if (!window.confirm(confirmMsg)) return;
     const snapshot = { histories };
     deleteHistory(r.id);
-    showToast('이력을 삭제했습니다', 'success', {
-      label: '실행취소',
+    showToast(t('이력을 삭제했습니다'), 'success', {
+      label: t('실행취소'),
       onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
     });
   };
@@ -351,7 +368,8 @@ export default function EquipmentDetail() {
 
   const deleteSpec = (k: string) => {
     if (!equipment) return;
-    if (!window.confirm(`"${k}" 항목을 삭제할까요?`)) return;
+    const confirmMsg = lang === 'ko' ? `"${k}" 항목을 삭제할까요?` : `Delete "${k}"?`;
+    if (!window.confirm(confirmMsg)) return;
     const rest = { ...equipment.상세사양 };
     delete rest[k];
     updateEquipment(equipment.설비ID, { 상세사양: rest });
@@ -381,10 +399,12 @@ export default function EquipmentDetail() {
       <div className="min-h-[80vh] flex flex-col items-center justify-center gap-3 text-center px-6">
         <img src={mascotSurprised} alt="" className="h-20 w-auto select-none" draggable={false} />
         <p className="text-text-dim text-sm">
-          &ldquo;{id}&rdquo; 설비를 찾을 수 없습니다. 삭제됐거나 잘못된 링크일 수 있어요.
+          {lang === 'ko'
+            ? <>&ldquo;{id}&rdquo; 설비를 찾을 수 없습니다. 삭제됐거나 잘못된 링크일 수 있어요.</>
+            : <>Could not find equipment &ldquo;{id}&rdquo;. It may have been deleted, or the link may be wrong.</>}
         </p>
         <Link to="/equipment" className="text-accent text-sm hover:underline">
-          ← 설비 목록으로
+          {t('← 설비 목록으로')}
         </Link>
       </div>
     );
@@ -414,7 +434,7 @@ export default function EquipmentDetail() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link to="/equipment" className="text-xs text-text-dim hover:text-text">
-            ← 설비 목록
+            {t('← 설비 목록')}
           </Link>
           <div className="flex items-center gap-3 mt-2">
             <h1 className="text-2xl font-semibold tracking-tight">{equipment.설비명}</h1>
@@ -427,7 +447,7 @@ export default function EquipmentDetail() {
                   stat.위험등급 === '상' ? 'bg-risk-high/15 text-risk-high' : 'bg-risk-mid/15 text-risk-mid'
                 }`}
               >
-                위험 {stat.위험등급}
+                {t('위험')} {t(stat.위험등급)}
               </span>
             )}
           </div>
@@ -439,21 +459,21 @@ export default function EquipmentDetail() {
               onClick={startEditing}
               className="rounded-lg border border-border px-3 py-1.5 text-sm hover:border-accent/50 hover:text-accent transition-colors"
             >
-              수정
+              {t('수정')}
             </button>
             <button
               type="button"
               onClick={handleDelete}
               className="rounded-lg border border-border px-3 py-1.5 text-sm text-text-dim hover:text-risk-high hover:border-risk-high/50 transition-colors"
             >
-              삭제
+              {t('삭제')}
             </button>
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card title={editing ? '기본 정보 수정' : '기본 정보'} className={editing ? 'lg:col-span-3' : undefined}>
+        <Card title={t(editing ? '기본 정보 수정' : '기본 정보')} className={editing ? 'lg:col-span-3' : undefined}>
           {editing ? (
             <form onSubmit={saveEdit} className="space-y-4">
               <EquipmentFormFields form={form} onChange={(patch) => setForm((f) => ({ ...f, ...patch }))} />
@@ -462,41 +482,41 @@ export default function EquipmentDetail() {
                   type="submit"
                   className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
                 >
-                  저장
+                  {t('저장')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
                   className="rounded-lg border border-border text-sm px-4 py-2 text-text-dim hover:text-text"
                 >
-                  취소
+                  {t('취소')}
                 </button>
               </div>
             </form>
           ) : (
             <dl className="text-sm space-y-2">
-              <Row label="분류" value={equipment.분류} />
-              <Row label="사이트" value={equipment.사이트 || '미분류'} />
-              <Row label="위치" value={equipment.위치} />
-              <Row label="제조사" value={equipment.제조사} />
-              <Row label="모델명" value={equipment.모델명} />
-              <Row label="설치일" value={equipment.설치일} />
-              <Row label="상태" value={equipment.상태} />
-              <Row label="점검주기일" value={equipment.점검주기일 ? `${equipment.점검주기일}일` : undefined} />
-              <Row label="최근점검일" value={equipment.최근점검일} />
-              <Row label="다음점검일" value={equipment.다음점검일} />
+              <Row label={t('분류')} value={t(equipment.분류)} />
+              <Row label={t('사이트')} value={equipment.사이트 ? equipment.사이트 : t('미분류')} />
+              <Row label={t('위치')} value={equipment.위치} />
+              <Row label={t('제조사')} value={equipment.제조사} />
+              <Row label={t('모델명')} value={equipment.모델명} />
+              <Row label={t('설치일')} value={equipment.설치일} />
+              <Row label={t('상태')} value={t(equipment.상태)} />
+              <Row label={t('점검주기일')} value={equipment.점검주기일 ? `${equipment.점검주기일}${lang === 'ko' ? '일' : 'd'}` : undefined} />
+              <Row label={t('최근점검일')} value={equipment.최근점검일} />
+              <Row label={t('다음점검일')} value={equipment.다음점검일} />
             </dl>
           )}
 
           <div className="mt-4 pt-4 border-t border-border">
             <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="text-xs text-text-dim">상세 사양</div>
+              <div className="text-xs text-text-dim">{t('상세 사양')}</div>
               <button
                 type="button"
                 onClick={() => setAddingSpec((v) => !v)}
                 className="text-xs text-accent hover:underline"
               >
-                {addingSpec ? '닫기' : '+ 사양 추가'}
+                {addingSpec ? t('닫기') : t('+ 사양 추가')}
               </button>
             </div>
 
@@ -506,27 +526,27 @@ export default function EquipmentDetail() {
                   required
                   value={specKey}
                   onChange={(e) => setSpecKey(e.target.value)}
-                  placeholder="항목명 (예: 정격전압)"
+                  placeholder={t('항목명 (예: 정격전압)')}
                   className="flex-1 min-w-[8rem] rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-sm outline-none focus:border-accent/60"
                 />
                 <input
                   required
                   value={specValue}
                   onChange={(e) => setSpecValue(e.target.value)}
-                  placeholder="값"
+                  placeholder={t('값')}
                   className="flex-1 min-w-[8rem] rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-sm outline-none focus:border-accent/60"
                 />
                 <button
                   type="submit"
                   className="rounded-lg bg-accent text-bg text-xs font-medium px-3 py-1.5 hover:brightness-110 transition"
                 >
-                  추가
+                  {t('추가')}
                 </button>
               </form>
             )}
 
             {Object.keys(equipment.상세사양).length === 0 ? (
-              <p className="text-sm text-text-dim">등록된 상세 사양이 없습니다.</p>
+              <p className="text-sm text-text-dim">{t('등록된 상세 사양이 없습니다.')}</p>
             ) : (
               <ul className="text-sm space-y-1.5">
                 {Object.entries(equipment.상세사양).map(([k, v]) =>
@@ -548,14 +568,14 @@ export default function EquipmentDetail() {
                         onClick={() => saveSpecEdit(k)}
                         className="text-xs text-accent hover:underline shrink-0"
                       >
-                        저장
+                        {t('저장')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingSpecKey(null)}
                         className="text-xs text-text-dim shrink-0"
                       >
-                        취소
+                        {t('취소')}
                       </button>
                     </li>
                   ) : (
@@ -568,8 +588,8 @@ export default function EquipmentDetail() {
                           type="button"
                           onClick={() => startEditingSpec(k, v)}
                           className="text-xs text-text-dim hover:text-accent p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                          aria-label={`${k} 수정`}
-                          title="수정"
+                          aria-label={lang === 'ko' ? `${k} ${t('수정')}` : `${t('수정')} ${k}`}
+                          title={t('수정')}
                         >
                           ✎
                         </button>
@@ -577,8 +597,8 @@ export default function EquipmentDetail() {
                           type="button"
                           onClick={() => deleteSpec(k)}
                           className="text-xs text-text-dim hover:text-risk-high p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                          aria-label={`${k} 삭제`}
-                          title="삭제"
+                          aria-label={lang === 'ko' ? `${k} ${t('삭제')}` : `${t('삭제')} ${k}`}
+                          title={t('삭제')}
                         >
                           ✕
                         </button>
@@ -593,28 +613,28 @@ export default function EquipmentDetail() {
 
         {!editing && (
           <>
-            <Card title="고장 통계 (참고치)">
+            <Card title={t('고장 통계 (참고치)')}>
               {stat ? (
                 <dl className="text-sm space-y-2">
-                  <Row label="총 고장건수" value={`${stat.고장건수}건 (최근 1년 ${stat.최근1년건수}건)`} />
-                  <Row label="최초→최근 고장일" value={`${stat.최초고장일} → ${stat.최근고장일}`} />
-                  <Row label="평균고장간격(MTBF)" value={stat.mtbf일 ? `${Math.round(stat.mtbf일)}일` : '-'} />
-                  <Row label="예상 다음 고장" value={stat.예상다음고장일 ?? '-'} />
-                  <Row label="총 보수비용" value={totalRepairCost > 0 ? `${totalRepairCost.toLocaleString()}원` : '-'} />
+                  <Row label={t('총 고장건수')} value={lang === 'ko' ? `${stat.고장건수}건 (최근 1년 ${stat.최근1년건수}건)` : `${stat.고장건수} (last 1yr: ${stat.최근1년건수})`} />
+                  <Row label={t('최초→최근 고장일')} value={`${stat.최초고장일} → ${stat.최근고장일}`} />
+                  <Row label={t('평균고장간격(MTBF)')} value={stat.mtbf일 ? `${Math.round(stat.mtbf일)}${lang === 'ko' ? '일' : 'd'}` : '-'} />
+                  <Row label={t('예상 다음 고장')} value={stat.예상다음고장일 ?? '-'} />
+                  <Row label={t('총 보수비용')} value={totalRepairCost > 0 ? fmtWon(totalRepairCost, lang) : '-'} />
                 </dl>
               ) : (
                 <div className="text-sm text-text-dim">
-                  수리 이력이 없습니다.{' '}
+                  {t('수리 이력이 없습니다.')}{' '}
                   <button type="button" onClick={() => setAddingHistory(true)} className="text-accent hover:underline">
-                    이력 추가하기 →
+                    {t('이력 추가하기 →')}
                   </button>
                 </div>
               )}
             </Card>
 
-            <Card title="연결 설비">
+            <Card title={t('연결 설비')}>
               {connected.length === 0 ? (
-                <p className="text-sm text-text-dim">연결된 설비가 없습니다.</p>
+                <p className="text-sm text-text-dim">{t('연결된 설비가 없습니다.')}</p>
               ) : (
                 <ul className="space-y-1.5 text-sm">
                   {connected.map((c) => (
@@ -629,8 +649,8 @@ export default function EquipmentDetail() {
                         type="button"
                         onClick={() => removeConnection(c.설비ID)}
                         className="text-xs text-text-dim hover:text-risk-high shrink-0"
-                        aria-label={`${c.설비명} 연결 해제`}
-                        title="연결 해제"
+                        aria-label={lang === 'ko' ? `${c.설비명} ${t('연결 해제')}` : `${t('연결 해제')} ${c.설비명}`}
+                        title={t('연결 해제')}
                       >
                         ✕
                       </button>
@@ -645,7 +665,7 @@ export default function EquipmentDetail() {
                     onChange={(e) => setConnectTarget(e.target.value)}
                     className="flex-1 min-w-0 rounded-lg border border-border bg-bg-soft px-2 py-1.5 text-xs"
                   >
-                    <option value="">설비 선택…</option>
+                    <option value="">{t('설비 선택…')}</option>
                     {connectableOptions.map((e) => (
                       <option key={e.설비ID} value={e.설비ID}>
                         {e.설비명} ({e.설비ID})
@@ -658,7 +678,7 @@ export default function EquipmentDetail() {
                     disabled={!connectTarget}
                     className="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
-                    연결 추가
+                    {t('연결 추가')}
                   </button>
                 </div>
               )}
@@ -669,13 +689,13 @@ export default function EquipmentDetail() {
 
       <Card>
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-medium text-text-dim">점검·고장 이력 ({records.length}건)</h3>
+          <h3 className="text-sm font-medium text-text-dim">{t('점검·고장 이력')} ({fmtCount(records.length, lang, '건')})</h3>
           <button
             type="button"
             onClick={() => setAddingHistory((v) => !v)}
             className="text-xs text-accent hover:underline shrink-0"
           >
-            {addingHistory ? '닫기' : '+ 이력 추가'}
+            {addingHistory ? t('닫기') : t('+ 이력 추가')}
           </button>
         </div>
 
@@ -689,7 +709,7 @@ export default function EquipmentDetail() {
                   addTab === 'manual' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
                 }`}
               >
-                수기 입력
+                {t('수기 입력')}
               </button>
               <button
                 type="button"
@@ -698,7 +718,7 @@ export default function EquipmentDetail() {
                   addTab === 'file' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
                 }`}
               >
-                파일로 업로드
+                {t('파일로 업로드')}
               </button>
               <button
                 type="button"
@@ -707,14 +727,14 @@ export default function EquipmentDetail() {
                   addTab === 'template' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
                 }`}
               >
-                양식 등록
+                {t('양식 등록')}
               </button>
             </div>
 
             {addTab === 'manual' && (
               <form onSubmit={submitHistory} className="flex flex-wrap items-end gap-2">
                 <label className="block">
-                  <span className="text-xs text-text-dim">날짜 *</span>
+                  <span className="text-xs text-text-dim">{t('날짜 *')}</span>
                   <input
                     required
                     type="date"
@@ -724,34 +744,34 @@ export default function EquipmentDetail() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">유형</span>
+                  <span className="text-xs text-text-dim">{t('유형')}</span>
                   <select
                     value={historyForm.유형}
                     onChange={(e) => setHistoryForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
                     className="mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
                   >
-                    <option>점검</option>
-                    <option>수리</option>
+                    <option value="점검">{t('점검')}</option>
+                    <option value="수리">{t('수리')}</option>
                   </select>
                 </label>
                 <label className="block flex-1 min-w-[10rem]">
-                  <span className="text-xs text-text-dim">제목 *</span>
+                  <span className="text-xs text-text-dim">{t('제목 *')}</span>
                   <input
                     required
                     value={historyForm.제목}
                     onChange={(e) => setHistoryForm((f) => ({ ...f, 제목: e.target.value }))}
-                    placeholder="예: 필터 교체"
+                    placeholder={t('예: 필터 교체')}
                     className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">비용(원)</span>
+                  <span className="text-xs text-text-dim">{t('비용(원)')}</span>
                   <input
                     type="number"
                     min={0}
                     value={historyForm.비용}
                     onChange={(e) => setHistoryForm((f) => ({ ...f, 비용: e.target.value }))}
-                    placeholder="예: 50000"
+                    placeholder={t('예: 50000')}
                     className="mt-1 w-28 rounded-lg border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-accent/60"
                   />
                 </label>
@@ -759,7 +779,7 @@ export default function EquipmentDetail() {
                   type="submit"
                   className="rounded-lg bg-accent text-bg text-sm font-medium px-3 py-1.5 hover:brightness-110 transition"
                 >
-                  등록
+                  {t('등록')}
                 </button>
               </form>
             )}
@@ -768,16 +788,16 @@ export default function EquipmentDetail() {
               <div>
                 {historyTemplates.length > 0 && (
                   <label className="block mb-3">
-                    <span className="text-xs text-text-dim">적용할 양식 (엑셀 파일에만 적용됩니다)</span>
+                    <span className="text-xs text-text-dim">{t('적용할 양식 (엑셀 파일에만 적용됩니다)')}</span>
                     <select
                       value={selectedHistoryTemplateId}
                       onChange={(e) => setSelectedHistoryTemplateId(e.target.value)}
                       className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
                     >
-                      <option value="">일반 처리(자동 분류)</option>
-                      {historyTemplates.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
+                      <option value="">{t('일반 처리(자동 분류)')}</option>
+                      {historyTemplates.map((tpl) => (
+                        <option key={tpl.id} value={tpl.id}>
+                          {tpl.name}
                         </option>
                       ))}
                     </select>
@@ -796,17 +816,17 @@ export default function EquipmentDetail() {
                 >
                   {fileMode === 'parsing' ? (
                     <p className="text-text-dim text-sm">
-                      분석 중… {progress.total > 0 ? `${progress.done}/${progress.total}` : ''}
+                      {t('분석 중…')} {progress.total > 0 ? `${progress.done}/${progress.total}` : ''}
                     </p>
                   ) : (
                     <>
-                      <p className="text-text-dim text-sm">여기로 점검·수리 기록 폴더를 끌어다 놓으세요</p>
+                      <p className="text-text-dim text-sm">{t('여기로 점검·수리 기록 폴더를 끌어다 놓으세요')}</p>
                       <button
                         type="button"
                         onClick={() => folderInputRef.current?.click()}
                         className="mt-3 text-xs text-accent hover:underline"
                       >
-                        또는 폴더 선택하기
+                        {t('또는 폴더 선택하기')}
                       </button>
                       <input
                         ref={folderInputRef}
@@ -822,8 +842,9 @@ export default function EquipmentDetail() {
                   )}
                 </div>
                 <p className="mt-3 text-xs text-text-dim">
-                  hwp/hwpx/xls/xlsx/pdf/pptx/docx 지원. 찾은 이력은 전부 "{equipment.설비명}"에 등록됩니다.
-                  파일은 서버로 전송되지 않고 브라우저 안에서만 처리됩니다.
+                  {lang === 'ko'
+                    ? <>hwp/hwpx/xls/xlsx/pdf/pptx/docx 지원. 찾은 이력은 전부 "{equipment.설비명}"에 등록됩니다. 파일은 서버로 전송되지 않고 브라우저 안에서만 처리됩니다.</>
+                    : <>Supports hwp/hwpx/xls/xlsx/pdf/pptx/docx. All found records will be registered under "{equipment.설비명}". Files are never sent to a server — processed entirely in your browser.</>}
                 </p>
               </div>
             )}
@@ -834,10 +855,10 @@ export default function EquipmentDetail() {
 
         {records.length === 0 ? (
           <div className="text-sm text-text-dim">
-            이력이 없습니다.{' '}
+            {t('이력이 없습니다.')}{' '}
             {!addingHistory && (
               <button type="button" onClick={() => setAddingHistory(true)} className="text-accent hover:underline">
-                지금 추가하기 →
+                {t('지금 추가하기 →')}
               </button>
             )}
           </div>
@@ -866,8 +887,8 @@ export default function EquipmentDetail() {
                         >
                           ›
                         </span>
-                        {r.날짜} · {r.유형}
-                        {r.비용 ? ` · ${r.비용.toLocaleString()}원` : ''}
+                        {r.날짜} · {t(r.유형)}
+                        {r.비용 ? ` · ${fmtWon(r.비용, lang)}` : ''}
                       </div>
                       <div className="text-sm">{r.제목}</div>
                     </button>
@@ -875,8 +896,8 @@ export default function EquipmentDetail() {
                       type="button"
                       onClick={() => startEditingHistory(r)}
                       className="text-xs text-text-dim hover:text-accent shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                      aria-label={`${r.제목} 이력 수정`}
-                      title="수정"
+                      aria-label={lang === 'ko' ? `${r.제목} ${t('이력 수정')}` : `${t('이력 수정')} ${r.제목}`}
+                      title={t('수정')}
                     >
                       ✎
                     </button>
@@ -884,8 +905,8 @@ export default function EquipmentDetail() {
                       type="button"
                       onClick={() => handleDeleteHistory(r)}
                       className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                      aria-label={`${r.제목} 이력 삭제`}
-                      title="삭제"
+                      aria-label={lang === 'ko' ? `${r.제목} ${t('이력 삭제')}` : `${t('이력 삭제')} ${r.제목}`}
+                      title={t('삭제')}
                     >
                       ✕
                     </button>
@@ -905,7 +926,7 @@ export default function EquipmentDetail() {
                             className="mt-2 flex flex-wrap items-end gap-2 rounded-xl border border-accent/50 bg-bg-soft/60 p-3"
                           >
                             <label className="block">
-                              <span className="text-xs text-text-dim">날짜 *</span>
+                              <span className="text-xs text-text-dim">{t('날짜 *')}</span>
                               <input
                                 required
                                 type="date"
@@ -915,7 +936,7 @@ export default function EquipmentDetail() {
                               />
                             </label>
                             <label className="block">
-                              <span className="text-xs text-text-dim">유형</span>
+                              <span className="text-xs text-text-dim">{t('유형')}</span>
                               <select
                                 value={historyEditForm.유형}
                                 onChange={(e) =>
@@ -923,12 +944,12 @@ export default function EquipmentDetail() {
                                 }
                                 className="mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
                               >
-                                <option>점검</option>
-                                <option>수리</option>
+                                <option value="점검">{t('점검')}</option>
+                                <option value="수리">{t('수리')}</option>
                               </select>
                             </label>
                             <label className="block flex-1 min-w-[10rem]">
-                              <span className="text-xs text-text-dim">제목 *</span>
+                              <span className="text-xs text-text-dim">{t('제목 *')}</span>
                               <input
                                 required
                                 value={historyEditForm.제목}
@@ -937,7 +958,7 @@ export default function EquipmentDetail() {
                               />
                             </label>
                             <label className="block">
-                              <span className="text-xs text-text-dim">비용(원)</span>
+                              <span className="text-xs text-text-dim">{t('비용(원)')}</span>
                               <input
                                 type="number"
                                 min={0}
@@ -947,7 +968,7 @@ export default function EquipmentDetail() {
                               />
                             </label>
                             <label className="block w-full">
-                              <span className="text-xs text-text-dim">내용</span>
+                              <span className="text-xs text-text-dim">{t('내용')}</span>
                               <input
                                 value={historyEditForm.내용}
                                 onChange={(e) => setHistoryEditForm((f) => ({ ...f, 내용: e.target.value }))}
@@ -955,23 +976,23 @@ export default function EquipmentDetail() {
                               />
                             </label>
                             <button type="submit" className="text-xs text-accent hover:underline shrink-0">
-                              저장
+                              {t('저장')}
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingHistoryId(null)}
                               className="text-xs text-text-dim hover:text-text shrink-0"
                             >
-                              취소
+                              {t('취소')}
                             </button>
                           </form>
                         ) : (
                           <dl className="mt-2 rounded-xl border border-border bg-bg-soft/60 p-3 text-sm space-y-1.5">
-                            <Row label="날짜" value={r.날짜} />
-                            <Row label="유형" value={r.유형} />
-                            <Row label="비용" value={r.비용 ? `${r.비용.toLocaleString()}원` : undefined} />
-                            <Row label="내용" value={r.내용} />
-                            <Row label="출처파일" value={r.출처파일} />
+                            <Row label={t('날짜')} value={r.날짜} />
+                            <Row label={t('유형')} value={t(r.유형)} />
+                            <Row label={t('비용')} value={r.비용 ? fmtWon(r.비용, lang) : undefined} />
+                            <Row label={t('내용')} value={r.내용} />
+                            <Row label={t('출처파일')} value={r.출처파일} />
                           </dl>
                         )}
                       </motion.div>

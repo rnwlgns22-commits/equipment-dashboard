@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Equipment } from '../../types';
+import { useT } from '../../i18n';
 
 export default function ConnectionPopover({
   a,
@@ -12,15 +13,16 @@ export default function ConnectionPopover({
   onDisconnect: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
   return (
     <div className="absolute top-4 right-4 w-72 rounded-2xl border border-border bg-card shadow-xl p-4 z-10">
       <div className="flex items-start justify-between gap-2">
-        <div className="font-medium">🔗 연결선</div>
+        <div className="font-medium">🔗 {t('연결선')}</div>
         <button
           type="button"
           onClick={onClose}
           className="text-text-dim hover:text-text text-sm leading-none p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-          aria-label="닫기"
+          aria-label={t('닫기')}
         >
           ✕
         </button>
@@ -37,8 +39,7 @@ export default function ConnectionPopover({
       </div>
 
       <p className="mt-3 text-xs text-text-dim">
-        이 연결선은 두 설비의 &ldquo;연결설비&rdquo; 정보에서 파생된 것입니다 — 해제하면 두
-        설비 모두에서 서로에 대한 연결 정보가 지워집니다.
+        {t('이 연결선은 두 설비의 "연결설비" 정보에서 파생된 것입니다 — 해제하면 두 설비 모두에서 서로에 대한 연결 정보가 지워집니다.')}
       </p>
 
       <button
@@ -46,7 +47,7 @@ export default function ConnectionPopover({
         onClick={onDisconnect}
         className="mt-3 w-full rounded-lg border border-border px-2 py-1.5 text-xs text-text-dim hover:text-risk-high hover:border-risk-high/50 transition-colors"
       >
-        연결 해제
+        {t('연결 해제')}
       </button>
     </div>
   );

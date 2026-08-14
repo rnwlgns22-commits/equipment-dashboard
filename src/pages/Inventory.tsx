@@ -7,6 +7,7 @@ import { showToast } from '../toastStore';
 import { csvBlob } from '../lib/csv';
 import { downloadBlob } from '../lib/vaultExport';
 import type { Part } from '../types';
+import { useT, useLang, fmtCount, fmtWon } from '../i18n';
 
 const emptyForm = {
   자재명: '',
@@ -29,6 +30,8 @@ function isLowStock(p: Part): boolean {
 // 남았는지 + 안전재고 이하인지"만 즉시 보이면 충분하다고 판단해 현재수량을
 // 직접 조정하는 스냅샷 모델로 단순화(법정점검 "오늘 완료" 버튼과 같은 취지).
 export default function Inventory() {
+  const t = useT();
+  const lang = useLang();
   const parts = useAppStore((s) => s.parts);
   const equipments = useAppStore((s) => s.equipments);
   const addPart = useAppStore((s) => s.addPart);
@@ -100,7 +103,7 @@ export default function Inventory() {
     setForm(emptyForm);
     setLinkTargets([]);
     setAdding(false);
-    showToast('자재를 추가했습니다');
+    showToast(t('자재를 추가했습니다'));
   };
 
   const startEditing = (p: Part) => {
@@ -135,7 +138,7 @@ export default function Inventory() {
       비고: editForm.비고.trim() || undefined,
     });
     setEditingId(null);
-    showToast('자재 정보를 수정했습니다');
+    showToast(t('자재 정보를 수정했습니다'));
   };
 
   const toggleEditLinkTarget = (id: string) => {
@@ -147,11 +150,12 @@ export default function Inventory() {
   };
 
   const handleDelete = (p: Part) => {
-    if (!window.confirm(`"${p.자재명}" 자재를 삭제할까요?`)) return;
+    const confirmMsg = lang === 'ko' ? `"${p.자재명}" 자재를 삭제할까요?` : `Delete part "${p.자재명}"?`;
+    if (!window.confirm(confirmMsg)) return;
     const snapshot = { parts };
     deletePart(p.id);
-    showToast('자재를 삭제했습니다', 'success', {
-      label: '실행취소',
+    showToast(t('자재를 삭제했습니다'), 'success', {
+      label: t('실행취소'),
       onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
     });
   };
@@ -163,10 +167,10 @@ export default function Inventory() {
   return (
     <div className="p-6 md:p-8 space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">자재·재고관리</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('자재·재고관리')}</h1>
         <p className="text-sm text-text-dim mt-1">
-          예비부품·소모자재의 현재 재고와 안전재고를 관리합니다. {lowStockCount > 0 && (
-            <span className="text-risk-high">재고부족 {lowStockCount}건</span>
+          {t('예비부품·소모자재의 현재 재고와 안전재고를 관리합니다.')} {lowStockCount > 0 && (
+            <span className="text-risk-high">{t('재고부족')} {fmtCount(lowStockCount, lang, '건')}</span>
           )}
         </p>
       </div>
@@ -175,7 +179,7 @@ export default function Inventory() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="자재명·보관위치 검색"
+          placeholder={t('자재명·보관위치 검색')}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-56 outline-none focus:border-accent/60"
         />
         <button
@@ -184,14 +188,14 @@ export default function Inventory() {
           disabled={list.length === 0}
           className="rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
-          CSV 내보내기
+          {t('CSV 내보내기')}
         </button>
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
           className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition shrink-0"
         >
-          {adding ? '닫기' : '+ 자재 추가'}
+          {adding ? t('닫기') : t('+ 자재 추가')}
         </button>
       </div>
 
@@ -201,36 +205,36 @@ export default function Inventory() {
           className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
         >
           <label className="block">
-            <span className="text-xs text-text-dim">자재명 *</span>
+            <span className="text-xs text-text-dim">{t('자재명 *')}</span>
             <input
               required
               value={form.자재명}
               onChange={(e) => setForm((f) => ({ ...f, 자재명: e.target.value }))}
-              placeholder="예: V벨트 A형"
+              placeholder={t('예: V벨트 A형')}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">규격</span>
+            <span className="text-xs text-text-dim">{t('규격')}</span>
             <input
               value={form.규격}
               onChange={(e) => setForm((f) => ({ ...f, 규격: e.target.value }))}
-              placeholder="예: A-38"
+              placeholder={t('예: A-38')}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">단위 *</span>
+            <span className="text-xs text-text-dim">{t('단위 *')}</span>
             <input
               required
               value={form.단위}
               onChange={(e) => setForm((f) => ({ ...f, 단위: e.target.value }))}
-              placeholder="예: EA"
+              placeholder={t('예: EA')}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">현재수량 *</span>
+            <span className="text-xs text-text-dim">{t('현재수량 *')}</span>
             <input
               required
               type="number"
@@ -241,18 +245,18 @@ export default function Inventory() {
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">안전재고</span>
+            <span className="text-xs text-text-dim">{t('안전재고')}</span>
             <input
               type="number"
               min={0}
               value={form.안전재고}
               onChange={(e) => setForm((f) => ({ ...f, 안전재고: e.target.value }))}
-              placeholder="이 값 이하면 재고부족 표시"
+              placeholder={t('이 값 이하면 재고부족 표시')}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">단가(원)</span>
+            <span className="text-xs text-text-dim">{t('단가(원)')}</span>
             <input
               type="number"
               min={0}
@@ -262,16 +266,16 @@ export default function Inventory() {
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">보관위치</span>
+            <span className="text-xs text-text-dim">{t('보관위치')}</span>
             <input
               value={form.보관위치}
               onChange={(e) => setForm((f) => ({ ...f, 보관위치: e.target.value }))}
-              placeholder="예: 자재창고 A-3"
+              placeholder={t('예: 자재창고 A-3')}
               className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
             />
           </label>
           <label className="block">
-            <span className="text-xs text-text-dim">비고</span>
+            <span className="text-xs text-text-dim">{t('비고')}</span>
             <input
               value={form.비고}
               onChange={(e) => setForm((f) => ({ ...f, 비고: e.target.value }))}
@@ -279,9 +283,9 @@ export default function Inventory() {
             />
           </label>
           <div className="block sm:col-span-2 lg:col-span-4">
-            <span className="text-xs text-text-dim">사용 설비 (선택)</span>
+            <span className="text-xs text-text-dim">{t('사용 설비 (선택)')}</span>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {equipments.length === 0 && <span className="text-xs text-text-dim">등록된 설비가 없습니다.</span>}
+              {equipments.length === 0 && <span className="text-xs text-text-dim">{t('등록된 설비가 없습니다.')}</span>}
               {equipments.map((e) => (
                 <button
                   key={e.설비ID}
@@ -302,7 +306,7 @@ export default function Inventory() {
             type="submit"
             className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition sm:col-span-2 lg:col-span-4"
           >
-            등록
+            {t('등록')}
           </button>
         </form>
       )}
@@ -310,7 +314,7 @@ export default function Inventory() {
       <div className="space-y-2">
         {list.length === 0 && (
           <p className="text-sm text-text-dim text-center py-8">
-            {parts.length === 0 ? '등록된 자재가 없습니다.' : '검색 조건에 맞는 자재가 없습니다.'}
+            {parts.length === 0 ? t('등록된 자재가 없습니다.') : t('검색 조건에 맞는 자재가 없습니다.')}
           </p>
         )}
         <AnimatePresence>
@@ -326,7 +330,7 @@ export default function Inventory() {
                 className="rounded-2xl border border-accent/50 bg-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
               >
                 <label className="block">
-                  <span className="text-xs text-text-dim">자재명</span>
+                  <span className="text-xs text-text-dim">{t('자재명')}</span>
                   <input
                     required
                     value={editForm.자재명}
@@ -335,7 +339,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">규격</span>
+                  <span className="text-xs text-text-dim">{t('규격')}</span>
                   <input
                     value={editForm.규격}
                     onChange={(e) => setEditForm((f) => ({ ...f, 규격: e.target.value }))}
@@ -343,7 +347,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">단위</span>
+                  <span className="text-xs text-text-dim">{t('단위')}</span>
                   <input
                     required
                     value={editForm.단위}
@@ -352,7 +356,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">현재수량</span>
+                  <span className="text-xs text-text-dim">{t('현재수량')}</span>
                   <input
                     required
                     type="number"
@@ -363,7 +367,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">안전재고</span>
+                  <span className="text-xs text-text-dim">{t('안전재고')}</span>
                   <input
                     type="number"
                     min={0}
@@ -373,7 +377,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">단가(원)</span>
+                  <span className="text-xs text-text-dim">{t('단가(원)')}</span>
                   <input
                     type="number"
                     min={0}
@@ -383,7 +387,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">보관위치</span>
+                  <span className="text-xs text-text-dim">{t('보관위치')}</span>
                   <input
                     value={editForm.보관위치}
                     onChange={(e) => setEditForm((f) => ({ ...f, 보관위치: e.target.value }))}
@@ -391,7 +395,7 @@ export default function Inventory() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-text-dim">비고</span>
+                  <span className="text-xs text-text-dim">{t('비고')}</span>
                   <input
                     value={editForm.비고}
                     onChange={(e) => setEditForm((f) => ({ ...f, 비고: e.target.value }))}
@@ -399,9 +403,9 @@ export default function Inventory() {
                   />
                 </label>
                 <div className="block sm:col-span-2 lg:col-span-4">
-                  <span className="text-xs text-text-dim">사용 설비 (선택)</span>
+                  <span className="text-xs text-text-dim">{t('사용 설비 (선택)')}</span>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {equipments.length === 0 && <span className="text-xs text-text-dim">등록된 설비가 없습니다.</span>}
+                    {equipments.length === 0 && <span className="text-xs text-text-dim">{t('등록된 설비가 없습니다.')}</span>}
                     {equipments.map((e) => (
                       <button
                         key={e.설비ID}
@@ -423,14 +427,14 @@ export default function Inventory() {
                     type="submit"
                     className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
                   >
-                    저장
+                    {t('저장')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
                     className="rounded-lg border border-border text-sm px-4 py-2 text-text-dim hover:text-text"
                   >
-                    취소
+                    {t('취소')}
                   </button>
                 </div>
               </form>
@@ -449,13 +453,13 @@ export default function Inventory() {
                     <span className="text-sm font-medium truncate">{p.자재명}</span>
                     {p.규격 && <span className="text-xs text-text-dim">· {p.규격}</span>}
                     {low && (
-                      <span className="text-xs rounded-full px-2 py-0.5 bg-risk-high/15 text-risk-high">재고부족</span>
+                      <span className="text-xs rounded-full px-2 py-0.5 bg-risk-high/15 text-risk-high">{t('재고부족')}</span>
                     )}
                   </div>
                   <div className="mt-1 text-xs text-text-dim">
-                    현재수량 {p.현재수량}{p.단위}
-                    {p.안전재고 !== undefined && ` · 안전재고 ${p.안전재고}${p.단위}`}
-                    {p.단가 !== undefined && ` · 단가 ${p.단가.toLocaleString()}원`}
+                    {t('현재수량')} {p.현재수량}{p.단위}
+                    {p.안전재고 !== undefined && ` · ${t('안전재고')} ${p.안전재고}${p.단위}`}
+                    {p.단가 !== undefined && ` · ${t('단가')} ${fmtWon(p.단가, lang)}`}
                     {p.보관위치 && ` · ${p.보관위치}`}
                   </div>
                   {linked.length > 0 && (
@@ -477,8 +481,8 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => adjustQty(p, -1)}
-                    aria-label={`${p.자재명} 재고 1 감소`}
-                    title="재고 1 감소"
+                    aria-label={lang === 'ko' ? `${p.자재명} ${t('재고 1 감소')}` : `${t('재고 1 감소')} ${p.자재명}`}
+                    title={t('재고 1 감소')}
                     className="h-7 w-7 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
                   >
                     −
@@ -486,8 +490,8 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => adjustQty(p, 1)}
-                    aria-label={`${p.자재명} 재고 1 증가`}
-                    title="재고 1 증가"
+                    aria-label={lang === 'ko' ? `${p.자재명} ${t('재고 1 증가')}` : `${t('재고 1 증가')} ${p.자재명}`}
+                    title={t('재고 1 증가')}
                     className="h-7 w-7 rounded-lg border border-border text-xs text-text-dim hover:text-text hover:border-accent/50"
                   >
                     +
@@ -496,8 +500,8 @@ export default function Inventory() {
                     type="button"
                     onClick={() => startEditing(p)}
                     className="text-xs text-text-dim hover:text-accent p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                    aria-label={`${p.자재명} 수정`}
-                    title="수정"
+                    aria-label={lang === 'ko' ? `${p.자재명} ${t('수정')}` : `${t('수정')} ${p.자재명}`}
+                    title={t('수정')}
                   >
                     ✎
                   </button>
@@ -505,8 +509,8 @@ export default function Inventory() {
                     type="button"
                     onClick={() => handleDelete(p)}
                     className="text-xs text-text-dim hover:text-risk-high p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                    aria-label={`${p.자재명} 삭제`}
-                    title="삭제"
+                    aria-label={lang === 'ko' ? `${p.자재명} ${t('삭제')}` : `${t('삭제')} ${p.자재명}`}
+                    title={t('삭제')}
                   >
                     ✕
                   </button>

@@ -7,12 +7,15 @@ import { showToast } from '../toastStore';
 import { csvBlob } from '../lib/csv';
 import { downloadBlob } from '../lib/vaultExport';
 import Reveal from '../components/Reveal';
+import { useT, useLang, fmtCount } from '../i18n';
 import type { Category, Equipment, EquipmentStatus } from '../types';
 
 const CATEGORIES: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
 const STATUSES: EquipmentStatus[] = ['정상', '수리중', '정지', '폐기'];
 
 export default function EquipmentList() {
+  const t = useT();
+  const lang = useLang();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const deleteEquipment = useAppStore((s) => s.deleteEquipment);
@@ -90,7 +93,11 @@ export default function EquipmentList() {
 
   const bulkDelete = () => {
     if (selected.size === 0) return;
-    if (!window.confirm(`선택한 설비 ${selected.size}개를 삭제할까요? 관련 이력은 고아 이력으로 남습니다.`)) {
+    const confirmMsg =
+      lang === 'ko'
+        ? `선택한 설비 ${selected.size}개를 삭제할까요? 관련 이력은 고아 이력으로 남습니다.`
+        : `Delete ${selected.size} selected equipment? Related history will remain as orphaned records.`;
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     const count = selected.size;
@@ -102,10 +109,14 @@ export default function EquipmentList() {
     };
     selected.forEach((id) => deleteEquipment(id));
     setSelected(new Set());
-    showToast(`설비 ${count}개를 삭제했습니다`, 'success', {
-      label: '실행취소',
-      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
-    });
+    showToast(
+      lang === 'ko' ? `설비 ${count}개를 삭제했습니다` : `Deleted ${count} equipment`,
+      'success',
+      {
+        label: t('실행취소'),
+        onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+      },
+    );
   };
 
   // 여러 설비를 골라 분류·사이트·상태를 한 번에 바꿈(2026-07-25 요청) — 값을
@@ -129,21 +140,25 @@ export default function EquipmentList() {
     setBulkCategory('');
     setBulkSite('');
     setBulkStatus('');
-    showToast(`설비 ${count}개를 일괄 수정했습니다`, 'success', {
-      label: '실행취소',
-      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
-    });
+    showToast(
+      lang === 'ko' ? `설비 ${count}개를 일괄 수정했습니다` : `Bulk-updated ${count} equipment`,
+      'success',
+      {
+        label: t('실행취소'),
+        onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+      },
+    );
   };
 
   return (
     <div className="p-6 md:p-8 space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">설비 목록</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{t('설비 목록')}</h1>
 
       <div className="flex flex-wrap gap-2">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="설비명·ID 검색"
+          placeholder={t('설비명·ID 검색')}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-48 outline-none focus:border-accent/60"
         />
         <select
@@ -151,9 +166,9 @@ export default function EquipmentList() {
           onChange={(e) => setCategory(e.target.value)}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
         >
-          <option>전체</option>
+          <option value="전체">{t('전체')}</option>
           {CATEGORIES.map((c) => (
-            <option key={c}>{c}</option>
+            <option key={c} value={c}>{t(c)}</option>
           ))}
         </select>
         <select
@@ -162,7 +177,7 @@ export default function EquipmentList() {
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
         >
           {sites.map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s}>{s === '전체' || s === '미분류' ? t(s) : s}</option>
           ))}
         </select>
         <select
@@ -170,9 +185,9 @@ export default function EquipmentList() {
           onChange={(e) => setStatus(e.target.value)}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
         >
-          <option>전체</option>
+          <option value="전체">{t('전체')}</option>
           {STATUSES.map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s}>{t(s)}</option>
           ))}
         </select>
         <button
@@ -181,28 +196,28 @@ export default function EquipmentList() {
           disabled={filtered.length === 0}
           className="ml-auto rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          CSV 내보내기
+          {t('CSV 내보내기')}
         </button>
         <label className="flex items-center gap-1.5 text-xs text-text-dim">
           <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} />
-          전체선택
+          {t('전체선택')}
         </label>
-        <span className="self-center text-xs text-text-dim">{filtered.length}건</span>
+        <span className="self-center text-xs text-text-dim">{fmtCount(filtered.length, lang, '건')}</span>
       </div>
 
       {selected.size > 0 && (
         <div className="rounded-lg border border-accent/30 bg-accent/10 text-sm">
           <div className="flex items-center justify-between gap-3 px-4 py-2">
-            <span>{selected.size}개 선택됨</span>
+            <span>{fmtCount(selected.size, lang)} {t('선택됨')}</span>
             <div className="flex gap-3 shrink-0">
               <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-text-dim hover:text-text">
-                선택 해제
+                {t('선택 해제')}
               </button>
               <button type="button" onClick={() => setBulkEditing((v) => !v)} className="text-xs text-accent hover:underline">
-                {bulkEditing ? '일괄 수정 닫기' : '일괄 수정'}
+                {bulkEditing ? t('일괄 수정 닫기') : t('일괄 수정')}
               </button>
               <button type="button" onClick={bulkDelete} className="text-xs text-risk-high hover:underline">
-                선택 삭제
+                {t('선택 삭제')}
               </button>
             </div>
           </div>
@@ -213,15 +228,15 @@ export default function EquipmentList() {
                 onChange={(e) => setBulkCategory(e.target.value)}
                 className="rounded-lg border border-border bg-card px-2 py-1.5 text-xs"
               >
-                <option value="">분류 변경 안 함</option>
+                <option value="">{t('분류 변경 안 함')}</option>
                 {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
+                  <option key={c} value={c}>{t(c)}</option>
                 ))}
               </select>
               <input
                 value={bulkSite}
                 onChange={(e) => setBulkSite(e.target.value)}
-                placeholder="사이트 변경 안 함"
+                placeholder={t('사이트 변경 안 함')}
                 className="w-36 rounded-lg border border-border bg-card px-2 py-1.5 text-xs"
               />
               <select
@@ -229,9 +244,9 @@ export default function EquipmentList() {
                 onChange={(e) => setBulkStatus(e.target.value)}
                 className="rounded-lg border border-border bg-card px-2 py-1.5 text-xs"
               >
-                <option value="">상태 변경 안 함</option>
+                <option value="">{t('상태 변경 안 함')}</option>
                 {STATUSES.map((s) => (
-                  <option key={s}>{s}</option>
+                  <option key={s} value={s}>{t(s)}</option>
                 ))}
               </select>
               <button
@@ -240,7 +255,7 @@ export default function EquipmentList() {
                 disabled={!bulkCategory && !bulkSite.trim() && !bulkStatus}
                 className="rounded-lg bg-accent text-bg px-3 py-1.5 text-xs font-medium hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {selected.size}개에 적용
+                {fmtCount(selected.size, lang)} {t('에 적용')}
               </button>
             </div>
           )}
@@ -264,7 +279,7 @@ export default function EquipmentList() {
                     checked={selected.has(e.설비ID)}
                     onClick={(ev) => ev.stopPropagation()}
                     onChange={() => toggleSelect(e.설비ID)}
-                    aria-label={`${e.설비명} 선택`}
+                    aria-label={lang === 'ko' ? `${e.설비명} ${t('선택')}` : `${t('선택')} ${e.설비명}`}
                     className="shrink-0"
                   />
                   <span className="text-xs text-text-dim truncate">{e.설비ID}</span>
@@ -275,15 +290,15 @@ export default function EquipmentList() {
                       risk === '상' ? 'bg-risk-high/15 text-risk-high' : 'bg-risk-mid/15 text-risk-mid'
                     }`}
                   >
-                    위험 {risk}
+                    {t('위험')} {t(risk)}
                   </span>
                 )}
               </div>
               <div className="mt-1 font-medium truncate">{e.설비명}</div>
               <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-text-dim">
-                <span className="rounded-full border border-border px-2 py-0.5">{e.분류}</span>
-                <span className="rounded-full border border-border px-2 py-0.5">{e.사이트 || '미분류'}</span>
-                <span className="rounded-full border border-border px-2 py-0.5">{e.상태}</span>
+                <span className="rounded-full border border-border px-2 py-0.5">{t(e.분류)}</span>
+                <span className="rounded-full border border-border px-2 py-0.5">{e.사이트 ? e.사이트 : t('미분류')}</span>
+                <span className="rounded-full border border-border px-2 py-0.5">{t(e.상태)}</span>
               </div>
             </Link>
             </Reveal>
@@ -294,7 +309,7 @@ export default function EquipmentList() {
           <div className="col-span-full py-8 text-center text-sm text-text-dim">
             {hasActiveFilter ? (
               <>
-                조건에 맞는 설비가 없습니다.{' '}
+                {t('조건에 맞는 설비가 없습니다.')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -305,14 +320,14 @@ export default function EquipmentList() {
                   }}
                   className="text-accent hover:underline"
                 >
-                  필터 초기화
+                  {t('필터 초기화')}
                 </button>
               </>
             ) : (
               <>
-                등록된 설비가 없습니다.{' '}
+                {t('등록된 설비가 없습니다.')}{' '}
                 <Link to="/equipment/add" className="text-accent hover:underline">
-                  설비 추가하러 가기 →
+                  {t('설비 추가하러 가기 →')}
                 </Link>
               </>
             )}

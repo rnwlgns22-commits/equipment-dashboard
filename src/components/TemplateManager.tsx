@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SheetTemplate, SheetTemplateCells, SheetTemplateCustomField } from '../lib/sheetTemplate';
 import { useTemplateStore } from '../templateStore';
 import { showToast } from '../toastStore';
+import { useT, useLang } from '../i18n';
 
 // EquipmentFormFields.tsx의 필드셋과 맞춤 — 상세사양(가격 등 자유 항목)은 아래
 // customFields로 따로 받는다.
@@ -32,6 +33,8 @@ interface PreviewCell {
 }
 
 export default function TemplateManager() {
+  const t = useT();
+  const lang = useLang();
   const templates = useTemplateStore((s) => s.templates);
   const addTemplate = useTemplateStore((s) => s.addTemplate);
   const updateTemplate = useTemplateStore((s) => s.updateTemplate);
@@ -72,7 +75,7 @@ export default function TemplateManager() {
 
   const save = () => {
     if (!editing || !editing.name.trim()) {
-      showToast('양식 이름을 입력하세요', 'error');
+      showToast(t('양식 이름을 입력하세요'), 'error');
       return;
     }
     const cleaned: SheetTemplate = {
@@ -82,7 +85,7 @@ export default function TemplateManager() {
     };
     if (isNew) addTemplate(cleaned);
     else updateTemplate(cleaned.id, cleaned);
-    showToast(`양식 "${cleaned.name}" 저장했습니다`);
+    showToast(lang === 'ko' ? `양식 "${cleaned.name}" 저장했습니다` : `Saved template "${cleaned.name}"`);
     setEditing(null);
     resetPreview();
   };
@@ -113,7 +116,7 @@ export default function TemplateManager() {
       setPreviewValues(values);
       setPreviewFileName(file.name);
     } catch {
-      showToast('샘플 파일을 읽지 못했습니다(엑셀 파일인지 확인하세요)', 'error');
+      showToast(t('샘플 파일을 읽지 못했습니다(엑셀 파일인지 확인하세요)'), 'error');
     }
   };
 
@@ -156,54 +159,53 @@ export default function TemplateManager() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-text-dim">
-            반복되는 엑셀 서식(예: 설비 현황판)을 한 번만 등록해두면, 다음부턴 같은 셀 위치에서 값을 그대로
-            읽어와 자동으로 채웁니다. 한 서식에 설비가 여러 개면 설비명 칸에 셀을 쉼표로 여러 개(A7,A8)
-            적어서 한 번에 여러 설비로 나눌 수 있습니다.
+            {t('반복되는 엑셀 서식(예: 설비 현황판)을 한 번만 등록해두면, 다음부턴 같은 셀 위치에서 값을 그대로 읽어와 자동으로 채웁니다. 한 서식에 설비가 여러 개면 설비명 칸에 셀을 쉼표로 여러 개(A7,A8) 적어서 한 번에 여러 설비로 나눌 수 있습니다.')}
           </p>
           <button
             type="button"
             onClick={startCreate}
             className="shrink-0 rounded-lg bg-accent text-bg px-4 py-2 text-sm font-medium hover:brightness-110"
           >
-            + 새 양식 등록
+            {t('+ 새 양식 등록')}
           </button>
         </div>
 
         {templates.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-text-dim">
-            등록된 양식이 없습니다. "새 양식 등록"으로 자주 쓰는 엑셀 서식의 셀 위치를 저장해보세요.
+            {t('등록된 양식이 없습니다. "새 양식 등록"으로 자주 쓰는 엑셀 서식의 셀 위치를 저장해보세요.')}
           </div>
         ) : (
           <div className="space-y-2">
-            {templates.map((t) => {
-              const mappedCount = Object.values(t.cells).filter(Boolean).length + t.customFields.length;
+            {templates.map((tpl) => {
+              const mappedCount = Object.values(tpl.cells).filter(Boolean).length + tpl.customFields.length;
               return (
                 <div
-                  key={t.id}
+                  key={tpl.id}
                   className="flex items-center justify-between rounded-2xl border border-border bg-card p-3"
                 >
                   <div>
-                    <div className="text-sm font-medium">{t.name}</div>
+                    <div className="text-sm font-medium">{tpl.name}</div>
                     <div className="text-xs text-text-dim mt-0.5">
-                      필드 {mappedCount}개 매핑 · {new Date(t.createdAt).toLocaleDateString('ko-KR')}
+                      {t('필드')} {mappedCount} · {new Date(tpl.createdAt).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US')}
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => startEdit(t)}
+                      onClick={() => startEdit(tpl)}
                       className="rounded-lg border border-border px-3 py-1.5 text-xs text-text-dim hover:text-text"
                     >
-                      수정
+                      {t('수정')}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(`"${t.name}" 양식을 삭제할까요?`)) removeTemplate(t.id);
+                        const confirmMsg = lang === 'ko' ? `"${tpl.name}" 양식을 삭제할까요?` : `Delete template "${tpl.name}"?`;
+                        if (confirm(confirmMsg)) removeTemplate(tpl.id);
                       }}
                       className="rounded-lg border border-border px-3 py-1.5 text-xs text-red-400 hover:text-red-300"
                     >
-                      삭제
+                      {t('삭제')}
                     </button>
                   </div>
                 </div>
@@ -218,11 +220,11 @@ export default function TemplateManager() {
   return (
     <div className="space-y-4">
       <label className="block">
-        <span className="text-xs text-text-dim">양식 이름 *</span>
+        <span className="text-xs text-text-dim">{t('양식 이름 *')}</span>
         <input
           value={editing.name}
           onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-          placeholder="예: 설비 현황판 표준서식"
+          placeholder={t('예: 설비 현황판 표준서식')}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent/60"
         />
       </label>
@@ -232,21 +234,21 @@ export default function TemplateManager() {
           <div className="space-y-2">
             {FIELD_KEYS.map(({ key, label, hint }) => (
               <div key={key} className="flex items-center gap-2">
-                <span className="w-28 shrink-0 text-xs text-text-dim" title={hint}>
-                  {label}
+                <span className="w-28 shrink-0 text-xs text-text-dim" title={hint ? t(hint) : undefined}>
+                  {t(label)}
                 </span>
                 <input
                   value={editing.cells[key] ?? ''}
                   onFocus={() => setActiveField(key)}
                   onChange={(e) => setEditing({ ...editing, cells: { ...editing.cells, [key]: e.target.value } })}
-                  placeholder="예: A6 또는 A7,A8"
+                  placeholder={t('예: A6 또는 A7,A8')}
                   className={`flex-1 rounded-lg border px-2 py-1.5 text-xs bg-card outline-none ${
                     activeField === key ? 'border-accent/60' : 'border-border'
                   }`}
                 />
                 {previewGrid && editing.cells[key] && (
-                  <span className="w-32 shrink-0 truncate text-xs text-text-dim" title="현재 값(셀마다 순서대로)">
-                    → {previewForRaw(previewValues, editing.cells[key])}
+                  <span className="w-32 shrink-0 truncate text-xs text-text-dim" title={t('현재 값(셀마다 순서대로)')}>
+                    → {previewForRaw(previewValues, editing.cells[key], t)}
                   </span>
                 )}
               </div>
@@ -254,7 +256,7 @@ export default function TemplateManager() {
           </div>
 
           <div className="pt-2 border-t border-border space-y-2">
-            <div className="text-xs text-text-dim">커스텀 필드 (상세사양에 저장 — 가격, 용량 등)</div>
+            <div className="text-xs text-text-dim">{t('커스텀 필드 (상세사양에 저장 — 가격, 용량 등)')}</div>
             {editing.customFields.map((cf, idx) => (
               <CustomFieldRow
                 key={idx}
@@ -280,7 +282,7 @@ export default function TemplateManager() {
               }
               className="rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-text-dim hover:text-text"
             >
-              + 커스텀 필드 추가
+              {t('+ 커스텀 필드 추가')}
             </button>
           </div>
         </div>
@@ -288,7 +290,7 @@ export default function TemplateManager() {
         <div className="space-y-2">
           <label className="block">
             <span className="text-xs text-text-dim">
-              미리보기용 샘플 파일 (선택 — 올리면 셀을 클릭해서 채울 수 있어요)
+              {t('미리보기용 샘플 파일 (선택 — 올리면 셀을 클릭해서 채울 수 있어요)')}
             </span>
             <input
               type="file"
@@ -328,7 +330,13 @@ export default function TemplateManager() {
                           className={`border border-border px-2 py-1 whitespace-nowrap cursor-pointer hover:bg-accent/10 ${
                             !cell.value ? 'text-text-dim' : ''
                           }`}
-                          title={activeField ? `클릭하면 선택된 필드에 ${cell.addr}가 채워집니다` : cell.addr}
+                          title={
+                            activeField
+                              ? lang === 'ko'
+                                ? `클릭하면 선택된 필드에 ${cell.addr}가 채워집니다`
+                                : `Click to fill the selected field with ${cell.addr}`
+                              : cell.addr
+                          }
                         >
                           {cell.value || ''}
                         </td>
@@ -340,7 +348,7 @@ export default function TemplateManager() {
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-text-dim">
-              샘플 파일을 올리지 않아도, 각 필드에 셀 위치("A6" 등)를 직접 입력해서 저장할 수 있습니다.
+              {t('샘플 파일을 올리지 않아도, 각 필드에 셀 위치("A6" 등)를 직접 입력해서 저장할 수 있습니다.')}
             </div>
           )}
         </div>
@@ -348,14 +356,14 @@ export default function TemplateManager() {
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={cancel} className="rounded-lg border border-border px-4 py-2 text-sm text-text-dim hover:text-text">
-          취소
+          {t('취소')}
         </button>
         <button
           type="button"
           onClick={save}
           className="rounded-lg bg-accent text-bg px-4 py-2 text-sm font-medium hover:brightness-110"
         >
-          저장
+          {t('저장')}
         </button>
       </div>
     </div>
@@ -377,30 +385,31 @@ function CustomFieldRow({
   onChange: (patch: Partial<SheetTemplateCustomField>) => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-2">
       <input
         value={cf.label}
         onChange={(e) => onChange({ label: e.target.value })}
-        placeholder="예: 가격"
+        placeholder={t('예: 가격')}
         className="w-28 shrink-0 rounded-lg border border-border bg-card px-2 py-1.5 text-xs outline-none"
       />
       <input
         value={cf.cell}
         onFocus={onFocus}
         onChange={(e) => onChange({ cell: e.target.value })}
-        placeholder="예: A6 또는 A7,A8"
+        placeholder={t('예: A6 또는 A7,A8')}
         className={`flex-1 rounded-lg border px-2 py-1.5 text-xs bg-card outline-none ${
           active ? 'border-accent/60' : 'border-border'
         }`}
       />
       {previewValues && cf.cell && (
-        <span className="w-32 shrink-0 truncate text-xs text-text-dim" title="현재 값(셀마다 순서대로)">
-          → {previewForRaw(previewValues, cf.cell)}
+        <span className="w-32 shrink-0 truncate text-xs text-text-dim" title={t('현재 값(셀마다 순서대로)')}>
+          → {previewForRaw(previewValues, cf.cell, t)}
         </span>
       )}
       <button type="button" onClick={onRemove} className="shrink-0 text-xs text-red-400 hover:text-red-300">
-        삭제
+        {t('삭제')}
       </button>
     </div>
   );
@@ -414,11 +423,11 @@ function colLetterFromAddr(addr: string): string {
 
 // 필드 하나에 셀이 여러 개("A7,A8")일 수 있어서, 각 셀의 값을 순서대로 이어붙여 보여줌 —
 // sheetTemplate.ts의 parseCellList와 같은 분리 규칙(쉼표/공백)을 여기서도 그대로 씀.
-function previewForRaw(previewValues: Record<string, string>, raw: string): string {
+function previewForRaw(previewValues: Record<string, string>, raw: string, t: (ko: string) => string): string {
   const refs = raw
     .split(/[,\s]+/)
     .map((s) => s.trim().toUpperCase())
     .filter(Boolean);
-  if (refs.length === 0) return '(빈칸)';
-  return refs.map((ref) => previewValues[ref] || '(빈칸)').join(', ');
+  if (refs.length === 0) return t('(빈칸)');
+  return refs.map((ref) => previewValues[ref] || t('(빈칸)')).join(', ');
 }

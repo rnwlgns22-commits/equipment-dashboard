@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Card from '../components/Card';
+import { useT } from '../i18n';
 
 interface Feature {
   to: string;
@@ -66,13 +67,13 @@ const FEATURES: Feature[] = [
 ];
 
 export default function FeatureGuide() {
+  const t = useT();
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">기능설명</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('기능설명')}</h1>
         <p className="text-sm text-text-dim mt-1">
-          이 앱의 각 메뉴가 무엇을 하는지 정리했습니다. 완전 클라이언트 사이드로 동작하며 올린 파일과
-          입력한 데이터는 서버로 전송되지 않고 이 브라우저 안에만 저장됩니다.
+          {t('이 앱의 각 메뉴가 무엇을 하는지 정리했습니다. 완전 클라이언트 사이드로 동작하며 올린 파일과 입력한 데이터는 서버로 전송되지 않고 이 브라우저 안에만 저장됩니다.')}
         </p>
       </div>
 
@@ -81,11 +82,11 @@ export default function FeatureGuide() {
           <Card key={f.to}>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h3 className="text-sm font-medium">{f.label}</h3>
-                <p className="text-sm text-text-dim mt-1 leading-relaxed">{f.description}</p>
+                <h3 className="text-sm font-medium">{t(f.label)}</h3>
+                <p className="text-sm text-text-dim mt-1 leading-relaxed">{t(f.description)}</p>
               </div>
               <Link to={f.to} className="text-xs text-accent hover:underline shrink-0">
-                바로가기 →
+                {t('바로가기 →')}
               </Link>
             </div>
           </Card>

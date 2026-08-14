@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { computeFailureStats } from '../lib/stats';
 import { useThemeColors, type ThemeColors } from '../lib/colors';
+import { useT, useLang, fmtCount } from '../i18n';
 import type { Category } from '../types';
 
 const CATEGORY_ORDER: Category[] = ['공조', '냉난방', '급배수', '전기', '소방', '승강기', '통신', '기타'];
@@ -32,6 +33,8 @@ interface GraphNode {
 }
 
 export default function GraphView() {
+  const t = useT();
+  const lang = useLang();
   const colors = useThemeColors();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
@@ -102,9 +105,9 @@ export default function GraphView() {
     <div className="h-screen flex flex-col">
       <div className="px-6 py-4 border-b border-border shrink-0 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">설비 관계 그래프</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t('설비 관계 그래프')}</h1>
           <p className="text-xs text-text-dim mt-1">
-            노드 크기 = 고장건수, 색 = 분류, 테두리 = 위험등급. 선 = 연결설비.
+            {t('노드 크기 = 고장건수, 색 = 분류, 테두리 = 위험등급. 선 = 연결설비.')}
           </p>
         </div>
         <div className="flex rounded-lg border border-border overflow-hidden">
@@ -129,9 +132,9 @@ export default function GraphView() {
         {size.width > 0 &&
           (equipments.length === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-text-dim">
-              <span>표시할 설비가 없습니다.</span>
+              <span>{t('표시할 설비가 없습니다.')}</span>
               <Link to="/equipment/add" className="text-accent hover:underline">
-                설비 추가하러 가기 →
+                {t('설비 추가하러 가기 →')}
               </Link>
             </div>
           ) : is3D ? (
@@ -173,41 +176,41 @@ export default function GraphView() {
               <div>
                 <div className="font-medium">{selectedEquipment.설비명}</div>
                 <div className="text-xs text-text-dim mt-0.5">
-                  {selectedEquipment.설비ID} · {selectedEquipment.분류}
+                  {selectedEquipment.설비ID} · {t(selectedEquipment.분류)}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
                 className="text-text-dim hover:text-text text-sm leading-none p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                aria-label="닫기"
+                aria-label={t('닫기')}
               >
                 ✕
               </button>
             </div>
             <dl className="mt-3 text-sm space-y-1.5">
               <div className="flex justify-between">
-                <dt className="text-text-dim">사이트</dt>
-                <dd>{selectedEquipment.사이트 || '미분류'}</dd>
+                <dt className="text-text-dim">{t('사이트')}</dt>
+                <dd>{selectedEquipment.사이트 ? selectedEquipment.사이트 : t('미분류')}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-text-dim">상태</dt>
-                <dd>{selectedEquipment.상태}</dd>
+                <dt className="text-text-dim">{t('상태')}</dt>
+                <dd>{t(selectedEquipment.상태)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-text-dim">고장건수</dt>
-                <dd>{selectedStat?.고장건수 ?? 0}건</dd>
+                <dt className="text-text-dim">{t('고장건수')}</dt>
+                <dd>{fmtCount(selectedStat?.고장건수 ?? 0, lang, '건')}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-text-dim">위험등급</dt>
-                <dd>{selectedStat?.위험등급 ?? '하'}</dd>
+                <dt className="text-text-dim">{t('위험등급')}</dt>
+                <dd>{t(selectedStat?.위험등급 ?? '하')}</dd>
               </div>
             </dl>
             <Link
               to={`/equipment/${selectedEquipment.설비ID}`}
               className="mt-3 block text-center text-xs text-accent hover:underline"
             >
-              설비 상세 페이지로 이동 →
+              {t('설비 상세 페이지로 이동 →')}
             </Link>
           </div>
         )}

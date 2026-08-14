@@ -1,16 +1,12 @@
-import { lazy, Suspense, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store';
-import ThemeToggle from './ThemeToggle';
+import { useT } from '../i18n';
+import LanguageToggle from './LanguageToggle';
 import ToastContainer from './ToastContainer';
 import GlobalSearch from './GlobalSearch';
 import NotificationManager from './NotificationManager';
-import GlassBackdrop from './GlassBackdrop';
-
-// 굴절 유리 배경은 three를 물고 있어서 lazy — 청크가 오는 동안엔 CSS 구체(GlassBackdrop)를
-// 대신 보여주고, 도착하면 조용히 교체된다(빈 배경이 번쩍이지 않게).
-const LiquidGlassBackdrop = lazy(() => import('./three/LiquidGlassBackdrop'));
 
 // 텍스트 한 줄("불러오는 중…")만 보이던 걸 스켈레톤으로 교체(2026-07-25) — 특히
 // three.js를 통째로 물고 오는 그래프뷰처럼 lazy 로드가 체감되는 화면에서 개선.
@@ -47,14 +43,11 @@ export default function Layout() {
   const clearData = useAppStore((s) => s.clearData);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const t = useT();
 
   return (
-    // 배경은 body(단색) + GlassBackdrop(오브제)가 담당 — 여기서 bg를 칠하면
-    // 유리 뒤가 가려지므로 투명하게 둔다
+    // 배경은 body 단색(--color-bg) 하나로 고정 — 3D/CSS 오브제 배경은 제거됨(2026-08-14).
     <div className="min-h-screen flex flex-col md:flex-row text-text">
-      <Suspense fallback={<GlassBackdrop />}>
-        <LiquidGlassBackdrop />
-      </Suspense>
       {/* 모바일 전용 상단바 — 사이드바가 폭을 다 차지해버려서(390px에서 컨텐츠가
           166px로 눌리던 문제, 2026-07-19 발견) md 미만에서는 사이드바를 드로어로 뺌 */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 glass depth-2 shrink-0 sticky top-0 z-30">
@@ -62,12 +55,12 @@ export default function Layout() {
           type="button"
           onClick={() => setMobileOpen(true)}
           className="text-text-dim hover:text-text"
-          aria-label="메뉴 열기"
+          aria-label={t('메뉴 열기')}
         >
           ☰
         </button>
-        <div className="text-sm font-medium">설비관리 대시보드</div>
-        <ThemeToggle />
+        <div className="text-sm font-medium">{t('설비관리 대시보드')}</div>
+        <LanguageToggle />
       </div>
 
       {mobileOpen && (
@@ -87,10 +80,10 @@ export default function Layout() {
       >
         <div className="px-5 py-6 space-y-3">
           <div>
-            <div className="text-lg font-semibold tracking-tight">설비관리 대시보드</div>
-            <div className="text-xs text-text-dim mt-1">클라이언트 전용 · 서버 없음</div>
+            <div className="text-lg font-semibold tracking-tight">{t('설비관리 대시보드')}</div>
+            <div className="text-xs text-text-dim mt-1">{t('클라이언트 전용 · 서버 없음')}</div>
           </div>
-          <ThemeToggle />
+          <LanguageToggle />
           <GlobalSearch />
         </div>
         <nav className="flex-1 px-3 space-y-1">
@@ -110,7 +103,7 @@ export default function Layout() {
                 }`
               }
             >
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
         </nav>
@@ -126,7 +119,7 @@ export default function Layout() {
               }`
             }
           >
-            기능설명
+            {t('기능설명')}
           </NavLink>
         </div>
         <div className="px-3 pb-5">
@@ -135,7 +128,7 @@ export default function Layout() {
             onClick={clearData}
             className="w-full rounded-lg px-3 py-2 text-sm text-text-dim hover:bg-white/5 hover:text-text transition-colors text-left"
           >
-            ← 데이터 비우고 나가기
+            {t('← 데이터 비우고 나가기')}
           </button>
         </div>
       </aside>

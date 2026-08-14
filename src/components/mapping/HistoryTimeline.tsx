@@ -1,3 +1,5 @@
+import { useT, useLang } from '../../i18n';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function HistoryTimeline({
@@ -11,6 +13,8 @@ export default function HistoryTimeline({
   value: Date;
   onChange: (d: Date) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const totalDays = Math.max(1, Math.round((maxDate.getTime() - minDate.getTime()) / DAY_MS));
   const valueDays = Math.round((value.getTime() - minDate.getTime()) / DAY_MS);
 
@@ -31,9 +35,11 @@ export default function HistoryTimeline({
         </span>
       </div>
       <div className="text-center text-sm mt-1 font-medium">
-        {value.toISOString().slice(0, 10)} 시점 재생 중
+        {lang === 'ko'
+          ? <>{value.toISOString().slice(0, 10)} 시점 재생 중</>
+          : <>Playing back {value.toISOString().slice(0, 10)}</>}
         <span className="text-xs text-text-dim font-normal ml-2">
-          (수리 이력 역산 재현 — 확정 기록 아님)
+          {t('(수리 이력 역산 재현 — 확정 기록 아님)')}
         </span>
       </div>
     </div>

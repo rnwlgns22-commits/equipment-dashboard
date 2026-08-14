@@ -1,4 +1,4 @@
-// 알림 켬/끔은 themeStore.ts와 같은 패턴(localStorage 백업 zustand 스토어)으로
+// 알림 켬/끔은 langStore.ts와 같은 패턴(localStorage 백업 zustand 스토어)으로
 // 관리(2026-07-27). 브라우저 알림 권한(Notification.permission) 자체는 브라우저가
 // 들고 있어서 여기서 따로 저장하지 않음 — 이 스토어는 "이 앱에서 켰는지" 앱 차원의
 // 의사만 담는다(권한은 있어도 앱에서 끄면 알림 안 보내야 하므로 둘을 분리).

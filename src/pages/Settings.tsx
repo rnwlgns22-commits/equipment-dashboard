@@ -6,8 +6,11 @@ import { useTemplateStore } from '../templateStore';
 import { useHistoryTemplateStore } from '../historyTemplateStore';
 import { buildJsonExport, buildVaultZip, downloadBlob } from '../lib/vaultExport';
 import Card from '../components/Card';
+import { useT, useLang } from '../i18n';
 
 export default function Settings() {
+  const t = useT();
+  const lang = useLang();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const inspectionSchedules = useAppStore((s) => s.inspectionSchedules);
@@ -49,14 +52,14 @@ export default function Settings() {
       return;
     }
     if (Notification.permission === 'denied') {
-      setMessage('브라우저가 알림 권한을 차단했습니다. 주소창의 사이트 설정에서 알림을 허용한 뒤 다시 시도하세요.');
+      setMessage(t('브라우저가 알림 권한을 차단했습니다. 주소창의 사이트 설정에서 알림을 허용한 뒤 다시 시도하세요.'));
       return;
     }
     const result = await Notification.requestPermission();
     if (result === 'granted') {
       setNotifyEnabled(true);
     } else {
-      setMessage('알림 권한이 거부되어 켤 수 없습니다.');
+      setMessage(t('알림 권한이 거부되어 켤 수 없습니다.'));
     }
   };
 
@@ -75,7 +78,7 @@ export default function Settings() {
       ),
       `설비데이터_전체백업_${todayStamp()}.json`,
     );
-    setMessage('JSON 파일을 내려받았습니다(설비·이력·레이아웃 매핑·법정/정기점검·자재재고·양식 전체 포함).');
+    setMessage(t('JSON 파일을 내려받았습니다(설비·이력·레이아웃 매핑·법정/정기점검·자재재고·양식 전체 포함).'));
   };
 
   const exportVaultZip = async () => {
@@ -83,7 +86,7 @@ export default function Settings() {
     try {
       const blob = await buildVaultZip(equipments, histories, parts);
       downloadBlob(blob, `설비통합_볼트내보내기_${todayStamp()}.zip`);
-      setMessage('옵시디언 볼트 형식 zip을 내려받았습니다.');
+      setMessage(t('옵시디언 볼트 형식 zip을 내려받았습니다.'));
     } finally {
       setBusy(false);
     }
@@ -94,7 +97,7 @@ export default function Settings() {
       const text = await file.text();
       const parsed = JSON.parse(text);
       if (!Array.isArray(parsed.equipments) || !Array.isArray(parsed.histories)) {
-        setMessage('올바른 형식의 파일이 아닙니다(equipments/histories 배열 필요).');
+        setMessage(t('올바른 형식의 파일이 아닙니다(equipments/histories 배열 필요).'));
         return;
       }
       loadData(parsed.equipments, parsed.histories);
@@ -120,32 +123,58 @@ export default function Settings() {
       if (hasHistoryTemplates) {
         loadHistoryTemplates(parsed.historyTemplates);
       }
-      setMessage(
-        `불러오기 완료: 설비 ${parsed.equipments.length}개, 이력 ${parsed.histories.length}건` +
-          (hasMapping ? `, 레이아웃 매핑(도면 ${m.floorplans.length}개)까지 복원됨` : ' (이 파일엔 레이아웃 매핑 데이터가 없어 그 부분은 그대로 둠)') +
-          (hasInspections
-            ? `, 법정/정기점검 ${parsed.inspectionSchedules.length}건까지 복원됨`
-            : ' (이 파일엔 법정/정기점검 데이터가 없어 그 부분도 그대로 둠)') +
-          (hasParts ? `, 자재 ${parsed.parts.length}건까지 복원됨` : ' (이 파일엔 자재 데이터가 없어 그 부분도 그대로 둠)') +
-          (hasTemplates || hasHistoryTemplates
-            ? `, 양식(설비 ${parsed.templates?.length ?? 0}·이력 ${parsed.historyTemplates?.length ?? 0})까지 복원됨.`
-            : ' (이 파일엔 양식 데이터가 없어 그 부분도 그대로 둠).'),
-      );
+      if (lang === 'ko') {
+        setMessage(
+          `불러오기 완료: 설비 ${parsed.equipments.length}개, 이력 ${parsed.histories.length}건` +
+            (hasMapping ? `, 레이아웃 매핑(도면 ${m.floorplans.length}개)까지 복원됨` : ' (이 파일엔 레이아웃 매핑 데이터가 없어 그 부분은 그대로 둠)') +
+            (hasInspections
+              ? `, 법정/정기점검 ${parsed.inspectionSchedules.length}건까지 복원됨`
+              : ' (이 파일엔 법정/정기점검 데이터가 없어 그 부분도 그대로 둠)') +
+            (hasParts ? `, 자재 ${parsed.parts.length}건까지 복원됨` : ' (이 파일엔 자재 데이터가 없어 그 부분도 그대로 둠)') +
+            (hasTemplates || hasHistoryTemplates
+              ? `, 양식(설비 ${parsed.templates?.length ?? 0}·이력 ${parsed.historyTemplates?.length ?? 0})까지 복원됨.`
+              : ' (이 파일엔 양식 데이터가 없어 그 부분도 그대로 둠).'),
+        );
+      } else {
+        setMessage(
+          `Import complete: ${parsed.equipments.length} equipment, ${parsed.histories.length} history records` +
+            (hasMapping ? `, layout mapping restored (${m.floorplans.length} floorplans)` : ' (no layout mapping data in this file, left unchanged)') +
+            (hasInspections
+              ? `, ${parsed.inspectionSchedules.length} legal/regular inspections restored`
+              : ' (no legal/regular inspection data in this file, left unchanged)') +
+            (hasParts ? `, ${parsed.parts.length} parts restored` : ' (no parts data in this file, left unchanged)') +
+            (hasTemplates || hasHistoryTemplates
+              ? `, templates restored (equipment ${parsed.templates?.length ?? 0} · history ${parsed.historyTemplates?.length ?? 0}).`
+              : ' (no template data in this file, left unchanged).'),
+        );
+      }
     } catch {
-      setMessage('파일을 읽는 중 오류가 발생했습니다.');
+      setMessage(t('파일을 읽는 중 오류가 발생했습니다.'));
     }
   };
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">설정 / 데이터</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('설정 / 데이터')}</h1>
         <p className="text-sm text-text-dim mt-1">
-          현재 설비 {equipments.length}개, 이력 {histories.length}건, 레이아웃 매핑 도면{' '}
-          {floorplans.length}개, 법정/정기점검 {inspectionSchedules.length}건, 자재{' '}
-          {parts.length}건, 양식 {templates.length + historyTemplates.length}개가 이 브라우저에
-          저장돼 있습니다(새로고침해도 유지되지만, 이 브라우저·이 PC에만 있는 데이터라 다른
-          기기로 옮기거나 브라우저 데이터를 지우기 전엔 아래에서 내보내기를 권장합니다).
+          {lang === 'ko' ? (
+            <>
+              현재 설비 {equipments.length}개, 이력 {histories.length}건, 레이아웃 매핑 도면{' '}
+              {floorplans.length}개, 법정/정기점검 {inspectionSchedules.length}건, 자재{' '}
+              {parts.length}건, 양식 {templates.length + historyTemplates.length}개가 이 브라우저에
+              저장돼 있습니다(새로고침해도 유지되지만, 이 브라우저·이 PC에만 있는 데이터라 다른
+              기기로 옮기거나 브라우저 데이터를 지우기 전엔 아래에서 내보내기를 권장합니다).
+            </>
+          ) : (
+            <>
+              This browser currently stores {equipments.length} equipment, {histories.length} history
+              records, {floorplans.length} layout mapping floorplans, {inspectionSchedules.length}{' '}
+              legal/regular inspections, {parts.length} parts, and {templates.length + historyTemplates.length}{' '}
+              templates (it persists across reloads, but only lives in this browser on this PC — export below
+              before switching devices or clearing browser data).
+            </>
+          )}
         </p>
       </div>
 
@@ -155,20 +184,19 @@ export default function Settings() {
         </div>
       )}
 
-      <Card title="알림">
+      <Card title={t('알림')}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm font-medium">브라우저 알림</div>
+            <div className="text-sm font-medium">{t('브라우저 알림')}</div>
             <div className="text-xs text-text-dim mt-0.5">
-              점검 임박·법정/정기점검 도래·재고부족을 이 탭이 열려 있는 동안 브라우저 알림으로 받습니다.
-              서버가 없는 앱이라 탭을 닫으면 알림도 멈춥니다(이메일·푸시 알림은 지원하지 않음).
+              {t('점검 임박·법정/정기점검 도래·재고부족을 이 탭이 열려 있는 동안 브라우저 알림으로 받습니다. 서버가 없는 앱이라 탭을 닫으면 알림도 멈춥니다(이메일·푸시 알림은 지원하지 않음).')}
             </div>
             {!notifySupported && (
-              <div className="text-xs text-risk-high mt-1">이 브라우저는 알림 기능을 지원하지 않습니다.</div>
+              <div className="text-xs text-risk-high mt-1">{t('이 브라우저는 알림 기능을 지원하지 않습니다.')}</div>
             )}
             {notifySupported && notifyPermission === 'denied' && (
               <div className="text-xs text-risk-high mt-1">
-                브라우저에서 알림 권한이 차단돼 있습니다. 사이트 설정에서 알림을 허용해야 켤 수 있습니다.
+                {t('브라우저에서 알림 권한이 차단돼 있습니다. 사이트 설정에서 알림을 허용해야 켤 수 있습니다.')}
               </div>
             )}
           </div>
@@ -191,14 +219,13 @@ export default function Settings() {
         </div>
       </Card>
 
-      <Card title="내보내기">
+      <Card title={t('내보내기')}>
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <div className="text-sm font-medium">JSON으로 전체 내보내기</div>
+              <div className="text-sm font-medium">{t('JSON으로 전체 내보내기')}</div>
               <div className="text-xs text-text-dim">
-                설비·이력(수리비용 포함)·레이아웃 매핑(도면·배치·구역)·법정/정기점검·자재재고·
-                양식(셀 매핑)까지 이 앱에서 다시 불러올 수 있는 형태로 전부 백업
+                {t('설비·이력(수리비용 포함)·레이아웃 매핑(도면·배치·구역)·법정/정기점검·자재재고· 양식(셀 매핑)까지 이 앱에서 다시 불러올 수 있는 형태로 전부 백업')}
               </div>
             </div>
             <button
@@ -206,14 +233,14 @@ export default function Settings() {
               onClick={exportJson}
               className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition shrink-0"
             >
-              내려받기
+              {t('내려받기')}
             </button>
           </div>
           <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
             <div>
-              <div className="text-sm font-medium">옵시디언 볼트 형식(zip)으로 내보내기</div>
+              <div className="text-sm font-medium">{t('옵시디언 볼트 형식(zip)으로 내보내기')}</div>
               <div className="text-xs text-text-dim">
-                설비카드·점검이력·자재카드 마크다운 노트로 변환된 zip — 옵시디언 볼트에 바로 복사 가능
+                {t('설비카드·점검이력·자재카드 마크다운 노트로 변환된 zip — 옵시디언 볼트에 바로 복사 가능')}
               </div>
             </div>
             <button
@@ -222,18 +249,18 @@ export default function Settings() {
               disabled={busy}
               className="rounded-lg border border-border text-sm font-medium px-4 py-2 hover:border-accent/50 hover:text-accent transition shrink-0 disabled:opacity-50"
             >
-              {busy ? '생성 중…' : '내려받기'}
+              {busy ? t('생성 중…') : t('내려받기')}
             </button>
           </div>
         </div>
       </Card>
 
-      <Card title="가져오기">
+      <Card title={t('가져오기')}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm font-medium">JSON 파일 불러오기</div>
+            <div className="text-sm font-medium">{t('JSON 파일 불러오기')}</div>
             <div className="text-xs text-text-dim">
-              이 앱에서 내보낸 JSON을 다시 불러와 현재 데이터를 교체(설비·이력·레이아웃 매핑·법정/정기점검·자재재고·양식 전부)
+              {t('이 앱에서 내보낸 JSON을 다시 불러와 현재 데이터를 교체(설비·이력·레이아웃 매핑·법정/정기점검·자재재고·양식 전부)')}
             </div>
           </div>
           <button
@@ -241,7 +268,7 @@ export default function Settings() {
             onClick={() => fileInputRef.current?.click()}
             className="rounded-lg border border-border text-sm font-medium px-4 py-2 hover:border-accent/50 hover:text-accent transition shrink-0"
           >
-            파일 선택
+            {t('파일 선택')}
           </button>
           <input
             ref={fileInputRef}

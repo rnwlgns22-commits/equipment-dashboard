@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { HistoryTemplate, HistoryTemplateCells } from '../lib/historySheetTemplate';
 import { useHistoryTemplateStore } from '../historyTemplateStore';
 import { showToast } from '../toastStore';
+import { useT, useLang } from '../i18n';
 
 // TemplateManager.tsx(설비 양식)와 같은 방식 — 이력은 상세사양 같은 자유항목이 없어서
 // 커스텀 필드 없이 고정 필드만 있음.
@@ -24,6 +25,8 @@ interface PreviewCell {
 }
 
 export default function HistoryTemplateManager() {
+  const t = useT();
+  const lang = useLang();
   const templates = useHistoryTemplateStore((s) => s.templates);
   const addTemplate = useHistoryTemplateStore((s) => s.addTemplate);
   const updateTemplate = useHistoryTemplateStore((s) => s.updateTemplate);
@@ -49,8 +52,8 @@ export default function HistoryTemplateManager() {
     setActiveField(null);
   };
 
-  const startEdit = (t: HistoryTemplate) => {
-    setEditing({ ...t, cells: { ...t.cells } });
+  const startEdit = (tpl: HistoryTemplate) => {
+    setEditing({ ...tpl, cells: { ...tpl.cells } });
     setIsNew(false);
     resetPreview();
     setActiveField(null);
@@ -64,13 +67,13 @@ export default function HistoryTemplateManager() {
 
   const save = () => {
     if (!editing || !editing.name.trim()) {
-      showToast('양식 이름을 입력하세요', 'error');
+      showToast(t('양식 이름을 입력하세요'), 'error');
       return;
     }
     const cleaned: HistoryTemplate = { ...editing, name: editing.name.trim() };
     if (isNew) addTemplate(cleaned);
     else updateTemplate(cleaned.id, cleaned);
-    showToast(`양식 "${cleaned.name}" 저장했습니다`);
+    showToast(lang === 'ko' ? `양식 "${cleaned.name}" 저장했습니다` : `Saved template "${cleaned.name}"`);
     setEditing(null);
     resetPreview();
   };
@@ -97,7 +100,7 @@ export default function HistoryTemplateManager() {
       setPreviewValues(values);
       setPreviewFileName(file.name);
     } catch {
-      showToast('샘플 파일을 읽지 못했습니다(엑셀 파일인지 확인하세요)', 'error');
+      showToast(t('샘플 파일을 읽지 못했습니다(엑셀 파일인지 확인하세요)'), 'error');
     }
   };
 
@@ -123,51 +126,50 @@ export default function HistoryTemplateManager() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-text-dim">
-            반복되는 점검·수리 기록 서식을 한 번만 등록해두면, 다음부턴 같은 셀 위치에서 값을 그대로 읽어와
-            이력을 자동으로 채웁니다. 한 서식에 이력이 여러 개면 제목 칸에 셀을 쉼표로 여러 개(A7,A8) 적어서
-            한 번에 여러 이력으로 나눌 수 있습니다.
+            {t('반복되는 점검·수리 기록 서식을 한 번만 등록해두면, 다음부턴 같은 셀 위치에서 값을 그대로 읽어와 이력을 자동으로 채웁니다. 한 서식에 이력이 여러 개면 제목 칸에 셀을 쉼표로 여러 개(A7,A8) 적어서 한 번에 여러 이력으로 나눌 수 있습니다.')}
           </p>
           <button
             type="button"
             onClick={startCreate}
             className="shrink-0 rounded-lg bg-accent text-bg px-4 py-2 text-sm font-medium hover:brightness-110"
           >
-            + 새 양식 등록
+            {t('+ 새 양식 등록')}
           </button>
         </div>
 
         {templates.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-text-dim">
-            등록된 양식이 없습니다. "새 양식 등록"으로 자주 쓰는 이력 서식의 셀 위치를 저장해보세요.
+            {t('등록된 양식이 없습니다. "새 양식 등록"으로 자주 쓰는 이력 서식의 셀 위치를 저장해보세요.')}
           </div>
         ) : (
           <div className="space-y-2">
-            {templates.map((t) => {
-              const mappedCount = Object.values(t.cells).filter(Boolean).length;
+            {templates.map((tpl) => {
+              const mappedCount = Object.values(tpl.cells).filter(Boolean).length;
               return (
-                <div key={t.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-3">
+                <div key={tpl.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-3">
                   <div>
-                    <div className="text-sm font-medium">{t.name}</div>
+                    <div className="text-sm font-medium">{tpl.name}</div>
                     <div className="text-xs text-text-dim mt-0.5">
-                      필드 {mappedCount}개 매핑 · {new Date(t.createdAt).toLocaleDateString('ko-KR')}
+                      {t('필드')} {mappedCount} · {new Date(tpl.createdAt).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US')}
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => startEdit(t)}
+                      onClick={() => startEdit(tpl)}
                       className="rounded-lg border border-border px-3 py-1.5 text-xs text-text-dim hover:text-text"
                     >
-                      수정
+                      {t('수정')}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(`"${t.name}" 양식을 삭제할까요?`)) removeTemplate(t.id);
+                        const confirmMsg = lang === 'ko' ? `"${tpl.name}" 양식을 삭제할까요?` : `Delete template "${tpl.name}"?`;
+                        if (confirm(confirmMsg)) removeTemplate(tpl.id);
                       }}
                       className="rounded-lg border border-border px-3 py-1.5 text-xs text-red-400 hover:text-red-300"
                     >
-                      삭제
+                      {t('삭제')}
                     </button>
                   </div>
                 </div>
@@ -182,11 +184,11 @@ export default function HistoryTemplateManager() {
   return (
     <div className="space-y-4">
       <label className="block">
-        <span className="text-xs text-text-dim">양식 이름 *</span>
+        <span className="text-xs text-text-dim">{t('양식 이름 *')}</span>
         <input
           value={editing.name}
           onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-          placeholder="예: 정기점검 결과지"
+          placeholder={t('예: 정기점검 결과지')}
           className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent/60"
         />
       </label>
@@ -195,21 +197,21 @@ export default function HistoryTemplateManager() {
         <div className="space-y-2">
           {FIELD_KEYS.map(({ key, label, hint }) => (
             <div key={key} className="flex items-center gap-2">
-              <span className="w-16 shrink-0 text-xs text-text-dim" title={hint}>
-                {label}
+              <span className="w-16 shrink-0 text-xs text-text-dim" title={hint ? t(hint) : undefined}>
+                {t(label)}
               </span>
               <input
                 value={editing.cells[key] ?? ''}
                 onFocus={() => setActiveField(key)}
                 onChange={(e) => setEditing({ ...editing, cells: { ...editing.cells, [key]: e.target.value } })}
-                placeholder="예: A6 또는 A7,A8"
+                placeholder={t('예: A6 또는 A7,A8')}
                 className={`flex-1 rounded-lg border px-2 py-1.5 text-xs bg-card outline-none ${
                   activeField === key ? 'border-accent/60' : 'border-border'
                 }`}
               />
               {previewGrid && editing.cells[key] && (
-                <span className="w-32 shrink-0 truncate text-xs text-text-dim" title="현재 값(셀마다 순서대로)">
-                  → {previewForRaw(previewValues, editing.cells[key])}
+                <span className="w-32 shrink-0 truncate text-xs text-text-dim" title={t('현재 값(셀마다 순서대로)')}>
+                  → {previewForRaw(previewValues, editing.cells[key], t)}
                 </span>
               )}
             </div>
@@ -219,7 +221,7 @@ export default function HistoryTemplateManager() {
         <div className="space-y-2">
           <label className="block">
             <span className="text-xs text-text-dim">
-              미리보기용 샘플 파일 (선택 — 올리면 셀을 클릭해서 채울 수 있어요)
+              {t('미리보기용 샘플 파일 (선택 — 올리면 셀을 클릭해서 채울 수 있어요)')}
             </span>
             <input
               type="file"
@@ -257,7 +259,13 @@ export default function HistoryTemplateManager() {
                           className={`border border-border px-2 py-1 whitespace-nowrap cursor-pointer hover:bg-accent/10 ${
                             !cell.value ? 'text-text-dim' : ''
                           }`}
-                          title={activeField ? `클릭하면 선택된 필드에 ${cell.addr}가 채워집니다` : cell.addr}
+                          title={
+                            activeField
+                              ? lang === 'ko'
+                                ? `클릭하면 선택된 필드에 ${cell.addr}가 채워집니다`
+                                : `Click to fill the selected field with ${cell.addr}`
+                              : cell.addr
+                          }
                         >
                           {cell.value || ''}
                         </td>
@@ -269,7 +277,7 @@ export default function HistoryTemplateManager() {
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-text-dim">
-              샘플 파일을 올리지 않아도, 각 필드에 셀 위치("A6" 등)를 직접 입력해서 저장할 수 있습니다.
+              {t('샘플 파일을 올리지 않아도, 각 필드에 셀 위치("A6" 등)를 직접 입력해서 저장할 수 있습니다.')}
             </div>
           )}
         </div>
@@ -277,14 +285,14 @@ export default function HistoryTemplateManager() {
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={cancel} className="rounded-lg border border-border px-4 py-2 text-sm text-text-dim hover:text-text">
-          취소
+          {t('취소')}
         </button>
         <button
           type="button"
           onClick={save}
           className="rounded-lg bg-accent text-bg px-4 py-2 text-sm font-medium hover:brightness-110"
         >
-          저장
+          {t('저장')}
         </button>
       </div>
     </div>
@@ -295,11 +303,11 @@ function colLetterFromAddr(addr: string): string {
   return addr.replace(/\d+$/, '');
 }
 
-function previewForRaw(previewValues: Record<string, string>, raw: string): string {
+function previewForRaw(previewValues: Record<string, string>, raw: string, t: (ko: string) => string): string {
   const refs = raw
     .split(/[,\s]+/)
     .map((s) => s.trim().toUpperCase())
     .filter(Boolean);
-  if (refs.length === 0) return '(빈칸)';
-  return refs.map((ref) => previewValues[ref] || '(빈칸)').join(', ');
+  if (refs.length === 0) return t('(빈칸)');
+  return refs.map((ref) => previewValues[ref] || t('(빈칸)')).join(', ');
 }

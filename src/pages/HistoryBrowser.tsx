@@ -14,6 +14,7 @@ import { readDataTransfer, readFileList } from '../lib/readDroppedFiles';
 import { buildRecordsFromCandidates } from '../lib/uploadCommit';
 import type { EquipmentCandidate, HistoryCandidate, FailedCandidate } from '../lib/uploadPipeline';
 import type { HistoryRecord, HistoryType } from '../types';
+import { useT, useLang, fmtWon, fmtCount } from '../i18n';
 
 const emptyAddForm = { 날짜: '', 유형: '점검' as HistoryType, 설비ID: '', 제목: '', 내용: '', 비용: '' };
 
@@ -21,6 +22,8 @@ type AddTab = 'manual' | 'file' | 'template';
 type FileMode = 'idle' | 'dragging' | 'parsing' | 'review';
 
 export default function HistoryBrowser() {
+  const t = useT();
+  const lang = useLang();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const addHistory = useAppStore((s) => s.addHistory);
@@ -68,7 +71,7 @@ export default function HistoryBrowser() {
     setFileMode('parsing');
     setProgress({ done: 0, total: files.length });
 
-    const selectedTemplate = historyTemplates.find((t) => t.id === selectedHistoryTemplateId);
+    const selectedTemplate = historyTemplates.find((tpl) => tpl.id === selectedHistoryTemplateId);
     const templateFiles = selectedTemplate ? files.filter((f) => /\.xlsx?$/i.test(f.file.name)) : [];
     const restFiles = selectedTemplate ? files.filter((f) => !/\.xlsx?$/i.test(f.file.name)) : files;
 
@@ -91,7 +94,10 @@ export default function HistoryBrowser() {
               key: `htpl-${i}`,
               fileName: file.name,
               relativePath,
-              reason: `양식 "${selectedTemplate.name}" 적용 결과 제목/날짜 칸이 비어있음`,
+              reason:
+                lang === 'ko'
+                  ? `양식 "${selectedTemplate.name}" 적용 결과 제목/날짜 칸이 비어있음`
+                  : `Template "${selectedTemplate.name}" produced empty title/date fields`,
             });
           } else {
             applied.forEach((a, j) => {
@@ -116,7 +122,7 @@ export default function HistoryBrowser() {
             key: `htpl-${i}`,
             fileName: file.name,
             relativePath,
-            reason: '양식 적용 중 오류(엑셀 파일인지 확인)',
+            reason: t('양식 적용 중 오류(엑셀 파일인지 확인)'),
           });
         }
         done += 1;
@@ -163,7 +169,11 @@ export default function HistoryBrowser() {
     appendData(newEquipments, newHistories);
     cancelFileReview();
     setAdding(false);
-    showToast(`설비 ${newEquipments.length}개, 이력 ${newHistories.length}건을 반영했습니다`);
+    showToast(
+      lang === 'ko'
+        ? `설비 ${newEquipments.length}개, 이력 ${newHistories.length}건을 반영했습니다`
+        : `Added ${newEquipments.length} equipment, ${newHistories.length} history records`,
+    );
   };
 
   const fileEquipmentOptions = useMemo(
@@ -195,7 +205,7 @@ export default function HistoryBrowser() {
       비용: editForm.비용 && 비용 > 0 ? 비용 : undefined,
     });
     setEditingId(null);
-    showToast('이력을 수정했습니다');
+    showToast(t('이력을 수정했습니다'));
   };
 
   const orphanCount = useMemo(() => histories.filter((h) => !h.설비ID).length, [histories]);
@@ -255,15 +265,21 @@ export default function HistoryBrowser() {
 
   const bulkDelete = () => {
     if (selected.size === 0) return;
-    if (!window.confirm(`선택한 이력 ${selected.size}건을 삭제할까요?`)) return;
+    const confirmMsg =
+      lang === 'ko' ? `선택한 이력 ${selected.size}건을 삭제할까요?` : `Delete ${selected.size} selected history records?`;
+    if (!window.confirm(confirmMsg)) return;
     const count = selected.size;
     const snapshot = { histories };
     selected.forEach((id) => deleteHistory(id));
     setSelected(new Set());
-    showToast(`이력 ${count}건을 삭제했습니다`, 'success', {
-      label: '실행취소',
-      onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
-    });
+    showToast(
+      lang === 'ko' ? `이력 ${count}건을 삭제했습니다` : `Deleted ${count} history records`,
+      'success',
+      {
+        label: t('실행취소'),
+        onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
+      },
+    );
   };
 
   const submitAdd = (e: React.FormEvent) => {
@@ -283,15 +299,16 @@ export default function HistoryBrowser() {
     addHistory(record);
     setAddForm(emptyAddForm);
     setAdding(false);
-    showToast('이력을 추가했습니다');
+    showToast(t('이력을 추가했습니다'));
   };
 
   const handleDelete = (h: HistoryRecord) => {
-    if (!window.confirm(`"${h.제목}" 이력을 삭제할까요?`)) return;
+    const confirmMsg = lang === 'ko' ? `"${h.제목}" 이력을 삭제할까요?` : `Delete history "${h.제목}"?`;
+    if (!window.confirm(confirmMsg)) return;
     const snapshot = { histories };
     deleteHistory(h.id);
-    showToast('이력을 삭제했습니다', 'success', {
-      label: '실행취소',
+    showToast(t('이력을 삭제했습니다'), 'success', {
+      label: t('실행취소'),
       onClick: () => useAppStore.getState().restoreSnapshot(snapshot),
     });
   };
@@ -320,13 +337,13 @@ export default function HistoryBrowser() {
   return (
     <div className="p-6 md:p-8 space-y-5">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">점검·수리 이력</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('점검·수리 이력')}</h1>
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
           className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition shrink-0"
         >
-          {adding ? '닫기' : '+ 이력 추가'}
+          {adding ? t('닫기') : t('+ 이력 추가')}
         </button>
       </div>
 
@@ -340,7 +357,7 @@ export default function HistoryBrowser() {
                 addTab === 'manual' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
               }`}
             >
-              수기 입력
+              {t('수기 입력')}
             </button>
             <button
               type="button"
@@ -349,7 +366,7 @@ export default function HistoryBrowser() {
                 addTab === 'file' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
               }`}
             >
-              파일로 업로드
+              {t('파일로 업로드')}
             </button>
             <button
               type="button"
@@ -358,7 +375,7 @@ export default function HistoryBrowser() {
                 addTab === 'template' ? 'bg-accent/15 text-accent' : 'text-text-dim hover:text-text'
               }`}
             >
-              양식 등록
+              {t('양식 등록')}
             </button>
           </div>
 
@@ -368,7 +385,7 @@ export default function HistoryBrowser() {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
             >
               <label className="block">
-                <span className="text-xs text-text-dim">날짜 *</span>
+                <span className="text-xs text-text-dim">{t('날짜 *')}</span>
                 <input
                   required
                   type="date"
@@ -378,24 +395,24 @@ export default function HistoryBrowser() {
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-text-dim">유형</span>
+                <span className="text-xs text-text-dim">{t('유형')}</span>
                 <select
                   value={addForm.유형}
                   onChange={(e) => setAddForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
                   className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
                 >
-                  <option>점검</option>
-                  <option>수리</option>
+                  <option value="점검">{t('점검')}</option>
+                  <option value="수리">{t('수리')}</option>
                 </select>
               </label>
               <label className="block">
-                <span className="text-xs text-text-dim">설비</span>
+                <span className="text-xs text-text-dim">{t('설비')}</span>
                 <select
                   value={addForm.설비ID}
                   onChange={(e) => setAddForm((f) => ({ ...f, 설비ID: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
                 >
-                  <option value="">설비 미지정</option>
+                  <option value="">{t('설비 미지정')}</option>
                   {equipments.map((e) => (
                     <option key={e.설비ID} value={e.설비ID}>
                       {e.설비명} ({e.설비ID})
@@ -404,17 +421,17 @@ export default function HistoryBrowser() {
                 </select>
               </label>
               <label className="block sm:col-span-2">
-                <span className="text-xs text-text-dim">제목 *</span>
+                <span className="text-xs text-text-dim">{t('제목 *')}</span>
                 <input
                   required
                   value={addForm.제목}
                   onChange={(e) => setAddForm((f) => ({ ...f, 제목: e.target.value }))}
-                  placeholder="예: 공조기 1호기 필터 교체"
+                  placeholder={t('예: 공조기 1호기 필터 교체')}
                   className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
                 />
               </label>
               <label className="block sm:col-span-2 lg:col-span-3">
-                <span className="text-xs text-text-dim">내용</span>
+                <span className="text-xs text-text-dim">{t('내용')}</span>
                 <input
                   value={addForm.내용}
                   onChange={(e) => setAddForm((f) => ({ ...f, 내용: e.target.value }))}
@@ -422,13 +439,13 @@ export default function HistoryBrowser() {
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-text-dim">비용(원)</span>
+                <span className="text-xs text-text-dim">{t('비용(원)')}</span>
                 <input
                   type="number"
                   min={0}
                   value={addForm.비용}
                   onChange={(e) => setAddForm((f) => ({ ...f, 비용: e.target.value }))}
-                  placeholder="예: 50000"
+                  placeholder={t('예: 50000')}
                   className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm outline-none focus:border-accent/60"
                 />
               </label>
@@ -436,7 +453,7 @@ export default function HistoryBrowser() {
                 type="submit"
                 className="rounded-lg bg-accent text-bg text-sm font-medium px-4 py-2 hover:brightness-110 transition"
               >
-                등록
+                {t('등록')}
               </button>
             </form>
           )}
@@ -445,16 +462,16 @@ export default function HistoryBrowser() {
             <div>
               {historyTemplates.length > 0 && (
                 <label className="block mb-3">
-                  <span className="text-xs text-text-dim">적용할 양식 (엑셀 파일에만 적용됩니다)</span>
+                  <span className="text-xs text-text-dim">{t('적용할 양식 (엑셀 파일에만 적용됩니다)')}</span>
                   <select
                     value={selectedHistoryTemplateId}
                     onChange={(e) => setSelectedHistoryTemplateId(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm"
                   >
-                    <option value="">일반 처리(자동 분류)</option>
-                    {historyTemplates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
+                    <option value="">{t('일반 처리(자동 분류)')}</option>
+                    {historyTemplates.map((tpl) => (
+                      <option key={tpl.id} value={tpl.id}>
+                        {tpl.name}
                       </option>
                     ))}
                   </select>
@@ -473,17 +490,17 @@ export default function HistoryBrowser() {
               >
                 {fileMode === 'parsing' ? (
                   <p className="text-text-dim text-sm">
-                    분석 중… {progress.total > 0 ? `${progress.done}/${progress.total}` : ''}
+                    {t('분석 중…')} {progress.total > 0 ? `${progress.done}/${progress.total}` : ''}
                   </p>
                 ) : (
                   <>
-                    <p className="text-text-dim text-sm">여기로 점검·수리 기록 폴더를 끌어다 놓으세요</p>
+                    <p className="text-text-dim text-sm">{t('여기로 점검·수리 기록 폴더를 끌어다 놓으세요')}</p>
                     <button
                       type="button"
                       onClick={() => folderInputRef.current?.click()}
                       className="mt-3 text-xs text-accent hover:underline"
                     >
-                      또는 폴더 선택하기
+                      {t('또는 폴더 선택하기')}
                     </button>
                     <input
                       ref={folderInputRef}
@@ -499,7 +516,7 @@ export default function HistoryBrowser() {
                 )}
               </div>
               <p className="mt-3 text-xs text-text-dim">
-                hwp/hwpx/xls/xlsx/pdf/pptx/docx 지원. 파일은 서버로 전송되지 않고 브라우저 안에서만 처리됩니다.
+                {t('hwp/hwpx/xls/xlsx/pdf/pptx/docx 지원. 파일은 서버로 전송되지 않고 브라우저 안에서만 처리됩니다.')}
               </p>
             </div>
           )}
@@ -513,8 +530,8 @@ export default function HistoryBrowser() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: '전체', label: '전체 이력', count: histories.length },
-          { value: '고아', label: '설비 매칭 안 됨', count: orphanCount },
+          { value: '전체', label: t('전체 이력'), count: histories.length },
+          { value: '고아', label: t('설비 매칭 안 됨'), count: orphanCount },
         ]}
       />
 
@@ -522,7 +539,7 @@ export default function HistoryBrowser() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="제목·설비명·ID 검색"
+          placeholder={t('제목·설비명·ID 검색')}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-52 outline-none focus:border-accent/60"
         />
         <select
@@ -530,9 +547,9 @@ export default function HistoryBrowser() {
           onChange={(e) => setTypeFilter(e.target.value as '전체' | HistoryType)}
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
         >
-          <option>전체</option>
-          <option>점검</option>
-          <option>수리</option>
+          <option value="전체">{t('전체')}</option>
+          <option value="점검">{t('점검')}</option>
+          <option value="수리">{t('수리')}</option>
         </select>
         <input
           type="date"
@@ -553,24 +570,24 @@ export default function HistoryBrowser() {
           disabled={filtered.length === 0}
           className="ml-auto rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:text-accent hover:border-accent/50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          CSV 내보내기
+          {t('CSV 내보내기')}
         </button>
         <label className="flex items-center gap-1.5 text-xs text-text-dim">
           <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} />
-          전체선택
+          {t('전체선택')}
         </label>
-        <span className="self-center text-xs text-text-dim">{filtered.length}건</span>
+        <span className="self-center text-xs text-text-dim">{fmtCount(filtered.length, lang, '건')}</span>
       </div>
 
       {selected.size > 0 && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-sm">
-          <span>{selected.size}건 선택됨</span>
+          <span>{fmtCount(selected.size, lang, '건')} {t('선택됨')}</span>
           <div className="flex gap-3 shrink-0">
             <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-text-dim hover:text-text">
-              선택 해제
+              {t('선택 해제')}
             </button>
             <button type="button" onClick={bulkDelete} className="text-xs text-risk-high hover:underline">
-              선택 삭제
+              {t('선택 삭제')}
             </button>
           </div>
         </div>
@@ -597,8 +614,8 @@ export default function HistoryBrowser() {
                 onChange={(e) => setEditForm((f) => ({ ...f, 유형: e.target.value as HistoryType }))}
                 className="shrink-0 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
               >
-                <option>점검</option>
-                <option>수리</option>
+                <option value="점검">{t('점검')}</option>
+                <option value="수리">{t('수리')}</option>
               </select>
               <input
                 required
@@ -611,26 +628,26 @@ export default function HistoryBrowser() {
                 min={0}
                 value={editForm.비용}
                 onChange={(e) => setEditForm((f) => ({ ...f, 비용: e.target.value }))}
-                placeholder="비용(원)"
-                aria-label="비용(원)"
+                placeholder={t('비용(원)')}
+                aria-label={t('비용(원)')}
                 className="w-24 shrink-0 rounded-lg border border-border bg-bg-soft px-2 py-1 text-xs"
               />
               <input
                 value={editForm.내용}
                 onChange={(e) => setEditForm((f) => ({ ...f, 내용: e.target.value }))}
-                placeholder="내용"
-                aria-label="내용"
+                placeholder={t('내용')}
+                aria-label={t('내용')}
                 className="w-full rounded-lg border border-border bg-bg-soft px-2 py-1 text-sm"
               />
               <button type="submit" className="text-xs text-accent hover:underline shrink-0">
-                저장
+                {t('저장')}
               </button>
               <button
                 type="button"
                 onClick={() => setEditingId(null)}
                 className="text-xs text-text-dim hover:text-text shrink-0"
               >
-                취소
+                {t('취소')}
               </button>
             </form>
             </Reveal>
@@ -647,7 +664,7 @@ export default function HistoryBrowser() {
                 type="checkbox"
                 checked={selected.has(h.id)}
                 onChange={() => toggleSelect(h.id)}
-                aria-label={`${h.제목} 선택`}
+                aria-label={lang === 'ko' ? `${h.제목} ${t('선택')}` : `${t('선택')} ${h.제목}`}
                 className="shrink-0"
               />
               <span className="text-xs text-text-dim shrink-0 sm:w-24">{h.날짜}</span>
@@ -656,14 +673,14 @@ export default function HistoryBrowser() {
                   h.유형 === '수리' ? 'bg-risk-high/15 text-risk-high' : 'bg-accent/15 text-accent'
                 }`}
               >
-                {h.유형}
+                {t(h.유형)}
               </span>
 
               {/* 모바일: 제목·비용·설비명을 묶어 둘째 줄로. sm 이상: contents로 풀려 원래대로 */}
               <div className="order-last flex w-full min-w-0 items-center gap-3 sm:order-none sm:contents">
                 <span className="text-sm flex-1 min-w-0 truncate">{h.제목}</span>
-                <span className="text-xs text-text-dim shrink-0 text-right sm:w-20" title="비용">
-                  {h.비용 ? `${h.비용.toLocaleString()}원` : '-'}
+                <span className="text-xs text-text-dim shrink-0 text-right sm:w-20" title={t('비용')}>
+                  {h.비용 ? fmtWon(h.비용, lang) : '-'}
                 </span>
                 {h.설비ID ? (
                   <Link
@@ -677,9 +694,9 @@ export default function HistoryBrowser() {
                     value=""
                     onChange={(e) => e.target.value && updateHistory(h.id, { 설비ID: e.target.value })}
                     className="text-xs rounded-lg border border-border bg-bg-soft px-2 py-1 shrink-0 max-w-[8rem] sm:max-w-[10rem]"
-                    title="설비를 지정하면 고아 이력에서 빠집니다"
+                    title={t('설비를 지정하면 고아 이력에서 빠집니다')}
                   >
-                    <option value="">설비 지정…</option>
+                    <option value="">{t('설비 지정…')}</option>
                     {equipments.map((e) => (
                       <option key={e.설비ID} value={e.설비ID}>
                         {e.설비명} ({e.설비ID})
@@ -694,8 +711,8 @@ export default function HistoryBrowser() {
                 type="button"
                 onClick={() => startEditing(h)}
                 className="text-xs text-text-dim hover:text-accent shrink-0 ml-auto p-1.5 -m-1.5 rounded-lg hover:bg-white/5 sm:ml-0"
-                aria-label="이력 수정"
-                title="수정"
+                aria-label={t('이력 수정')}
+                title={t('수정')}
               >
                 ✎
               </button>
@@ -703,8 +720,8 @@ export default function HistoryBrowser() {
                 type="button"
                 onClick={() => handleDelete(h)}
                 className="text-xs text-text-dim hover:text-risk-high shrink-0 p-1.5 -m-1.5 rounded-lg hover:bg-white/5"
-                aria-label="이력 삭제"
-                title="삭제"
+                aria-label={t('이력 삭제')}
+                title={t('삭제')}
               >
                 ✕
               </button>
@@ -714,7 +731,7 @@ export default function HistoryBrowser() {
         )}
         </AnimatePresence>
         {filtered.length === 0 && (
-          <p className="text-sm text-text-dim text-center py-8">조건에 맞는 이력이 없습니다.</p>
+          <p className="text-sm text-text-dim text-center py-8">{t('조건에 맞는 이력이 없습니다.')}</p>
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { unifiedSearch, type SearchHit, type SearchKind } from '../lib/search';
+import { useT, useLang } from '../i18n';
 
 const KIND_LABEL: Record<SearchKind, string> = {
   설비: '설비',
@@ -17,6 +18,8 @@ const KIND_ORDER: SearchKind[] = ['설비', '이력', '자재'];
 // 선택하면 목록 화면으로 이동한 뒤 그 화면의 검색창에 제목/자재명을 채워 넣는다
 // (HistoryBrowser.tsx·Inventory.tsx의 presetQuery 초기화 참고).
 export default function GlobalSearch() {
+  const t = useT();
+  const lang = useLang();
   const equipments = useAppStore((s) => s.equipments);
   const histories = useAppStore((s) => s.histories);
   const parts = useAppStore((s) => s.parts);
@@ -93,7 +96,7 @@ export default function GlobalSearch() {
         className="flex items-center gap-2 w-full rounded-lg border border-border bg-bg px-3 py-2 text-xs text-text-dim hover:border-accent/50 hover:text-text transition-colors"
       >
         <span aria-hidden>🔍</span>
-        <span className="flex-1 text-left">설비·이력·자재 검색</span>
+        <span className="flex-1 text-left">{t('설비·이력·자재 검색')}</span>
         <span className="hidden sm:inline text-[10px] rounded border border-border px-1.5 py-0.5 leading-none">
           ⌘K
         </span>
@@ -114,19 +117,19 @@ export default function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onInputKeyDown}
-                placeholder="설비명·ID·위치·점검이력·자재 검색…"
-                aria-label="통합검색"
+                placeholder={t('설비명·ID·위치·점검이력·자재 검색…')}
+                aria-label={t('통합검색')}
                 className="w-full px-4 py-3 text-sm bg-transparent outline-none border-b border-border"
               />
               <div className="max-h-96 overflow-y-auto">
                 {query.trim() === '' && (
                   <p className="px-4 py-6 text-xs text-text-dim text-center">
-                    설비·점검이력·자재를 한 번에 검색합니다.
+                    {t('설비·점검이력·자재를 한 번에 검색합니다.')}
                   </p>
                 )}
                 {query.trim() !== '' && hits.length === 0 && (
                   <p className="px-4 py-6 text-xs text-text-dim text-center">
-                    &ldquo;{query}&rdquo;에 대한 검색 결과가 없습니다.
+                    {lang === 'ko' ? <>&ldquo;{query}&rdquo;에 대한 검색 결과가 없습니다.</> : <>No results for &ldquo;{query}&rdquo;.</>}
                   </p>
                 )}
                 {KIND_ORDER.map((kind) => {
@@ -135,7 +138,7 @@ export default function GlobalSearch() {
                   return (
                     <div key={kind} className="py-1">
                       <div className="px-4 py-1 text-[10px] uppercase tracking-wide text-text-dim">
-                        {KIND_LABEL[kind]}
+                        {t(KIND_LABEL[kind])}
                       </div>
                       {group.map((h) => {
                         const idx = hits.indexOf(h);
