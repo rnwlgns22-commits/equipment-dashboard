@@ -154,7 +154,7 @@ export default function Landing() {
           {t('점검·수리 기록이 담긴 문서 폴더를 올리면 설비별로 자동 정리하고, 고장통계·예측·연계분석까지 한 화면에서 볼 수 있습니다.')}
         </p>
 
-        <Tilt3D max={5} className="rounded-2xl">
+        <Tilt3D className="rounded-2xl">
           <div
             onDragOver={(e) => {
               e.preventDefault();

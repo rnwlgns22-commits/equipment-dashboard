@@ -29,7 +29,7 @@ export default function Card({
       className="persp"
     >
       {tilt ? (
-        <Tilt3D max={4} className={surface}>
+        <Tilt3D className={surface}>
           {title && <h3 className="text-sm font-medium text-text-dim mb-4">{title}</h3>}
           {children}
         </Tilt3D>
